@@ -8,7 +8,7 @@ Your product code (translation, chat, summarization, …) talks to OpenRouter th
 
 Hardcoding `OPENROUTER_MODEL = "anthropic/claude-3.5-sonnet"` means a deploy to change models, budgets or a kill switch. `django-openrouter` stores that runtime policy in the database, caches it, and enforces limits before every request.
 
-API keys can still come from the environment (`OPENROUTER_API_KEY`) if you prefer not to keep them in the database.
+API keys stored in admin are encrypted in the database (Fernet, key derived from `SECRET_KEY`) and are write-only: after save the value cannot be viewed, only replaced or cleared. Keys can still come from the environment (`OPENROUTER_API_KEY`) if you prefer not to keep them in the database.
 
 ## Quickstart
 
@@ -34,7 +34,7 @@ python manage.py migrate
 
 ### 3. Configure in Django admin
 
-1. Open **OpenRouter → OpenRouter settings**. Paste an API key *or* leave it empty and set `OPENROUTER_API_KEY` in the environment.
+1. Open **OpenRouter → OpenRouter settings**. Paste an API key (it is encrypted and cannot be viewed after save) *or* leave it empty and set `OPENROUTER_API_KEY` in the environment.
 2. Run `python manage.py sync_models` to pull the model catalog (`GET /api/v1/models`).
 3. Create a **Usage profile** (slug `translation`, `chat`, …), pick a model, optional fallbacks, limits and budgets.
 4. Set that profile as **default profile** if you want `chat(messages=...)` without a name.

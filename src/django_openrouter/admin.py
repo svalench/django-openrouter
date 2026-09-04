@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from typing import Any
 
+from django import forms
 from django.contrib import admin, messages
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Count, QuerySet, Sum
@@ -24,6 +26,22 @@ from django_openrouter.sync import sync_openrouter_models
 
 
 class OpenRouterSettingsForm(ModelForm):
+    """API-ключ write-only: после сохранения его нельзя увидеть в админке."""
+
+    api_key = forms.CharField(
+        label=_("API key"),
+        required=False,
+        strip=True,
+        widget=PasswordInput(
+            render_value=False,
+            attrs={"autocomplete": "new-password"},
+        ),
+    )
+    clear_api_key = forms.BooleanField(
+        label=_("Clear stored API key"),
+        required=False,
+    )
+
     class Meta:
         model = OpenRouterSettings
         fields = (
@@ -34,14 +52,34 @@ class OpenRouterSettingsForm(ModelForm):
             "max_retries",
             "enabled",
         )
-        widgets = {
-            "api_key": PasswordInput(render_value=False),
-        }
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        # Никогда не подставляем расшифрованный ключ в виджет.
+        self.initial["api_key"] = ""
+        self.fields["api_key"].initial = ""
+        stored = bool(self.instance.pk and self.instance.api_key)
+        if stored:
+            self.fields["api_key"].help_text = _(
+                "A key is stored encrypted. Leave blank to keep it, or enter a new "
+                "key to replace it. The stored value cannot be viewed."
+            )
+        else:
+            self.fields["api_key"].help_text = _(
+                "Entered once, stored encrypted, and cannot be viewed again. "
+                "Leave empty to use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+            )
+        if not stored:
+            self.fields["clear_api_key"].disabled = True
 
     def save(self, commit: bool = True) -> OpenRouterSettings:
         instance: OpenRouterSettings = super().save(commit=False)
         raw_key = self.cleaned_data.get("api_key") or ""
-        if not raw_key and instance.pk:
+        if raw_key:
+            instance.api_key = raw_key
+        elif self.cleaned_data.get("clear_api_key"):
+            instance.api_key = ""
+        elif instance.pk:
             instance.api_key = OpenRouterSettings.objects.get(pk=instance.pk).api_key
         if commit:
             instance.save()
@@ -52,13 +90,16 @@ class OpenRouterSettingsForm(ModelForm):
 @admin.register(OpenRouterSettings)
 class OpenRouterSettingsAdmin(admin.ModelAdmin):
     form = OpenRouterSettingsForm
+    readonly_fields = ("api_key_status",)
     fieldsets = (
         (
             None,
             {
                 "fields": (
                     "enabled",
+                    "api_key_status",
                     "api_key",
+                    "clear_api_key",
                     "base_url",
                     "default_profile",
                     "request_timeout",
@@ -67,6 +108,12 @@ class OpenRouterSettingsAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+    @admin.display(description=_("API key status"))
+    def api_key_status(self, obj: OpenRouterSettings | None) -> str:
+        if obj is not None and obj.pk and obj.api_key:
+            return str(_("Stored (encrypted, not visible)"))
+        return str(_("Not set"))
 
     def changelist_view(
         self,

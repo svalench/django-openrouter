@@ -2,6 +2,6 @@
 
 В коде проекта комментарии и docstring на русском. Ruff RUF002 (ambiguous unicode, кириллица vs латиница) для этого репозитория шумит и не является дефектом.
 
-- В `pyproject.toml` держать `RUF002` в `ignore`.
+- В `pyproject.toml` держать `RUF002` и `RUF003` в `ignore`.
 - Не «исправлять» русские docstring под латиницу ради RUF002.
 - Миграции Django не прогонять через isort (`I001` в per-file-ignores).

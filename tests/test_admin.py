@@ -133,6 +133,67 @@ def test_settings_form_keeps_blank_api_key(or_settings: OpenRouterSettings) -> N
     assert saved.api_key == "sk-test"
 
 
+def test_settings_form_replaces_api_key(or_settings: OpenRouterSettings) -> None:
+    from django_openrouter.admin import OpenRouterSettingsForm
+
+    form = OpenRouterSettingsForm(
+        data={
+            "api_key": "sk-new-key",
+            "base_url": or_settings.base_url,
+            "request_timeout": 60,
+            "max_retries": 0,
+            "enabled": True,
+        },
+        instance=or_settings,
+    )
+    assert form.is_valid(), form.errors
+    saved = form.save()
+    assert saved.api_key == "sk-new-key"
+
+
+def test_settings_form_clears_api_key(or_settings: OpenRouterSettings) -> None:
+    from django_openrouter.admin import OpenRouterSettingsForm
+
+    form = OpenRouterSettingsForm(
+        data={
+            "api_key": "",
+            "clear_api_key": True,
+            "base_url": or_settings.base_url,
+            "request_timeout": 60,
+            "max_retries": 0,
+            "enabled": True,
+        },
+        instance=or_settings,
+    )
+    assert form.is_valid(), form.errors
+    saved = form.save()
+    assert saved.api_key == ""
+
+
+def test_settings_admin_does_not_render_stored_api_key(
+    admin_client, or_settings: OpenRouterSettings
+) -> None:
+    or_settings.api_key = "sk-super-secret-should-not-leak"
+    or_settings.save()
+    url = reverse("admin:django_openrouter_openroutersettings_change", args=[or_settings.pk])
+    response = admin_client.get(url)
+    assert response.status_code == 200
+    assert b"sk-super-secret-should-not-leak" not in response.content
+    assert b"Stored (encrypted, not visible)" in response.content
+
+
+def test_settings_form_empty_key_is_write_only() -> None:
+    from django_openrouter.admin import OpenRouterSettingsForm
+
+    obj = OpenRouterSettings.load()
+    obj.api_key = ""
+    obj.save()
+    form = OpenRouterSettingsForm(instance=obj)
+    assert form.initial["api_key"] == ""
+    assert form.fields["clear_api_key"].disabled is True
+    assert "cannot be viewed again" in str(form.fields["api_key"].help_text)
+
+
 def test_usage_profile_form_rejects_inactive(paid_model: OpenRouterModel) -> None:
     from django_openrouter.admin import UsageProfileForm
 
@@ -225,6 +286,16 @@ def test_sync_action_reports_error(admin_client, monkeypatch: pytest.MonkeyPatch
     )
     assert response.status_code == 200
     assert b"API key" in response.content
+
+
+def test_settings_admin_status_not_set(admin_client) -> None:
+    obj = OpenRouterSettings.load()
+    obj.api_key = ""
+    obj.save()
+    url = reverse("admin:django_openrouter_openroutersettings_change", args=[obj.pk])
+    response = admin_client.get(url)
+    assert response.status_code == 200
+    assert b"Not set" in response.content
 
 
 def test_settings_has_no_add_when_exists(admin_client, or_settings: OpenRouterSettings) -> None:

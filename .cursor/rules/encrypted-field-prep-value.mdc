@@ -1,0 +1,5 @@
+# EncryptedTextField: get_prep_value
+
+`EncryptedTextField` хранит Fernet-ciphertext с префиксом `or2:`. `TextField.get_prep_value` вызывает `to_python()`, а `to_python` расшифровывает. Если после этого снова звать `_encrypt`, Fernet (случайный IV) даст **новый** токен на каждый save.
+
+`get_prep_value` должен шифровать напрямую (`_encrypt(str(value))`), без `super().get_prep_value` / `to_python`. Уже готовый `or2:`-токен `_encrypt` возвращает как есть.

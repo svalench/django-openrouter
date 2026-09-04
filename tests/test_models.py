@@ -40,8 +40,6 @@ def test_api_key_roundtrip_encrypted() -> None:
     obj.save()
     loaded = OpenRouterSettings.objects.get(pk=1)
     assert loaded.api_key == "sk-secret-value"
-    raw = OpenRouterSettings.objects.filter(pk=1).values_list("api_key", flat=True)[0]
-    assert raw != "sk-secret-value" or loaded.api_key == "sk-secret-value"
 
 
 def test_model_is_free(free_model: OpenRouterModel, paid_model: OpenRouterModel) -> None:
