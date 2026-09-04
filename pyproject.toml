@@ -51,8 +51,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/django-openrouter/django-openrouter"
-Documentation = "https://github.com/django-openrouter/django-openrouter#readme"
+Homepage = "https://github.com/svalench/django-openrouter"
+Documentation = "https://github.com/svalench/django-openrouter#readme"
+Repository = "https://github.com/svalench/django-openrouter"
 
 [tool.hatch.version]
 path = "src/django_openrouter/__init__.py"
