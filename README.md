@@ -205,6 +205,55 @@ You can also point `LOG_BACKENDS` at your own subclass of `django_openrouter.log
 
 Usage is aggregated from `RequestLog` for the current calendar day and month (`UsageProfile.get_usage("day"|"month")`). Null limit fields mean “unlimited”.
 
+## Internationalization
+
+Admin labels (filters, help texts, verbose names) are wrapped in `gettext_lazy`.
+Catalogs live in `src/django_openrouter/locale/<django_locale>/LC_MESSAGES/django.po`.
+
+The host project decides which languages are active. Example:
+
+```python
+from django.utils.translation import gettext_lazy as _
+
+LANGUAGE_CODE = "ru"
+LANGUAGES = [
+    ("ru", _("Русский")),
+    ("uk", _("Українська")),
+    ("pl", _("Polski")),
+    ("be", _("Беларуская")),
+    ("en-gb", _("English")),
+    ("de", _("Deutsch")),
+    ("fr", _("Français")),
+    ("es", _("Español")),
+    ("zh-hans", _("简体中文")),
+]
+
+MIDDLEWARE = [
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",  # after SessionMiddleware
+    ...
+]
+```
+
+Django language codes (`zh-hans`) map to gettext dirs (`zh_Hans`). English in this
+package is `en_GB` / `en-gb` — there is no base `en` catalog.
+
+Compile after editing `.po` files:
+
+```bash
+msgfmt -o src/django_openrouter/locale/ru/LC_MESSAGES/django.mo \
+        src/django_openrouter/locale/ru/LC_MESSAGES/django.po
+```
+
+Or from a Django project that has this app on `INSTALLED_APPS`:
+
+```bash
+python manage.py compilemessages -l ru
+```
+
+`.mo` files are not generated automatically; without them admin stays in English
+even if `LANGUAGE_CODE` is set.
+
 ## License
 
 MIT
