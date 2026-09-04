@@ -1,0 +1,33 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+  &rsaquo; <a href="{% url 'admin:app_list' app_label='django_openrouter' %}">{% trans 'Django_openrouter' %}</a>
+  &rsaquo; <a href="{% url 'admin:django_openrouter_openroutermodel_changelist' %}">{% trans 'OpenRouter models' %}</a>
+  &rsaquo; {% trans 'Assign to usage profile' %}
+</div>
+{% endblock %}
+{% block content %}
+<form action="" method="post">{% csrf_token %}
+  {% for obj in models %}
+  <input type="hidden" name="_selected_action" value="{{ obj.pk }}" />
+  {% endfor %}
+  <input type="hidden" name="action" value="assign_to_profile" />
+  <p>
+    {% blocktrans count counter=models|length trimmed %}
+    The selected model will be appended to the model chain of the profile:
+    {% plural %}
+    The {{ counter }} selected models will be appended to the model chain of the profile:
+    {% endblocktrans %}
+  </p>
+  <ul>
+    {% for obj in models %}
+    <li>{{ obj }}</li>
+    {% endfor %}
+  </ul>
+  {{ form.as_p }}
+  <input type="submit" name="apply" value="{% trans 'Assign' %}" />
+  <a href="{% url 'admin:django_openrouter_openroutermodel_changelist' %}" class="button cancel-link">{% trans 'Cancel' %}</a>
+</form>
+{% endblock %}

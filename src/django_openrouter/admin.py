@@ -542,7 +542,7 @@ class OpenRouterModelAdmin(admin.ModelAdmin):
 
     @admin.display(description=_("Params"), ordering="parameter_count")
     def parameter_size_display(self, obj: OpenRouterModel) -> str:
-        """Размер весов: 70B / 340M / 8×7B, не число API-параметров."""
+        """Размер весов: 70B / 340M / 8x7B, не число API-параметров."""
         label = display_parameter_label(
             stored_label=obj.parameter_label,
             model_id=obj.model_id,

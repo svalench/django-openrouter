@@ -1,0 +1,19 @@
+.or-model-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 16px;
+    align-items: center;
+    margin: 8px 0 12px;
+    padding: 8px 12px;
+    background: var(--darkened-bg, #f8f8f8);
+    border-radius: 4px;
+}
+
+.or-model-filters label {
+    font-weight: 400;
+    margin-right: 6px;
+}
+
+.or-model-filters select {
+    margin-right: 8px;
+}

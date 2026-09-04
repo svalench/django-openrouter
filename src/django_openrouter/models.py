@@ -87,7 +87,7 @@ class OpenRouterModel(models.Model):
         max_length=32,
         blank=True,
         default="",
-        help_text=_("Display size with unit, e.g. 70B, 340M, 8×7B."),
+        help_text=_("Display size with unit, e.g. 70B, 340M, 8x7B."),
     )
     is_active = models.BooleanField(default=True)
     last_synced_at = models.DateTimeField(null=True, blank=True)
