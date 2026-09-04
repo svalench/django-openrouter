@@ -1,0 +1,9 @@
+# pytest-django pythonpath
+
+Тесты лежат в корневом пакете `tests/` (`tests.settings`, `tests.urls`). Для pytest-django в `pythonpath` нужны и `src`, и `.`, иначе `No module named 'tests'` и Django project scan падает без `manage.py`.
+
+```toml
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+pythonpath = ["src", "."]
+```

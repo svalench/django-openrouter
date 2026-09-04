@@ -1,0 +1,3 @@
+# django-stubs: optional Django settings
+
+Атрибуты вроде `OPENROUTER` и `OPENROUTER_API_KEY` не объявлены на `django.conf.Settings`. Читать их через `getattr(settings, "OPENROUTER_API_KEY", "")`, а не через прямой доступ — иначе mypy `[misc]`.

@@ -1,0 +1,5 @@
+# Async Django + SQLite
+
+`AsyncOpenRouterClient` ходит в ORM через `sync_to_async`. `pytest.mark.asyncio` поднимает loop в другом режиме и на SQLite даёт `database table is locked`.
+
+В тестах вызывать async API через `async_to_sync(...)` в обычном sync-тесте (при необходимости `django_db(transaction=True)`), чтобы ORM оставался в том же потоке, что и соединение pytest-django.

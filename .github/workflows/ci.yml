@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python: "3.11"
+            django: "4.2.*"
+          - python: "3.12"
+            django: "4.2.*"
+          - python: "3.11"
+            django: "5.0.*"
+          - python: "3.12"
+            django: "5.0.*"
+          - python: "3.12"
+            django: "5.1.*"
+          - python: "3.13"
+            django: "5.1.*"
+          - python: "3.12"
+            django: "5.2.*"
+          - python: "3.13"
+            django: "5.2.*"
+          - python: "3.13"
+            django: "6.0.*"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]" "Django==${{ matrix.django }}"
+      - name: Tests
+        run: pytest --cov=django_openrouter --cov-report=term-missing --cov-fail-under=85
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Ruff
+        run: ruff check src tests
+      - name: Mypy
+        run: mypy src/django_openrouter
