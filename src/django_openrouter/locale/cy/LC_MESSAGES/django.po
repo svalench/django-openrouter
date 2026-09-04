@@ -1,0 +1,470 @@
+# Welsh translations for django-openrouter.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: django-openrouter\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-04 11:06+0000\n"
+"PO-Revision-Date: 2026-09-04 11:06+0000\n"
+"Last-Translator: django-openrouter contributors\n"
+"Language-Team: cy\n"
+"Language: cy\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n==1) ? 0 : (n==2) ? 1 : (n != 8 && n != "
+"11) ? 2 : 3;\n"
+
+#: admin.py:78 admin.py:429
+msgid "Price"
+msgstr "Pris"
+
+#: admin.py:85
+msgid "Free"
+msgstr "Am ddim"
+
+#: admin.py:86
+msgid "Cheap (< $1 / 1M)"
+msgstr "Rhad (< $1 / 1M)"
+
+#: admin.py:87
+msgid "Mid ($1-$10 / 1M)"
+msgstr "Canolig ($1-$10 / 1M)"
+
+#: admin.py:88
+msgid "Expensive (>= $10 / 1M)"
+msgstr "Drud (>= $10 / 1M)"
+
+#: admin.py:98
+msgid "Speed"
+msgstr "Cyflymder"
+
+#: admin.py:105
+msgid "Fast (< 400 ms)"
+msgstr "Cyflym (< 400 ms)"
+
+#: admin.py:106
+msgid "Medium (400-1200 ms)"
+msgstr "Canolig (400-1200 ms)"
+
+#: admin.py:107
+msgid "Slow (>= 1200 ms)"
+msgstr "Araf (>= 1200 ms)"
+
+#: admin.py:108
+msgid "Unknown latency"
+msgstr "Oediad anhysbys"
+
+#: admin.py:136
+msgid "API key"
+msgstr "Allwedd API"
+
+#: admin.py:145
+msgid "Clear stored API key"
+msgstr "Clirio'r allwedd API sydd wedi'i storio"
+
+#: admin.py:168
+msgid ""
+"A key is stored encrypted. Leave blank to keep it, or enter a new key to "
+"replace it. The stored value cannot be viewed."
+msgstr ""
+"Mae allwedd wedi'i storio wedi'i hamgryptio. Gadewch yn wag i'w chadw, neu "
+"nodwch allwedd newydd i'w disodli. Ni ellir gweld y gwerth sydd wedi'i storio."
+
+#: admin.py:173
+msgid ""
+"Entered once, stored encrypted, and cannot be viewed again. Leave empty to "
+"use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+"Caiff ei nodi unwaith, ei storio wedi'i hamgryptio, ac ni ellir ei gweld "
+"eto. Gadewch yn wag i ddefnyddio OPENROUTER_API_KEY / "
+"settings.OPENROUTER['API_KEY']."
+
+#: admin.py:216
+msgid "API key status"
+msgstr "Statws allwedd API"
+
+#: admin.py:219
+msgid "Stored (encrypted, not visible)"
+msgstr "Wedi'i storio (wedi'i hamgryptio, heb ei weld)"
+
+#: admin.py:220
+msgid "Not set"
+msgstr "Heb ei osod"
+
+#: admin.py:250 models.py:274
+msgid "Fallback model must be active."
+msgstr "Rhaid i'r model wrth gefn fod yn weithredol."
+
+#: admin.py:269
+msgid "Models in the chain must be active."
+msgstr "Rhaid i'r modelau yn y gadwyn fod yn weithredol."
+
+#: admin.py:271
+msgid "only_free_models allows only free models."
+msgstr "mae only_free_models yn caniatáu dim ond modelau am ddim."
+
+#: admin.py:273
+msgid "Each model may appear only once."
+msgstr "Dim ond unwaith y caiff model ymddangos."
+
+#: admin.py:293
+msgid "Model"
+msgstr "Model"
+
+#: admin.py:294
+msgid "Models (priority order)"
+msgstr "Modelau (trefn blaenoriaeth)"
+
+#: admin.py:324 models.py:148
+msgid "Usage profile"
+msgstr "Proffil defnydd"
+
+#: admin.py:436
+msgid "Sync catalog with OpenRouter"
+msgstr "Cysoni'r catalog ag OpenRouter"
+
+#: admin.py:450
+#, python-format
+msgid ""
+"Sync complete: %(created)s created, %(updated)s updated, %(deactivated)s "
+"deactivated (%(total)s remote)."
+msgstr ""
+"Cysoni wedi gorffen: %(created)s wedi'u creu, %(updated)s wedi'u "
+"diweddaru, %(deactivated)s wedi'u diactifadu (%(total)s o bell)."
+
+#: admin.py:461
+msgid "Assign to usage profile…"
+msgstr "Neilltuo i broffil defnydd…"
+
+#: admin.py:481
+msgid "Assign models to usage profile"
+msgstr "Neilltuo modelau i broffil defnydd"
+
+#: admin.py:534
+#, python-format
+msgid "%(count)s already in the chain"
+msgstr "%(count)s eisoes yn y gadwyn"
+
+#: admin.py:535
+#, python-format
+msgid "%(count)s inactive"
+msgstr "%(count)s anweithredol"
+
+#: admin.py:536
+#, python-format
+msgid "%(count)s not free (only_free_models)"
+msgstr "%(count)s ddim am ddim (only_free_models)"
+
+#: admin.py:542
+#, python-format
+msgid "Added %(count)s model(s) to profile “%(profile)s”."
+msgstr "Ychwanegwyd %(count)s model(i) at y proffil “%(profile)s”."
+
+#: admin.py:548
+#, python-format
+msgid "No models were added to profile “%(profile)s”."
+msgstr "Ni ychwanegwyd unrhyw fodelau at y proffil “%(profile)s”."
+
+#: admin.py:551
+#, python-format
+msgid "Skipped: %(reasons)s."
+msgstr "Wedi'u hepgor: %(reasons)s."
+
+#: client.py:131
+msgid "No usage profile specified and default_profile is not set."
+msgstr "Dim proffil defnydd wedi'i nodi ac mae default_profile heb ei osod."
+
+#: client.py:135
+#, python-format
+msgid "Usage profile %(name)r is not found or inactive."
+msgstr "Proffil defnydd %(name)r heb ei ganfod neu'n anweithredol."
+
+#: client.py:151
+#, python-format
+msgid "Unknown model %(model_id)r."
+msgstr "Model anhysbys %(model_id)r."
+
+#: client.py:167
+#, python-format
+msgid "Profile %(name)r has no models configured."
+msgstr "Proffil %(name)r heb unrhyw fodelau wedi'u ffurfweddu."
+
+#: client.py:171
+#, python-format
+msgid "No allowed models left for profile %(name)r."
+msgstr "Dim modelau caniatebol ar ôl ar gyfer y proffil %(name)r."
+
+#: client.py:237
+msgid "Streaming is not implemented in django-openrouter MVP."
+msgstr "Nid yw ffrydio wedi'i weithredu yn MVP django-openrouter."
+
+#: client.py:240
+msgid "OpenRouter is disabled in admin settings."
+msgstr "Mae OpenRouter wedi'i analluogi yng ngosodiadau'r gweinydd."
+
+#: client.py:242 sync.py:213
+msgid "OpenRouter API key is not configured."
+msgstr "Nid yw allwedd API OpenRouter wedi'i ffurfweddu."
+
+#: client.py:268 client.py:358
+msgid "All models failed without a specific error."
+msgstr "Methodd pob model heb wall penodol."
+
+#: client.py:321 client.py:436
+#, python-format
+msgid "OpenRouter returned HTTP %(status)s: %(error)s"
+msgstr "Dychwelodd OpenRouter HTTP %(status)s: %(error)s"
+
+#: log_backends.py:194
+msgid ""
+"ClickHouseBackend requires 'URL' in the LOG_BACKENDS entry (e.g. http://"
+"localhost:8123)."
+msgstr ""
+"Mae angen 'URL' ar ClickHouseBackend yn y cofnod LOG_BACKENDS (e.e. http://"
+"localhost:8123)."
+
+#: log_backends.py:204
+#, python-format
+msgid "ClickHouseBackend: invalid %(label)s identifier %(identifier)r."
+msgstr "ClickHouseBackend: %(label)s nod annilys %(identifier)r."
+
+#: log_backends.py:245
+msgid "LOG_BACKENDS entry dict requires a 'BACKEND' key."
+msgstr "Mae angen allwedd 'BACKEND' ar gofnod dict LOG_BACKENDS."
+
+#: log_backends.py:250
+#, python-format
+msgid "LOG_BACKENDS entries must be strings or dicts, got %(type)s."
+msgstr "Rhaid i gofnodion LOG_BACKENDS fod yn llinynnau neu dicts, cafwyd %(type)s."
+
+#: log_backends.py:257
+#, python-format
+msgid "Cannot import log backend %(path)r: %(error)s"
+msgstr "Methu mewnforio backend log %(path)r: %(error)s"
+
+#: log_backends.py:260
+#, python-format
+msgid "%(path)r is not a LogBackend subclass."
+msgstr "Nid yw %(path)r yn is-ddosbarth LogBackend."
+
+#: log_backends.py:276
+msgid "OPENROUTER['LOG_BACKENDS'] must be a list."
+msgstr "Rhaid i OPENROUTER['LOG_BACKENDS'] fod yn restr."
+
+#: management/commands/sync_models.py:11
+msgid "Fetch GET /api/v1/models and upsert the local OpenRouter catalog."
+msgstr "Nôl GET /api/v1/models ac upsert y catalog OpenRouter lleol."
+
+#: management/commands/sync_models.py:18
+msgid "Override API key for this run."
+msgstr "Anwybyddu'r allwedd API ar gyfer y rhediad hwn."
+
+#: management/commands/sync_models.py:31
+#, python-format
+msgid ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+msgstr ""
+"crëwyd=%(created)s diweddarwyd=%(updated)s diactifadwyd=%(deactivated)s "
+"pell=%(total)s"
+
+#: models.py:45
+msgid "OpenRouter model id, e.g. anthropic/claude-3.5-sonnet"
+msgstr "ID model OpenRouter, e.e. anthropic/claude-3.5-sonnet"
+
+#: models.py:52
+msgid "Per-token prices: prompt, completion, optional request/image."
+msgstr "Prisiau fesul tocyn: prompt, completion, cais/delwedd dewisol."
+
+#: models.py:61
+msgid "Prompt price per token from the catalog, for admin sorting."
+msgstr "Pris prompt fesul tocyn o'r catalog, ar gyfer trefnu yn y gweinydd."
+
+#: models.py:68
+msgid "Completion price per token from the catalog, for admin sorting."
+msgstr "Pris completion fesul tocyn o'r catalog, ar gyfer trefnu yn y gweinydd."
+
+#: models.py:73
+msgid "p50 TTFT for the best endpoint, in milliseconds."
+msgstr "p50 TTFT ar gyfer yr endpoint gorau, mewn miliseiliadau."
+
+#: models.py:78
+msgid "p50 throughput (tok/s) for the best endpoint — load."
+msgstr "p50 trwygyrch (tok/s) ar gyfer yr endpoint gorau — llwyth."
+
+#: models.py:85
+msgid "OpenRouter model"
+msgstr "Model OpenRouter"
+
+#: models.py:86
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:7
+msgid "OpenRouter models"
+msgstr "Modelau OpenRouter"
+
+#: models.py:108
+msgid "Stable slug used in code, e.g. chat, translation."
+msgstr "Slug sefydlog a ddefnyddir mewn cod, e.e. chat, cyfieithu."
+
+#: models.py:116
+msgid "First model in the chain (synced from the list)."
+msgstr "Model cyntaf yn y gadwyn (wedi'i gysoni o'r rhestr)."
+
+#: models.py:142
+msgid "If enabled, only models with zero catalog price may be used."
+msgstr "Os wedi'i alluogi, dim ond modelau â phris catalog sero y gellir eu defnyddio."
+
+#: models.py:149
+msgid "Usage profiles"
+msgstr "Proffiliau defnydd"
+
+#: models.py:157
+msgid "Temperature must be between 0 and 2."
+msgstr "Rhaid i'r tymheredd fod rhwng 0 a 2."
+
+#: models.py:163
+msgid "Primary model must be active."
+msgstr "Rhaid i'r model cynradd fod yn weithredol."
+
+#: models.py:166
+msgid "only_free_models requires a free primary model."
+msgstr "mae only_free_models angen model cynradd am ddim."
+
+#: models.py:263
+msgid "Profile model"
+msgstr "Model proffil"
+
+#: models.py:264
+msgid "Profile models"
+msgstr "Modelau proffil"
+
+#: models.py:277
+msgid "only_free_models allows only free fallback models."
+msgstr "mae only_free_models yn caniatáu dim ond modelau wrth gefn am ddim."
+
+#: models.py:287
+msgid "Leave empty to use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+"Gadewch yn wag i ddefnyddio OPENROUTER_API_KEY / "
+"settings.OPENROUTER['API_KEY']."
+
+#: models.py:300
+msgid "HTTP timeout in seconds."
+msgstr "Amser terfyn HTTP mewn eiliadau."
+
+#: models.py:304
+msgid "Retries per model on transport / 5xx errors before fallback."
+msgstr ""
+"Ail-geisio fesul model ar wallau trafnidiaeth / 5xx cyn troi at y model "
+"wrth gefn."
+
+#: models.py:308
+msgid "Global kill switch. When off, every chat() call fails."
+msgstr "Swits difodi byd-eang. Pan fydd i ffwrdd, mae pob galwad chat() yn methu."
+
+#: models.py:312 models.py:313 models.py:316
+msgid "OpenRouter settings"
+msgstr "Gosodiadau OpenRouter"
+
+#: models.py:360
+msgid "Request log"
+msgstr "Log cais"
+
+#: models.py:361
+msgid "Request logs"
+msgstr "Logiau cais"
+
+#: models.py:366
+msgid "Can view usage logs"
+msgstr "Gall weld logiau defnydd"
+
+#: rules.py:25
+#, python-format
+msgid "Usage profile %(name)r is disabled."
+msgstr "Proffil defnydd %(name)r wedi'i analluogi."
+
+#: rules.py:39
+#, python-format
+msgid "Daily request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "Terfyn cais dyddiol (%(limit)s) wedi'i groesi ar gyfer y proffil %(name)r."
+
+#: rules.py:47
+#, python-format
+msgid "Monthly request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "Terfyn cais misol (%(limit)s) wedi'i groesi ar gyfer y proffil %(name)r."
+
+#: rules.py:54
+#, python-format
+msgid "Daily budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr ""
+"Cyllideb ddyddiol (%(budget)s USD) wedi'i groesi ar gyfer y proffil %(name)r."
+
+#: rules.py:61
+#, python-format
+msgid "Monthly budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr ""
+"Cyllideb fisol (%(budget)s USD) wedi'i groesi ar gyfer y proffil %(name)r."
+
+#: rules.py:69
+#, python-format
+msgid "Model %(model_id)r is disabled."
+msgstr "Model %(model_id)r wedi'i analluogi."
+
+#: rules.py:72
+#, python-format
+msgid "Profile %(name)r allows only free models; %(model_id)r is not free."
+msgstr ""
+"Mae'r proffil %(name)r yn caniatáu dim ond modelau am ddim; nid yw "
+"%(model_id)r am ddim."
+
+#: sync.py:242
+msgid "Unexpected OpenRouter /models response."
+msgstr "Ymateb annisgwyl OpenRouter /models."
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:5
+msgid "Home"
+msgstr "Cartref"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:6
+msgid "Django_openrouter"
+msgstr "Django_openrouter"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:8
+msgid "Assign to usage profile"
+msgstr "Neilltuo i broffil defnydd"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:18
+#, python-format
+msgid ""
+"The selected model will be appended to the model chain of the profile:"
+msgid_plural ""
+"The %(counter)s selected models will be appended to the model chain of the "
+"profile:"
+msgstr[0] "Caiff y model dewisol ei atodi i gadwyn y proffil:"
+msgstr[1] ""
+"Caiff y %(counter)s model dewisol eu hatodi i gadwyn y "
+"proffil:"
+msgstr[2] ""
+"Caiff y %(counter)s model dewisol eu hatodi i gadwyn y "
+"proffil:"
+msgstr[3] ""
+"Caiff y %(counter)s model dewisol eu hatodi i gadwyn y "
+"proffil:"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:30
+msgid "Assign"
+msgstr "Neilltuo"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:31
+msgid "Cancel"
+msgstr "Diddymu"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:5
+msgid "Total requests"
+msgstr "Cyfanswm ceisiadau"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:7
+msgid "Total cost (USD)"
+msgstr "Cyfanswm y gost (USD)"

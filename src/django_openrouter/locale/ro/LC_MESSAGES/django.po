@@ -1,0 +1,457 @@
+# Romanian translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-04 11:06+0000\n"
+"PO-Revision-Date: 2026-09-04 11:06+0000\n"
+"Last-Translator: django-openrouter contributors\n"
+"Language-Team: ro\n"
+"Language: ro\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=n==1 ? 0 : (n==0 || (n%100 > 0 && n%100 < "
+"20)) ? 1 : 2;\n"
+
+#: admin.py:78 admin.py:429
+msgid "Price"
+msgstr "Preț"
+
+#: admin.py:85
+msgid "Free"
+msgstr "Gratuit"
+
+#: admin.py:86
+msgid "Cheap (< $1 / 1M)"
+msgstr "Ieftin (< $1 / 1M)"
+
+#: admin.py:87
+msgid "Mid ($1-$10 / 1M)"
+msgstr "Mediu ($1-$10 / 1M)"
+
+#: admin.py:88
+msgid "Expensive (>= $10 / 1M)"
+msgstr "Scump (>= $10 / 1M)"
+
+#: admin.py:98
+msgid "Speed"
+msgstr "Viteză"
+
+#: admin.py:105
+msgid "Fast (< 400 ms)"
+msgstr "Rapid (< 400 ms)"
+
+#: admin.py:106
+msgid "Medium (400-1200 ms)"
+msgstr "Mediu (400-1200 ms)"
+
+#: admin.py:107
+msgid "Slow (>= 1200 ms)"
+msgstr "Lent (>= 1200 ms)"
+
+#: admin.py:108
+msgid "Unknown latency"
+msgstr "Latență necunoscută"
+
+#: admin.py:136
+msgid "API key"
+msgstr "Cheie API"
+
+#: admin.py:145
+msgid "Clear stored API key"
+msgstr "Șterge cheia API stocată"
+
+#: admin.py:168
+msgid ""
+"A key is stored encrypted. Leave blank to keep it, or enter a new key to "
+"replace it. The stored value cannot be viewed."
+msgstr ""
+"Cheia este stocată criptat. Lăsați gol pentru a o păstra sau introduceți o "
+"cheie nouă pentru a o înlocui. Valoarea stocată nu poate fi vizualizată."
+
+#: admin.py:173
+msgid ""
+"Entered once, stored encrypted, and cannot be viewed again. Leave empty to "
+"use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+"Introduceți o singură dată, este stocată criptat și nu poate fi vizualizată "
+"din nou. Lăsați gol pentru a utiliza OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+
+#: admin.py:216
+msgid "API key status"
+msgstr "Stare cheie API"
+
+#: admin.py:219
+msgid "Stored (encrypted, not visible)"
+msgstr "Stocată (criptat, nevizibilă)"
+
+#: admin.py:220
+msgid "Not set"
+msgstr "Nespecificat"
+
+#: admin.py:250 models.py:274
+msgid "Fallback model must be active."
+msgstr "Modelul de rezervă trebuie să fie activ."
+
+#: admin.py:269
+msgid "Models in the chain must be active."
+msgstr "Modelele din lanț trebuie să fie active."
+
+#: admin.py:271
+msgid "only_free_models allows only free models."
+msgstr "only_free_models permite doar modele gratuite."
+
+#: admin.py:273
+msgid "Each model may appear only once."
+msgstr "Fiecare model poate apărea o singură dată."
+
+#: admin.py:293
+msgid "Model"
+msgstr "Model"
+
+#: admin.py:294
+msgid "Models (priority order)"
+msgstr "Modele (ordinea priorității)"
+
+#: admin.py:324 models.py:148
+msgid "Usage profile"
+msgstr "Profil de utilizare"
+
+#: admin.py:436
+msgid "Sync catalog with OpenRouter"
+msgstr "Sincronizează catalogul cu OpenRouter"
+
+#: admin.py:450
+#, python-format
+msgid ""
+"Sync complete: %(created)s created, %(updated)s updated, %(deactivated)s "
+"deactivated (%(total)s remote)."
+msgstr ""
+"Sincronizare finalizată: %(created)s create, %(updated)s actualizate, "
+"%(deactivated)s dezactivate (%(total)s la distanță)."
+
+#: admin.py:461
+msgid "Assign to usage profile…"
+msgstr "Atribuie profilului de utilizare…"
+
+#: admin.py:481
+msgid "Assign models to usage profile"
+msgstr "Atribuie modele profilului de utilizare"
+
+#: admin.py:534
+#, python-format
+msgid "%(count)s already in the chain"
+msgstr "%(count)s deja în lanț"
+
+#: admin.py:535
+#, python-format
+msgid "%(count)s inactive"
+msgstr "%(count)s inactive"
+
+#: admin.py:536
+#, python-format
+msgid "%(count)s not free (only_free_models)"
+msgstr "%(count)s negratuite (only_free_models)"
+
+#: admin.py:542
+#, python-format
+msgid "Added %(count)s model(s) to profile “%(profile)s”."
+msgstr "S-au adăugat %(count)s modele la profilul „%(profile)s”."
+
+#: admin.py:548
+#, python-format
+msgid "No models were added to profile “%(profile)s”."
+msgstr "Nu a fost adăugat niciun model la profilul „%(profile)s”."
+
+#: admin.py:551
+#, python-format
+msgid "Skipped: %(reasons)s."
+msgstr "Omise: %(reasons)s."
+
+#: client.py:131
+msgid "No usage profile specified and default_profile is not set."
+msgstr "Nu s-a specificat niciun profil de utilizare, iar default_profile nu este setat."
+
+#: client.py:135
+#, python-format
+msgid "Usage profile %(name)r is not found or inactive."
+msgstr "Profilul de utilizare %(name)r nu a fost găsit sau este inactiv."
+
+#: client.py:151
+#, python-format
+msgid "Unknown model %(model_id)r."
+msgstr "Model necunoscut %(model_id)r."
+
+#: client.py:167
+#, python-format
+msgid "Profile %(name)r has no models configured."
+msgstr "Profilul %(name)r nu are modele configurate."
+
+#: client.py:171
+#, python-format
+msgid "No allowed models left for profile %(name)r."
+msgstr "Nu mai există modele permise pentru profilul %(name)r."
+
+#: client.py:237
+msgid "Streaming is not implemented in django-openrouter MVP."
+msgstr "Streaming-ul nu este implementat în MVP-ul django-openrouter."
+
+#: client.py:240
+msgid "OpenRouter is disabled in admin settings."
+msgstr "OpenRouter este dezactivat în setările de administrare."
+
+#: client.py:242 sync.py:213
+msgid "OpenRouter API key is not configured."
+msgstr "Cheia API OpenRouter nu este configurată."
+
+#: client.py:268 client.py:358
+msgid "All models failed without a specific error."
+msgstr "Toate modelele au eșuat fără o eroare specifică."
+
+#: client.py:321 client.py:436
+#, python-format
+msgid "OpenRouter returned HTTP %(status)s: %(error)s"
+msgstr "OpenRouter a returnat HTTP %(status)s: %(error)s"
+
+#: log_backends.py:194
+msgid ""
+"ClickHouseBackend requires 'URL' in the LOG_BACKENDS entry (e.g. http://"
+"localhost:8123)."
+msgstr ""
+"ClickHouseBackend necesită „URL” în intrarea LOG_BACKENDS (de exemplu http://"
+"localhost:8123)."
+
+#: log_backends.py:204
+#, python-format
+msgid "ClickHouseBackend: invalid %(label)s identifier %(identifier)r."
+msgstr "ClickHouseBackend: identificator %(label)s nevalid %(identifier)r."
+
+#: log_backends.py:245
+msgid "LOG_BACKENDS entry dict requires a 'BACKEND' key."
+msgstr "Dicționarul intrării LOG_BACKENDS necesită o cheie „BACKEND”."
+
+#: log_backends.py:250
+#, python-format
+msgid "LOG_BACKENDS entries must be strings or dicts, got %(type)s."
+msgstr "Intrările LOG_BACKENDS trebuie să fie șiruri de caractere sau dicționare, s-a primit %(type)s."
+
+#: log_backends.py:257
+#, python-format
+msgid "Cannot import log backend %(path)r: %(error)s"
+msgstr "Nu se poate importa backend-ul de jurnalizare %(path)r: %(error)s"
+
+#: log_backends.py:260
+#, python-format
+msgid "%(path)r is not a LogBackend subclass."
+msgstr "%(path)r nu este o subclasă LogBackend."
+
+#: log_backends.py:276
+msgid "OPENROUTER['LOG_BACKENDS'] must be a list."
+msgstr "OPENROUTER['LOG_BACKENDS'] trebuie să fie o listă."
+
+#: management/commands/sync_models.py:11
+msgid "Fetch GET /api/v1/models and upsert the local OpenRouter catalog."
+msgstr "Preia GET /api/v1/models și actualizează catalogul local OpenRouter."
+
+#: management/commands/sync_models.py:18
+msgid "Override API key for this run."
+msgstr "Suprascrie cheia API pentru această rulare."
+
+#: management/commands/sync_models.py:31
+#, python-format
+msgid ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+msgstr ""
+"create=%(created)s actualizate=%(updated)s dezactivate=%(deactivated)s "
+"la distanță=%(total)s"
+
+#: models.py:45
+msgid "OpenRouter model id, e.g. anthropic/claude-3.5-sonnet"
+msgstr "ID model OpenRouter, de exemplu anthropic/claude-3.5-sonnet"
+
+#: models.py:52
+msgid "Per-token prices: prompt, completion, optional request/image."
+msgstr "Prețuri pe token: prompt, completion, opțional cerere/imagine."
+
+#: models.py:61
+msgid "Prompt price per token from the catalog, for admin sorting."
+msgstr "Prețul prompt pe token din catalog, pentru sortare în administrare."
+
+#: models.py:68
+msgid "Completion price per token from the catalog, for admin sorting."
+msgstr "Prețul completion pe token din catalog, pentru sortare în administrare."
+
+#: models.py:73
+msgid "p50 TTFT for the best endpoint, in milliseconds."
+msgstr "TTFT p50 pentru cel mai bun endpoint, în milisecunde."
+
+#: models.py:78
+msgid "p50 throughput (tok/s) for the best endpoint — load."
+msgstr "Throughput p50 (tok/s) pentru cel mai bun endpoint — încărcare."
+
+#: models.py:85
+msgid "OpenRouter model"
+msgstr "Model OpenRouter"
+
+#: models.py:86
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:7
+msgid "OpenRouter models"
+msgstr "Modele OpenRouter"
+
+#: models.py:108
+msgid "Stable slug used in code, e.g. chat, translation."
+msgstr "slug stabil utilizat în cod, de exemplu chat, translation."
+
+#: models.py:116
+msgid "First model in the chain (synced from the list)."
+msgstr "Primul model din lanț (sincronizat din listă)."
+
+#: models.py:142
+msgid "If enabled, only models with zero catalog price may be used."
+msgstr "Dacă este activat, pot fi utilizate doar modelele cu preț zero în catalog."
+
+#: models.py:149
+msgid "Usage profiles"
+msgstr "Profiluri de utilizare"
+
+#: models.py:157
+msgid "Temperature must be between 0 and 2."
+msgstr "Temperatura trebuie să fie între 0 și 2."
+
+#: models.py:163
+msgid "Primary model must be active."
+msgstr "Modelul primar trebuie să fie activ."
+
+#: models.py:166
+msgid "only_free_models requires a free primary model."
+msgstr "only_free_models necesită un model primar gratuit."
+
+#: models.py:263
+msgid "Profile model"
+msgstr "Model de profil"
+
+#: models.py:264
+msgid "Profile models"
+msgstr "Modele de profil"
+
+#: models.py:277
+msgid "only_free_models allows only free fallback models."
+msgstr "only_free_models permite doar modele de rezervă gratuite."
+
+#: models.py:287
+msgid "Leave empty to use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr "Lăsați gol pentru a utiliza OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+
+#: models.py:300
+msgid "HTTP timeout in seconds."
+msgstr "Timeout HTTP în secunde."
+
+#: models.py:304
+msgid "Retries per model on transport / 5xx errors before fallback."
+msgstr "Reîncercări pe model la erori de transport / 5xx înainte de comutarea pe rezervă."
+
+#: models.py:308
+msgid "Global kill switch. When off, every chat() call fails."
+msgstr "Comutator global de oprire. Când este oprit, fiecare apel chat() eșuează."
+
+#: models.py:312 models.py:313 models.py:316
+msgid "OpenRouter settings"
+msgstr "Setări OpenRouter"
+
+#: models.py:360
+msgid "Request log"
+msgstr "Jurnal de cereri"
+
+#: models.py:361
+msgid "Request logs"
+msgstr "Jurnale de cereri"
+
+#: models.py:366
+msgid "Can view usage logs"
+msgstr "Poate vizualiza jurnalele de utilizare"
+
+#: rules.py:25
+#, python-format
+msgid "Usage profile %(name)r is disabled."
+msgstr "Profilul de utilizare %(name)r este dezactivat."
+
+#: rules.py:39
+#, python-format
+msgid "Daily request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "Limita zilnică de cereri (%(limit)s) a fost depășită pentru profilul %(name)r."
+
+#: rules.py:47
+#, python-format
+msgid "Monthly request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "Limita lunară de cereri (%(limit)s) a fost depășită pentru profilul %(name)r."
+
+#: rules.py:54
+#, python-format
+msgid "Daily budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "Bugetul zilnic (%(budget)s USD) a fost depășit pentru profilul %(name)r."
+
+#: rules.py:61
+#, python-format
+msgid "Monthly budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "Bugetul lunar (%(budget)s USD) a fost depășit pentru profilul %(name)r."
+
+#: rules.py:69
+#, python-format
+msgid "Model %(model_id)r is disabled."
+msgstr "Modelul %(model_id)r este dezactivat."
+
+#: rules.py:72
+#, python-format
+msgid "Profile %(name)r allows only free models; %(model_id)r is not free."
+msgstr "Profilul %(name)r permite doar modele gratuite; %(model_id)r nu este gratuit."
+
+#: sync.py:242
+msgid "Unexpected OpenRouter /models response."
+msgstr "Răspuns neașteptat OpenRouter /models."
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:5
+msgid "Home"
+msgstr "Acasă"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:6
+msgid "Django_openrouter"
+msgstr "Django_openrouter"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:8
+msgid "Assign to usage profile"
+msgstr "Atribuie profilului de utilizare"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:18
+#, python-format
+msgid ""
+"The selected model will be appended to the model chain of the profile:"
+msgid_plural ""
+"The %(counter)s selected models will be appended to the model chain of the "
+"profile:"
+msgstr[0] "Modelul selectat va fi adăugat la lanțul de modele al profilului:"
+msgstr[1] "Cele %(counter)s modele selectate vor fi adăugate la lanțul de modele "
+"al profilului:"
+msgstr[2] "Cele %(counter)s modele selectate vor fi adăugate la lanțul de modele "
+"al profilului:"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:30
+msgid "Assign"
+msgstr "Atribuie"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:31
+msgid "Cancel"
+msgstr "Anulează"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:5
+msgid "Total requests"
+msgstr "Total cereri"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:7
+msgid "Total cost (USD)"
+msgstr "Cost total (USD)"

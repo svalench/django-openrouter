@@ -1,0 +1,455 @@
+# Slovak translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-04 11:06+0000\n"
+"PO-Revision-Date: 2026-09-04 11:06+0000\n"
+"Last-Translator: django-openrouter contributors\n"
+"Language-Team: sk\n"
+"Language: sk\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
+
+#: admin.py:78 admin.py:429
+msgid "Price"
+msgstr "Cena"
+
+#: admin.py:85
+msgid "Free"
+msgstr "Zadarmo"
+
+#: admin.py:86
+msgid "Cheap (< $1 / 1M)"
+msgstr "Lacné (< 1 USD / 1 mil.)"
+
+#: admin.py:87
+msgid "Mid ($1-$10 / 1M)"
+msgstr "Stredné (1–10 USD / 1 mil.)"
+
+#: admin.py:88
+msgid "Expensive (>= $10 / 1M)"
+msgstr "Drahé (≥ 10 USD / 1 mil.)"
+
+#: admin.py:98
+msgid "Speed"
+msgstr "Rýchlosť"
+
+#: admin.py:105
+msgid "Fast (< 400 ms)"
+msgstr "Rýchle (< 400 ms)"
+
+#: admin.py:106
+msgid "Medium (400-1200 ms)"
+msgstr "Stredné (400–1200 ms)"
+
+#: admin.py:107
+msgid "Slow (>= 1200 ms)"
+msgstr "Pomalé (≥ 1200 ms)"
+
+#: admin.py:108
+msgid "Unknown latency"
+msgstr "Neznáma odozva"
+
+#: admin.py:136
+msgid "API key"
+msgstr "API kľúč"
+
+#: admin.py:145
+msgid "Clear stored API key"
+msgstr "Vymazať uložený API kľúč"
+
+#: admin.py:168
+msgid ""
+"A key is stored encrypted. Leave blank to keep it, or enter a new key to "
+"replace it. The stored value cannot be viewed."
+msgstr ""
+"Kľúč je uložený šifrovane. Ak ho chcete zachovať, pole nechajte prázdne, "
+"alebo zadajte nový kľúč na jeho nahradenie. Uloženú hodnotu nie je možné "
+"zobraziť."
+
+#: admin.py:173
+msgid ""
+"Entered once, stored encrypted, and cannot be viewed again. Leave empty to "
+"use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+"Zadá sa raz, uloží sa šifrovane a už ho nie je možné znova zobraziť. Ak "
+"chcete použiť OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY'], "
+"nechajte prázdne."
+
+#: admin.py:216
+msgid "API key status"
+msgstr "Stav API kľúča"
+
+#: admin.py:219
+msgid "Stored (encrypted, not visible)"
+msgstr "Uložený (šifrovane, nie je viditeľný)"
+
+#: admin.py:220
+msgid "Not set"
+msgstr "Nenastavený"
+
+#: admin.py:250 models.py:274
+msgid "Fallback model must be active."
+msgstr "Náhradný model musí byť aktívny."
+
+#: admin.py:269
+msgid "Models in the chain must be active."
+msgstr "Modely v reťazci musia byť aktívne."
+
+#: admin.py:271
+msgid "only_free_models allows only free models."
+msgstr "only_free_models povoľuje iba bezplatné modely."
+
+#: admin.py:273
+msgid "Each model may appear only once."
+msgstr "Každý model sa môže vyskytnúť iba raz."
+
+#: admin.py:293
+msgid "Model"
+msgstr "Model"
+
+#: admin.py:294
+msgid "Models (priority order)"
+msgstr "Modely (v poradí priority)"
+
+#: admin.py:324 models.py:148
+msgid "Usage profile"
+msgstr "Profil využitia"
+
+#: admin.py:436
+msgid "Sync catalog with OpenRouter"
+msgstr "Synchronizovať katalóg s OpenRouter"
+
+#: admin.py:450
+#, python-format
+msgid ""
+"Sync complete: %(created)s created, %(updated)s updated, %(deactivated)s "
+"deactivated (%(total)s remote)."
+msgstr ""
+"Synchronizácia dokončená: %(created)s vytvorených, %(updated)s "
+"aktualizovaných, %(deactivated)s deaktivovaných (%(total)s vzdialených)."
+
+#: admin.py:461
+msgid "Assign to usage profile…"
+msgstr "Priradiť k profilu využitia…"
+
+#: admin.py:481
+msgid "Assign models to usage profile"
+msgstr "Priradiť modely k profilu využitia"
+
+#: admin.py:534
+#, python-format
+msgid "%(count)s already in the chain"
+msgstr "%(count)s už je v reťazci"
+
+#: admin.py:535
+#, python-format
+msgid "%(count)s inactive"
+msgstr "%(count)s neaktívnych"
+
+#: admin.py:536
+#, python-format
+msgid "%(count)s not free (only_free_models)"
+msgstr "%(count)s nie je bezplatných (only_free_models)"
+
+#: admin.py:542
+#, python-format
+msgid "Added %(count)s model(s) to profile “%(profile)s”."
+msgstr "Do profilu „%(profile)s“ bolo pridaných %(count)s modelov."
+
+#: admin.py:548
+#, python-format
+msgid "No models were added to profile “%(profile)s”."
+msgstr "Do profilu „%(profile)s“ neboli pridané žiadne modely."
+
+#: admin.py:551
+#, python-format
+msgid "Skipped: %(reasons)s."
+msgstr "Preskočené: %(reasons)s."
+
+#: client.py:131
+msgid "No usage profile specified and default_profile is not set."
+msgstr "Nebol zadaný profil využitia a default_profile nie je nastavený."
+
+#: client.py:135
+#, python-format
+msgid "Usage profile %(name)r is not found or inactive."
+msgstr "Profil využitia %(name)r sa nenašiel alebo nie je aktívny."
+
+#: client.py:151
+#, python-format
+msgid "Unknown model %(model_id)r."
+msgstr "Neznámy model %(model_id)r."
+
+#: client.py:167
+#, python-format
+msgid "Profile %(name)r has no models configured."
+msgstr "Profil %(name)r nemá nakonfigurované žiadne modely."
+
+#: client.py:171
+#, python-format
+msgid "No allowed models left for profile %(name)r."
+msgstr "Pre profil %(name)r nezostali žiadne povolené modely."
+
+#: client.py:237
+msgid "Streaming is not implemented in django-openrouter MVP."
+msgstr "Streamovanie nie je v django-openrouter MVP implementované."
+
+#: client.py:240
+msgid "OpenRouter is disabled in admin settings."
+msgstr "OpenRouter je v nastaveniach admina zakázaný."
+
+#: client.py:242 sync.py:213
+msgid "OpenRouter API key is not configured."
+msgstr "API kľúč OpenRouter nie je nakonfigurovaný."
+
+#: client.py:268 client.py:358
+msgid "All models failed without a specific error."
+msgstr "Všetky modely zlyhali bez konkrétnej chyby."
+
+#: client.py:321 client.py:436
+#, python-format
+msgid "OpenRouter returned HTTP %(status)s: %(error)s"
+msgstr "OpenRouter vrátil HTTP %(status)s: %(error)s"
+
+#: log_backends.py:194
+msgid ""
+"ClickHouseBackend requires 'URL' in the LOG_BACKENDS entry (e.g. http://"
+"localhost:8123)."
+msgstr ""
+"ClickHouseBackend vyžaduje kľúč 'URL' v zázname LOG_BACKENDS (napr. "
+"http://localhost:8123)."
+
+#: log_backends.py:204
+#, python-format
+msgid "ClickHouseBackend: invalid %(label)s identifier %(identifier)r."
+msgstr "ClickHouseBackend: neplatný identifikátor %(label)s %(identifier)r."
+
+#: log_backends.py:245
+msgid "LOG_BACKENDS entry dict requires a 'BACKEND' key."
+msgstr "Slovník záznamu LOG_BACKENDS vyžaduje kľúč 'BACKEND'."
+
+#: log_backends.py:250
+#, python-format
+msgid "LOG_BACKENDS entries must be strings or dicts, got %(type)s."
+msgstr "Záznamy LOG_BACKENDS musia byť reťazce alebo slovníky, prijaté: %(type)s."
+
+#: log_backends.py:257
+#, python-format
+msgid "Cannot import log backend %(path)r: %(error)s"
+msgstr "Nie je možné importovať log backend %(path)r: %(error)s"
+
+#: log_backends.py:260
+#, python-format
+msgid "%(path)r is not a LogBackend subclass."
+msgstr "%(path)r nie je podtriedou LogBackend."
+
+#: log_backends.py:276
+msgid "OPENROUTER['LOG_BACKENDS'] must be a list."
+msgstr "OPENROUTER['LOG_BACKENDS'] musí byť zoznam."
+
+#: management/commands/sync_models.py:11
+msgid "Fetch GET /api/v1/models and upsert the local OpenRouter catalog."
+msgstr "Stiahne GET /api/v1/models a upsertne lokálny katalóg OpenRouter."
+
+#: management/commands/sync_models.py:18
+msgid "Override API key for this run."
+msgstr "Prepíše API kľúč pre tento beh."
+
+#: management/commands/sync_models.py:31
+#, python-format
+msgid ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+msgstr ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+
+#: models.py:45
+msgid "OpenRouter model id, e.g. anthropic/claude-3.5-sonnet"
+msgstr "ID modelu OpenRouter, napr. anthropic/claude-3.5-sonnet"
+
+#: models.py:52
+msgid "Per-token prices: prompt, completion, optional request/image."
+msgstr "Ceny za token: prompt, completion, voliteľne požiadavka/obrázok."
+
+#: models.py:61
+msgid "Prompt price per token from the catalog, for admin sorting."
+msgstr "Cena promptu za token z katalógu, na triedenie v adminovi."
+
+#: models.py:68
+msgid "Completion price per token from the catalog, for admin sorting."
+msgstr "Cena completion za token z katalógu, na triedenie v adminovi."
+
+#: models.py:73
+msgid "p50 TTFT for the best endpoint, in milliseconds."
+msgstr "p50 TTFT pre najlepší endpoint, v milisekundách."
+
+#: models.py:78
+msgid "p50 throughput (tok/s) for the best endpoint — load."
+msgstr "p50 priepustnosť (tok/s) pre najlepší endpoint — záťaž."
+
+#: models.py:85
+msgid "OpenRouter model"
+msgstr "Model OpenRouter"
+
+#: models.py:86
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:7
+msgid "OpenRouter models"
+msgstr "Modely OpenRouter"
+
+#: models.py:108
+msgid "Stable slug used in code, e.g. chat, translation."
+msgstr "Stabilný slug používaný v kóde, napr. chat, translation."
+
+#: models.py:116
+msgid "First model in the chain (synced from the list)."
+msgstr "Prvý model v reťazci (synchronizovaný zo zoznamu)."
+
+#: models.py:142
+msgid "If enabled, only models with zero catalog price may be used."
+msgstr "Ak je povolené, možno používať iba modely s nulovou cenou v katalógu."
+
+#: models.py:149
+msgid "Usage profiles"
+msgstr "Profily využitia"
+
+#: models.py:157
+msgid "Temperature must be between 0 and 2."
+msgstr "Teplota musí byť v rozmedzí 0 až 2."
+
+#: models.py:163
+msgid "Primary model must be active."
+msgstr "Primárny model musí byť aktívny."
+
+#: models.py:166
+msgid "only_free_models requires a free primary model."
+msgstr "only_free_models vyžaduje bezplatný primárny model."
+
+#: models.py:263
+msgid "Profile model"
+msgstr "Model profilu"
+
+#: models.py:264
+msgid "Profile models"
+msgstr "Modely profilu"
+
+#: models.py:277
+msgid "only_free_models allows only free fallback models."
+msgstr "only_free_models povoľuje iba bezplatné náhradné modely."
+
+#: models.py:287
+msgid "Leave empty to use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr "Nechajte prázdne na použitie OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+
+#: models.py:300
+msgid "HTTP timeout in seconds."
+msgstr "HTTP timeout v sekundách."
+
+#: models.py:304
+msgid "Retries per model on transport / 5xx errors before fallback."
+msgstr "Opakovania na model pri transportných / 5xx chybách pred prepnutím."
+
+#: models.py:308
+msgid "Global kill switch. When off, every chat() call fails."
+msgstr "Globálny vypínač. Keď je vypnutý, každé volanie chat() zlyhá."
+
+#: models.py:312 models.py:313 models.py:316
+msgid "OpenRouter settings"
+msgstr "Nastavenia OpenRouter"
+
+#: models.py:360
+msgid "Request log"
+msgstr "Log požiadaviek"
+
+#: models.py:361
+msgid "Request logs"
+msgstr "Logy požiadaviek"
+
+#: models.py:366
+msgid "Can view usage logs"
+msgstr "Môže zobrazovať logy využitia"
+
+#: rules.py:25
+#, python-format
+msgid "Usage profile %(name)r is disabled."
+msgstr "Profil využitia %(name)r je zakázaný."
+
+#: rules.py:39
+#, python-format
+msgid "Daily request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "Denný limit požiadaviek (%(limit)s) prekročený pre profil %(name)r."
+
+#: rules.py:47
+#, python-format
+msgid "Monthly request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "Mesačný limit požiadaviek (%(limit)s) prekročený pre profil %(name)r."
+
+#: rules.py:54
+#, python-format
+msgid "Daily budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "Denný rozpočet (%(budget)s USD) prekročený pre profil %(name)r."
+
+#: rules.py:61
+#, python-format
+msgid "Monthly budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "Mesačný rozpočet (%(budget)s USD) prekročený pre profil %(name)r."
+
+#: rules.py:69
+#, python-format
+msgid "Model %(model_id)r is disabled."
+msgstr "Model %(model_id)r je zakázaný."
+
+#: rules.py:72
+#, python-format
+msgid "Profile %(name)r allows only free models; %(model_id)r is not free."
+msgstr "Profil %(name)r povoľuje iba bezplatné modely; %(model_id)r nie je bezplatný."
+
+#: sync.py:242
+msgid "Unexpected OpenRouter /models response."
+msgstr "Neočakávaná odpoveď OpenRouter /models."
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:5
+msgid "Home"
+msgstr "Domov"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:6
+msgid "Django_openrouter"
+msgstr "Django_openrouter"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:8
+msgid "Assign to usage profile"
+msgstr "Priradiť k profilu využitia"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:18
+#, python-format
+msgid "The selected model will be appended to the model chain of the profile:"
+msgid_plural ""
+"The %(counter)s selected models will be appended to the model chain of the "
+"profile:"
+msgstr[0] "Vybraný model bude pripojený k reťazcu modelov profilu:"
+msgstr[1] "Vybrané %(counter)s modely budú pripojené k reťazcu modelov profilu:"
+msgstr[2] "Vybraných %(counter)s modelov bude pripojených k reťazcu modelov profilu:"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:30
+msgid "Assign"
+msgstr "Priradiť"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:31
+msgid "Cancel"
+msgstr "Zrušiť"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:5
+msgid "Total requests"
+msgstr "Počet požiadaviek"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:7
+msgid "Total cost (USD)"
+msgstr "Celkové náklady (USD)"

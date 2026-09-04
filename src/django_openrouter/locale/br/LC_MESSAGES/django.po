@@ -1,0 +1,473 @@
+# Breton translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-04 11:06+0000\n"
+"PO-Revision-Date: 2026-09-04 11:06+0000\n"
+"Last-Translator: django-openrouter contributors\n"
+"Language-Team: br\n"
+"Language: br\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: admin.py:78 admin.py:429
+msgid "Price"
+msgstr "Priz"
+
+#: admin.py:85
+msgid "Free"
+msgstr "Digoust"
+
+#: admin.py:86
+msgid "Cheap (< $1 / 1M)"
+msgstr "Marc'hadmat (< 1 $ / 1M)"
+
+#: admin.py:87
+msgid "Mid ($1-$10 / 1M)"
+msgstr "Etre ($1-$10 / 1M)"
+
+#: admin.py:88
+msgid "Expensive (>= $10 / 1M)"
+msgstr "Ker (>= 10 $ / 1M)"
+
+#: admin.py:98
+msgid "Speed"
+msgstr "Tizh"
+
+#: admin.py:105
+msgid "Fast (< 400 ms)"
+msgstr "Buan (< 400 ms)"
+
+#: admin.py:106
+msgid "Medium (400-1200 ms)"
+msgstr "Etrekus (400-1200 ms)"
+
+#: admin.py:107
+msgid "Slow (>= 1200 ms)"
+msgstr "Gorrek (>= 1200 ms)"
+
+#: admin.py:108
+msgid "Unknown latency"
+msgstr "Daleüs dizanv"
+
+#: admin.py:136
+msgid "API key"
+msgstr "Alc'hwez API"
+
+#: admin.py:145
+msgid "Clear stored API key"
+msgstr "Lemel kuit an alc'hwez API miret"
+
+#: admin.py:168
+msgid ""
+"A key is stored encrypted. Leave blank to keep it, or enter a new key to "
+"replace it. The stored value cannot be viewed."
+msgstr ""
+"Un alc'hwez a zo miret enrineget. Lezit goullo evit e heuliañ, pe lakait "
+"un alc'hwez nevez evit e erlec'hiañ. Ne c'haller ket gwelet an talvoud "
+"miret."
+
+#: admin.py:173
+msgid ""
+"Entered once, stored encrypted, and cannot be viewed again. Leave empty to "
+"use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+"Laket ur wech, miret enrineget, ha ne c'haller ket gwelet anezhañ ken. "
+"Lezit goullo evit implijout OPENROUTER_API_KEY / "
+"settings.OPENROUTER['API_KEY']."
+
+#: admin.py:216
+msgid "API key status"
+msgstr "Statud an alc'hwez API"
+
+#: admin.py:219
+msgid "Stored (encrypted, not visible)"
+msgstr "Miret (enrineget, ket gwelus)"
+
+#: admin.py:220
+msgid "Not set"
+msgstr "Nann termenet"
+
+#: admin.py:250 models.py:274
+msgid "Fallback model must be active."
+msgstr "Rankout a ra ar model fallback bezañ oberiant."
+
+#: admin.py:269
+msgid "Models in the chain must be active."
+msgstr "Rankout a ra ar modelloù er chadenn bezañ oberiant."
+
+#: admin.py:271
+msgid "only_free_models allows only free models."
+msgstr "Ne aotren only_free_models nemet ar modelloù digoust."
+
+#: admin.py:273
+msgid "Each model may appear only once."
+msgstr "Ne c'hall pep model dont war-wel nemet ur wech."
+
+#: admin.py:293
+msgid "Model"
+msgstr "Model"
+
+#: admin.py:294
+msgid "Models (priority order)"
+msgstr "Modelloù (urzh priorelezh)"
+
+#: admin.py:324 models.py:148
+msgid "Usage profile"
+msgstr "Profil implij"
+
+#: admin.py:436
+msgid "Sync catalog with OpenRouter"
+msgstr "Sinkronelaat ar c'hatalog gant OpenRouter"
+
+#: admin.py:450
+#, python-format
+msgid ""
+"Sync complete: %(created)s created, %(updated)s updated, %(deactivated)s "
+"deactivated (%(total)s remote)."
+msgstr ""
+"Sinkroneladur echuet: %(created)s krouet, %(updated)s hizivaet, "
+"%(deactivated)s diweredekaet (%(total)s a-bell)."
+
+#: admin.py:461
+msgid "Assign to usage profile…"
+msgstr "Deverkañ d'ar profil implij…"
+
+#: admin.py:481
+msgid "Assign models to usage profile"
+msgstr "Deverkañ modelloù d'ar profil implij"
+
+#: admin.py:534
+#, python-format
+msgid "%(count)s already in the chain"
+msgstr "%(count)s er chadenn c'hoazh"
+
+#: admin.py:535
+#, python-format
+msgid "%(count)s inactive"
+msgstr "%(count)s dioberiant"
+
+#: admin.py:536
+#, python-format
+msgid "%(count)s not free (only_free_models)"
+msgstr "%(count)s n'int ket digoust (only_free_models)"
+
+#: admin.py:542
+#, python-format
+msgid "Added %(count)s model(s) to profile “%(profile)s”."
+msgstr "Ouzhpennet %(count)s model(où) d'ar profil “%(profile)s”."
+
+#: admin.py:548
+#, python-format
+msgid "No models were added to profile “%(profile)s”."
+msgstr "N'eus bet ouzhpennet model ebet d'ar profil “%(profile)s”."
+
+#: admin.py:551
+#, python-format
+msgid "Skipped: %(reasons)s."
+msgstr "Tremenet: %(reasons)s."
+
+#: client.py:131
+msgid "No usage profile specified and default_profile is not set."
+msgstr "Profil implij spisaet ebet ha default_profile n'eo ket termenet."
+
+#: client.py:135
+#, python-format
+msgid "Usage profile %(name)r is not found or inactive."
+msgstr "N'eo ket kavet ar profil implij %(name)r pe n'eo ket oberiant."
+
+#: client.py:151
+#, python-format
+msgid "Unknown model %(model_id)r."
+msgstr "Model dianav %(model_id)r."
+
+#: client.py:167
+#, python-format
+msgid "Profile %(name)r has no models configured."
+msgstr "N'eus model ebet kefluniet evit ar profil %(name)r."
+
+#: client.py:171
+#, python-format
+msgid "No allowed models left for profile %(name)r."
+msgstr "Ne chom model aotreet ebet evit ar profil %(name)r."
+
+#: client.py:237
+msgid "Streaming is not implemented in django-openrouter MVP."
+msgstr "N'eo ket bet lakaet ar streaming e django-openrouter MVP."
+
+#: client.py:240
+msgid "OpenRouter is disabled in admin settings."
+msgstr "Diweredekaet eo OpenRouter er stummoù ar mererezh."
+
+#: client.py:242 sync.py:213
+msgid "OpenRouter API key is not configured."
+msgstr "N'eo ket kefluniet an alc'hwez API OpenRouter."
+
+#: client.py:268 client.py:358
+msgid "All models failed without a specific error."
+msgstr "C'hwitet eo bet war an holl modelloù hep fazi resis."
+
+#: client.py:321 client.py:436
+#, python-format
+msgid "OpenRouter returned HTTP %(status)s: %(error)s"
+msgstr "OpenRouter a zistroas HTTP %(status)s: %(error)s"
+
+#: log_backends.py:194
+msgid ""
+"ClickHouseBackend requires 'URL' in the LOG_BACKENDS entry (e.g. http://"
+"localhost:8123)."
+msgstr ""
+"Ezhomm zo eus 'URL' en enankad LOG_BACKENDS evit ClickHouseBackend (da "
+"skouer http://localhost:8123)."
+
+#: log_backends.py:204
+#, python-format
+msgid "ClickHouseBackend: invalid %(label)s identifier %(identifier)r."
+msgstr "ClickHouseBackend: identifer %(label)s direizh %(identifier)r."
+
+#: log_backends.py:245
+msgid "LOG_BACKENDS entry dict requires a 'BACKEND' key."
+msgstr "Ezhomm zo eus un alc'hwez 'BACKEND' er geriadenn enankad LOG_BACKENDS."
+
+#: log_backends.py:250
+#, python-format
+msgid "LOG_BACKENDS entries must be strings or dicts, got %(type)s."
+msgstr ""
+"Rankout a ra an enankadoù LOG_BACKENDS bezañ neudadoù lizherennoù pe "
+"geriadennadoù, resevet %(type)s."
+
+#: log_backends.py:257
+#, python-format
+msgid "Cannot import log backend %(path)r: %(error)s"
+msgstr "N'haller ket enporzhiañ ar backend kazetenn %(path)r: %(error)s"
+
+#: log_backends.py:260
+#, python-format
+msgid "%(path)r is not a LogBackend subclass."
+msgstr "N'eo ket %(path)r un isrummad LogBackend."
+
+#: log_backends.py:276
+msgid "OPENROUTER['LOG_BACKENDS'] must be a list."
+msgstr "Rankout a ra OPENROUTER['LOG_BACKENDS'] bezañ ur roll."
+
+#: management/commands/sync_models.py:11
+msgid "Fetch GET /api/v1/models and upsert the local OpenRouter catalog."
+msgstr "Pakañ GET /api/v1/models hag upsert ar c'hatalog lec'hel OpenRouter."
+
+#: management/commands/sync_models.py:18
+msgid "Override API key for this run."
+msgstr "Dreisttermeniñ an alc'hwez API evit ar red-mañ."
+
+#: management/commands/sync_models.py:31
+#, python-format
+msgid ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+msgstr ""
+"krouet=%(created)s hizivaet=%(updated)s diweredekaet=%(deactivated)s "
+"a-bell=%(total)s"
+
+#: models.py:45
+msgid "OpenRouter model id, e.g. anthropic/claude-3.5-sonnet"
+msgstr "Id model OpenRouter, da skouer anthropic/claude-3.5-sonnet"
+
+#: models.py:52
+msgid "Per-token prices: prompt, completion, optional request/image."
+msgstr "Prizioù dre bezh: prompt, completion, goulenn/skeudenn diret."
+
+#: models.py:61
+msgid "Prompt price per token from the catalog, for admin sorting."
+msgstr "Priz ar prompt dre bezh eus ar c'hatalog, evit urzhiañ er mererezh."
+
+#: models.py:68
+msgid "Completion price per token from the catalog, for admin sorting."
+msgstr ""
+"Priz ar completion dre bezh eus ar c'hatalog, evit urzhiañ er mererezh."
+
+#: models.py:73
+msgid "p50 TTFT for the best endpoint, in milliseconds."
+msgstr "p50 TTFT evit ar endpoint gwellañ, e milieilennoù."
+
+#: models.py:78
+msgid "p50 throughput (tok/s) for the best endpoint — load."
+msgstr "p50 bountad (tok/s) evit ar endpoint gwellañ — karg."
+
+#: models.py:85
+msgid "OpenRouter model"
+msgstr "Model OpenRouter"
+
+#: models.py:86
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:7
+msgid "OpenRouter models"
+msgstr "Modelloù OpenRouter"
+
+#: models.py:108
+msgid "Stable slug used in code, e.g. chat, translation."
+msgstr "Slug stabil implijet er c'hod, da skouer chat, translation."
+
+#: models.py:116
+msgid "First model in the chain (synced from the list)."
+msgstr "Kentañ model er chadenn (sinkronel eus al listenn)."
+
+#: models.py:142
+msgid "If enabled, only models with zero catalog price may be used."
+msgstr ""
+"M'eo gweredekaet, n'eus nemet ar modelloù gant priz katalog mann a c'hall "
+"bezañ implijet."
+
+#: models.py:149
+msgid "Usage profiles"
+msgstr "Profiloù implij"
+
+#: models.py:157
+msgid "Temperature must be between 0 and 2."
+msgstr "Rankout a ra an temperadur bezañ etre 0 ha 2."
+
+#: models.py:163
+msgid "Primary model must be active."
+msgstr "Rankout a ra ar model pennañ bezañ oberiant."
+
+#: models.py:166
+msgid "only_free_models requires a free primary model."
+msgstr "Ezhomm a ra only_free_models eus ur model pennañ digoust."
+
+#: models.py:263
+msgid "Profile model"
+msgstr "Model profil"
+
+#: models.py:264
+msgid "Profile models"
+msgstr "Modelloù profil"
+
+#: models.py:277
+msgid "only_free_models allows only free fallback models."
+msgstr "Ne aotren only_free_models nemet ar modelloù fallback digoust."
+
+#: models.py:287
+msgid "Leave empty to use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+"Lezit goullo evit implijout OPENROUTER_API_KEY / "
+"settings.OPENROUTER['API_KEY']."
+
+#: models.py:300
+msgid "HTTP timeout in seconds."
+msgstr "Dale HTTP e eilennoù."
+
+#: models.py:304
+msgid "Retries per model on transport / 5xx errors before fallback."
+msgstr ""
+"Adklaskoù dre model war fazioù treuzkas / 5xx a-raok ar fallback."
+
+#: models.py:308
+msgid "Global kill switch. When off, every chat() call fails."
+msgstr ""
+"Chankedra kill hollek. Pa vez lazhet, c'hwitañ a ra pep galv chat()."
+
+#: models.py:312 models.py:313 models.py:316
+msgid "OpenRouter settings"
+msgstr "Stummoù OpenRouter"
+
+#: models.py:360
+msgid "Request log"
+msgstr "Kazetenn ar goulennoù"
+
+#: models.py:361
+msgid "Request logs"
+msgstr "Kazetennioù ar goulennoù"
+
+#: models.py:366
+msgid "Can view usage logs"
+msgstr "Gallout a ra gwelet kazetennioù an implij"
+
+#: rules.py:25
+#, python-format
+msgid "Usage profile %(name)r is disabled."
+msgstr "Diweredekaet eo ar profil implij %(name)r."
+
+#: rules.py:39
+#, python-format
+msgid "Daily request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr ""
+"Bevenn goulennoù pemdeziek (%(limit)s) aet dreist evit ar profil %(name)r."
+
+#: rules.py:47
+#, python-format
+msgid "Monthly request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr ""
+"Bevenn goulennoù miziek (%(limit)s) aet dreist evit ar profil %(name)r."
+
+#: rules.py:54
+#, python-format
+msgid "Daily budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr ""
+"Budjed pemdeziek (%(budget)s USD) aet dreist evit ar profil %(name)r."
+
+#: rules.py:61
+#, python-format
+msgid "Monthly budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr ""
+"Budjed miziek (%(budget)s USD) aet dreist evit ar profil %(name)r."
+
+#: rules.py:69
+#, python-format
+msgid "Model %(model_id)r is disabled."
+msgstr "Diweredekaet eo ar model %(model_id)r."
+
+#: rules.py:72
+#, python-format
+msgid "Profile %(name)r allows only free models; %(model_id)r is not free."
+msgstr ""
+"Ne aotren ar profil %(name)r nemet ar modelloù digoust; n'eo ket digoust "
+"%(model_id)r."
+
+#: sync.py:242
+msgid "Unexpected OpenRouter /models response."
+msgstr "Respont OpenRouter /models dic'hortoz."
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:5
+msgid "Home"
+msgstr "Degemer"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:6
+msgid "Django_openrouter"
+msgstr "Django_openrouter"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:8
+msgid "Assign to usage profile"
+msgstr "Deverkañ d'ar profil implij"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:18
+#, python-format
+msgid ""
+"The selected model will be appended to the model chain of the profile:"
+msgid_plural ""
+"The %(counter)s selected models will be appended to the model chain of the "
+"profile:"
+msgstr[0] ""
+"Ar model diuzet a vo ouzhpennet d'ar chadenn modelloù ar profil:"
+msgstr[1] ""
+"Ar %(counter)s model diuzet a vo ouzhpennet d'ar chadenn modelloù ar "
+"profil:"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:30
+msgid "Assign"
+msgstr "Deverkañ"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:31
+msgid "Cancel"
+msgstr "Nullañ"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:5
+msgid "Total requests"
+msgstr "Hollad ar goulennoù"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:7
+msgid "Total cost (USD)"
+msgstr "Koust hollek (USD)"

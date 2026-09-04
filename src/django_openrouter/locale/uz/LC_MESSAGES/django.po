@@ -1,0 +1,453 @@
+# Uzbek translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-04 11:06+0000\n"
+"PO-Revision-Date: 2026-09-04 11:06+0000\n"
+"Last-Translator: django-openrouter contributors\n"
+"Language-Team: uz\n"
+"Language: uz\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: admin.py:78 admin.py:429
+msgid "Price"
+msgstr "Narx"
+
+#: admin.py:85
+msgid "Free"
+msgstr "Bepul"
+
+#: admin.py:86
+msgid "Cheap (< $1 / 1M)"
+msgstr "Arzon (< $1 / 1M)"
+
+#: admin.py:87
+msgid "Mid ($1-$10 / 1M)"
+msgstr "O'rta ($1-$10 / 1M)"
+
+#: admin.py:88
+msgid "Expensive (>= $10 / 1M)"
+msgstr "Qimmat (>= $10 / 1M)"
+
+#: admin.py:98
+msgid "Speed"
+msgstr "Tezlik"
+
+#: admin.py:105
+msgid "Fast (< 400 ms)"
+msgstr "Tez (< 400 ms)"
+
+#: admin.py:106
+msgid "Medium (400-1200 ms)"
+msgstr "O'rta (400-1200 ms)"
+
+#: admin.py:107
+msgid "Slow (>= 1200 ms)"
+msgstr "Sekin (>= 1200 ms)"
+
+#: admin.py:108
+msgid "Unknown latency"
+msgstr "Noma'lum kechikish"
+
+#: admin.py:136
+msgid "API key"
+msgstr "API kalit"
+
+#: admin.py:145
+msgid "Clear stored API key"
+msgstr "Saqlangan API kalitni tozalash"
+
+#: admin.py:168
+msgid ""
+"A key is stored encrypted. Leave blank to keep it, or enter a new key to "
+"replace it. The stored value cannot be viewed."
+msgstr ""
+"Kalit shifrlangan holda saqlangan. Saqlab qolish uchun bo'sh qoldiring yoki "
+"almashtirish uchun yangi kalit kiriting. Saqlangan qiymatni ko'rib bo'lmaydi."
+
+#: admin.py:173
+msgid ""
+"Entered once, stored encrypted, and cannot be viewed again. Leave empty to "
+"use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+"Bir marta kiritiladi, shifrlangan holda saqlanadi va qayta ko'rib bo'lmaydi. "
+"OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY'] dan foydalanish uchun bo'sh qoldiring."
+
+#: admin.py:216
+msgid "API key status"
+msgstr "API kalit holati"
+
+#: admin.py:219
+msgid "Stored (encrypted, not visible)"
+msgstr "Saqlangan (shifrlangan, ko'rinmaydi)"
+
+#: admin.py:220
+msgid "Not set"
+msgstr "O'rnatilmagan"
+
+#: admin.py:250 models.py:274
+msgid "Fallback model must be active."
+msgstr "Zaxira model faol bo'lishi kerak."
+
+#: admin.py:269
+msgid "Models in the chain must be active."
+msgstr "Zanjirdagi modellar faol bo'lishi kerak."
+
+#: admin.py:271
+msgid "only_free_models allows only free models."
+msgstr "only_free_models faqat bepul modellarga ruxsat beradi."
+
+#: admin.py:273
+msgid "Each model may appear only once."
+msgstr "Har bir model faqat bir marta qatnashishi mumkin."
+
+#: admin.py:293
+msgid "Model"
+msgstr "Model"
+
+#: admin.py:294
+msgid "Models (priority order)"
+msgstr "Modellar (ustuvorlik tartibida)"
+
+#: admin.py:324 models.py:148
+msgid "Usage profile"
+msgstr "Foydalanish profili"
+
+#: admin.py:436
+msgid "Sync catalog with OpenRouter"
+msgstr "Katalogni OpenRouter bilan sinxronlash"
+
+#: admin.py:450
+#, python-format
+msgid ""
+"Sync complete: %(created)s created, %(updated)s updated, %(deactivated)s "
+"deactivated (%(total)s remote)."
+msgstr ""
+"Sinxronizatsiya tugadi: yaratildi %(created)s, yangilandi %(updated)s, "
+"faolsizlantirildi %(deactivated)s (%(total)s masofaviy)."
+
+#: admin.py:461
+msgid "Assign to usage profile…"
+msgstr "Foydalanish profiliga biriktirish…"
+
+#: admin.py:481
+msgid "Assign models to usage profile"
+msgstr "Modellarni foydalanish profiliga biriktirish"
+
+#: admin.py:534
+#, python-format
+msgid "%(count)s already in the chain"
+msgstr "%(count)s allaqachon zanjirda"
+
+#: admin.py:535
+#, python-format
+msgid "%(count)s inactive"
+msgstr "%(count)s faol emas"
+
+#: admin.py:536
+#, python-format
+msgid "%(count)s not free (only_free_models)"
+msgstr "%(count)s bepul emas (only_free_models)"
+
+#: admin.py:542
+#, python-format
+msgid "Added %(count)s model(s) to profile “%(profile)s”."
+msgstr "%(count)s ta model profilga qo'shildi: “%(profile)s”."
+
+#: admin.py:548
+#, python-format
+msgid "No models were added to profile “%(profile)s”."
+msgstr "Profilga hech qanday model qo'shilmadi: “%(profile)s”."
+
+#: admin.py:551
+#, python-format
+msgid "Skipped: %(reasons)s."
+msgstr "O'tkazib yuborildi: %(reasons)s."
+
+#: client.py:131
+msgid "No usage profile specified and default_profile is not set."
+msgstr "Foydalanish profili ko'rsatilmagan va default_profile o'rnatilmagan."
+
+#: client.py:135
+#, python-format
+msgid "Usage profile %(name)r is not found or inactive."
+msgstr "%(name)r foydalanish profili topilmadi yoki faol emas."
+
+#: client.py:151
+#, python-format
+msgid "Unknown model %(model_id)r."
+msgstr "Noma'lum model: %(model_id)r."
+
+#: client.py:167
+#, python-format
+msgid "Profile %(name)r has no models configured."
+msgstr "%(name)r profilida hech qanday model sozlanmagan."
+
+#: client.py:171
+#, python-format
+msgid "No allowed models left for profile %(name)r."
+msgstr "%(name)r profili uchun ruxsat etilgan modellar qolmadi."
+
+#: client.py:237
+msgid "Streaming is not implemented in django-openrouter MVP."
+msgstr "django-openrouter MVP da oqim rejimi (streaming) amalga oshirilmagan."
+
+#: client.py:240
+msgid "OpenRouter is disabled in admin settings."
+msgstr "OpenRouter admin sozlamalarida o'chirilgan."
+
+#: client.py:242 sync.py:213
+msgid "OpenRouter API key is not configured."
+msgstr "OpenRouter API kaliti sozlanmagan."
+
+#: client.py:268 client.py:358
+msgid "All models failed without a specific error."
+msgstr "Barcha modellar ishlamadi, aniq xato ko'rsatilmagan."
+
+#: client.py:321 client.py:436
+#, python-format
+msgid "OpenRouter returned HTTP %(status)s: %(error)s"
+msgstr "OpenRouter HTTP %(status)s qaytardi: %(error)s"
+
+#: log_backends.py:194
+msgid ""
+"ClickHouseBackend requires 'URL' in the LOG_BACKENDS entry (e.g. http://"
+"localhost:8123)."
+msgstr ""
+"ClickHouseBackend LOG_BACKENDS yozuvida 'URL' talab qiladi (masalan, http://"
+"localhost:8123)."
+
+#: log_backends.py:204
+#, python-format
+msgid "ClickHouseBackend: invalid %(label)s identifier %(identifier)r."
+msgstr "ClickHouseBackend: noto'g'ri %(label)s identifikatori %(identifier)r."
+
+#: log_backends.py:245
+msgid "LOG_BACKENDS entry dict requires a 'BACKEND' key."
+msgstr "LOG_BACKENDS yozuv lug'atida 'BACKEND' kaliti talab qilinadi."
+
+#: log_backends.py:250
+#, python-format
+msgid "LOG_BACKENDS entries must be strings or dicts, got %(type)s."
+msgstr "LOG_BACKENDS yozuvlari satr yoki lug'at bo'lishi kerak, olingan: %(type)s."
+
+#: log_backends.py:257
+#, python-format
+msgid "Cannot import log backend %(path)r: %(error)s"
+msgstr "Log backend %(path)r import qilib bo'lmadi: %(error)s"
+
+#: log_backends.py:260
+#, python-format
+msgid "%(path)r is not a LogBackend subclass."
+msgstr "%(path)r — LogBackend subclassi emas."
+
+#: log_backends.py:276
+msgid "OPENROUTER['LOG_BACKENDS'] must be a list."
+msgstr "OPENROUTER['LOG_BACKENDS'] ro'yxat bo'lishi kerak."
+
+#: management/commands/sync_models.py:11
+msgid "Fetch GET /api/v1/models and upsert the local OpenRouter catalog."
+msgstr "GET /api/v1/models so'rovini yuborish va mahalliy OpenRouter katalogini yangilash."
+
+#: management/commands/sync_models.py:18
+msgid "Override API key for this run."
+msgstr "Shu ishga oid API kalitini almashtirish."
+
+#: management/commands/sync_models.py:31
+#, python-format
+msgid ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+msgstr ""
+"yaratildi=%(created)s yangilandi=%(updated)s faolsizlantirildi=%(deactivated)s "
+"masofaviy=%(total)s"
+
+#: models.py:45
+msgid "OpenRouter model id, e.g. anthropic/claude-3.5-sonnet"
+msgstr "OpenRouter model identifikatori, masalan anthropic/claude-3.5-sonnet"
+
+#: models.py:52
+msgid "Per-token prices: prompt, completion, optional request/image."
+msgstr "Token uchun narxlar: prompt, completion, ixtiyoriy so'rov/rasm."
+
+#: models.py:61
+msgid "Prompt price per token from the catalog, for admin sorting."
+msgstr "Katalogdagi token uchun prompt narxi, admin saralashi uchun."
+
+#: models.py:68
+msgid "Completion price per token from the catalog, for admin sorting."
+msgstr "Katalogdagi token uchun completion narxi, admin saralashi uchun."
+
+#: models.py:73
+msgid "p50 TTFT for the best endpoint, in milliseconds."
+msgstr "Eng yaxshi endpoint uchun p50 TTFT, millisekundlarda."
+
+#: models.py:78
+msgid "p50 throughput (tok/s) for the best endpoint — load."
+msgstr "Eng yaxshi endpoint uchun p50 o'tkazuvchanlik (tok/s) — yuklama."
+
+#: models.py:85
+msgid "OpenRouter model"
+msgstr "OpenRouter modeli"
+
+#: models.py:86
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:7
+msgid "OpenRouter models"
+msgstr "OpenRouter modellari"
+
+#: models.py:108
+msgid "Stable slug used in code, e.g. chat, translation."
+msgstr "Kodda ishlatiladigan barqaror slug, masalan chat, translation."
+
+#: models.py:116
+msgid "First model in the chain (synced from the list)."
+msgstr "Zanjirdagi birinchi model (ro'yxatdan sinxronlanadi)."
+
+#: models.py:142
+msgid "If enabled, only models with zero catalog price may be used."
+msgstr "Yoqilganda, faqat katalog narxi nolga teng modellardan foydalanish mumkin."
+
+#: models.py:149
+msgid "Usage profiles"
+msgstr "Foydalanish profillari"
+
+#: models.py:157
+msgid "Temperature must be between 0 and 2."
+msgstr "Temperatura 0 va 2 orasida bo'lishi kerak."
+
+#: models.py:163
+msgid "Primary model must be active."
+msgstr "Asosiy model faol bo'lishi kerak."
+
+#: models.py:166
+msgid "only_free_models requires a free primary model."
+msgstr "only_free_models bepul asosiy modelni talab qiladi."
+
+#: models.py:263
+msgid "Profile model"
+msgstr "Profil modeli"
+
+#: models.py:264
+msgid "Profile models"
+msgstr "Profil modellari"
+
+#: models.py:277
+msgid "only_free_models allows only free fallback models."
+msgstr "only_free_models faqat bepul zaxira modellarga ruxsat beradi."
+
+#: models.py:287
+msgid "Leave empty to use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr "OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY'] dan foydalanish uchun bo'sh qoldiring."
+
+#: models.py:300
+msgid "HTTP timeout in seconds."
+msgstr "HTTP taymauti, soniyalarda."
+
+#: models.py:304
+msgid "Retries per model on transport / 5xx errors before fallback."
+msgstr "Zaxiraga o'tishdan oldin transport / 5xx xatolari bo'yicha har model uchun takrorlashlar."
+
+#: models.py:308
+msgid "Global kill switch. When off, every chat() call fails."
+msgstr "Global o'chirish kaliti. O'chiq bo'lganda har bir chat() chaqiruvi muvaffaqiyatsiz bo'ladi."
+
+#: models.py:312 models.py:313 models.py:316
+msgid "OpenRouter settings"
+msgstr "OpenRouter sozlamalari"
+
+#: models.py:360
+msgid "Request log"
+msgstr "So'rov jurnali"
+
+#: models.py:361
+msgid "Request logs"
+msgstr "So'rov jurnallari"
+
+#: models.py:366
+msgid "Can view usage logs"
+msgstr "Foydalanish jurnallarini ko'rish mumkin"
+
+#: rules.py:25
+#, python-format
+msgid "Usage profile %(name)r is disabled."
+msgstr "%(name)r foydalanish profili o'chirilgan."
+
+#: rules.py:39
+#, python-format
+msgid "Daily request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "%(name)r profili uchun kunlik so'rov limiti (%(limit)s) oshib ketdi."
+
+#: rules.py:47
+#, python-format
+msgid "Monthly request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "%(name)r profili uchun oylik so'rov limiti (%(limit)s) oshib ketdi."
+
+#: rules.py:54
+#, python-format
+msgid "Daily budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "%(name)r profili uchun kunlik byudjet (%(budget)s USD) oshib ketdi."
+
+#: rules.py:61
+#, python-format
+msgid "Monthly budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "%(name)r profili uchun oylik byudjet (%(budget)s USD) oshib ketdi."
+
+#: rules.py:69
+#, python-format
+msgid "Model %(model_id)r is disabled."
+msgstr "%(model_id)r modeli o'chirilgan."
+
+#: rules.py:72
+#, python-format
+msgid "Profile %(name)r allows only free models; %(model_id)r is not free."
+msgstr "%(name)r profili faqat bepul modellarga ruxsat beradi; %(model_id)r bepul emas."
+
+#: sync.py:242
+msgid "Unexpected OpenRouter /models response."
+msgstr "Kutilmagan OpenRouter /models javobi."
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:5
+msgid "Home"
+msgstr "Bosh sahifa"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:6
+msgid "Django_openrouter"
+msgstr "Django_openrouter"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:8
+msgid "Assign to usage profile"
+msgstr "Foydalanish profiliga biriktirish"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:18
+#, python-format
+msgid ""
+"The selected model will be appended to the model chain of the profile:"
+msgid_plural ""
+"The %(counter)s selected models will be appended to the model chain of the "
+"profile:"
+msgstr[0] "Tanlangan model profilning model zanjiriga qo'shiladi:"
+msgstr[1] "Tanlangan %(counter)s ta model profilning model zanjiriga qo'shiladi:"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:30
+msgid "Assign"
+msgstr "Biriktirish"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:31
+msgid "Cancel"
+msgstr "Bekor qilish"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:5
+msgid "Total requests"
+msgstr "Jami so'rovlar"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:7
+msgid "Total cost (USD)"
+msgstr "Jami xarajat (USD)"

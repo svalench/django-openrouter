@@ -1,0 +1,454 @@
+# Kannada translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-04 11:06+0000\n"
+"PO-Revision-Date: 2026-09-04 11:06+0000\n"
+"Last-Translator: django-openrouter contributors\n"
+"Language-Team: kn\n"
+"Language: kn\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: admin.py:78 admin.py:429
+msgid "Price"
+msgstr "ಬೆಲೆ"
+
+#: admin.py:85
+msgid "Free"
+msgstr "ಉಚಿತ"
+
+#: admin.py:86
+msgid "Cheap (< $1 / 1M)"
+msgstr "ಅಗ್ಗದ (< $1 / 1M)"
+
+#: admin.py:87
+msgid "Mid ($1-$10 / 1M)"
+msgstr "ಮಧ್ಯಮ ($1-$10 / 1M)"
+
+#: admin.py:88
+msgid "Expensive (>= $10 / 1M)"
+msgstr "ದುಬಾರಿ (>= $10 / 1M)"
+
+#: admin.py:98
+msgid "Speed"
+msgstr "ವೇಗ"
+
+#: admin.py:105
+msgid "Fast (< 400 ms)"
+msgstr "ವೇಗದ (< 400 ms)"
+
+#: admin.py:106
+msgid "Medium (400-1200 ms)"
+msgstr "ಮಧ್ಯಮ (400-1200 ms)"
+
+#: admin.py:107
+msgid "Slow (>= 1200 ms)"
+msgstr "ನಿಧಾನ (>= 1200 ms)"
+
+#: admin.py:108
+msgid "Unknown latency"
+msgstr "ಗೊತ್ತಿಲ್ಲದ ವಿಳಂಬ"
+
+#: admin.py:136
+msgid "API key"
+msgstr "API ಕೀಲಿ"
+
+#: admin.py:145
+msgid "Clear stored API key"
+msgstr "ಸಂಗ್ರಹಿಸಿದ API ಕೀಲಿಯನ್ನು ತೆರವುಗೊಳಿಸಿ"
+
+#: admin.py:168
+msgid ""
+"A key is stored encrypted. Leave blank to keep it, or enter a new key to "
+"replace it. The stored value cannot be viewed."
+msgstr ""
+"ಕೀಲಿಯನ್ನು ಗೂಢಲಿಪೀಕರಣ ಮಾಡಿ ಸಂಗ್ರಹಿಸಲಾಗಿದೆ. ಅದನ್ನು ಉಳಿಸಿಕೊಳ್ಳಲು ಖಾಲಿ ಬಿಡಿ, ಅಥವಾ "
+"ಬದಲಾಯಿಸಲು ಹೊಸ ಕೀಲಿಯನ್ನು ನಮೂದಿಸಿ. ಸಂಗ್ರಹಿಸಿದ ಮೌಲ್ಯವನ್ನು ನೋಡಲು ಸಾಧ್ಯವಿಲ್ಲ."
+
+#: admin.py:173
+msgid ""
+"Entered once, stored encrypted, and cannot be viewed again. Leave empty to "
+"use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+"ಒಮ್ಮೆ ನಮೂದಿಸಿ, ಗೂಢಲಿಪೀಕರಣ ಮಾಡಿ ಸಂಗ್ರಹಿಸಲಾಗುತ್ತದೆ, ಮತ್ತೆ ನೋಡಲು ಸಾಧ್ಯವಿಲ್ಲ. "
+"OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY'] ಬಳಸಲು ಖಾಲಿ ಬಿಡಿ."
+
+#: admin.py:216
+msgid "API key status"
+msgstr "API ಕೀಲಿ ಸ್ಥಿತಿ"
+
+#: admin.py:219
+msgid "Stored (encrypted, not visible)"
+msgstr "ಸಂಗ್ರಹಿಸಲಾಗಿದೆ (ಗೂಢಲಿಪೀಕರಣ, ಕಾಣದು)"
+
+#: admin.py:220
+msgid "Not set"
+msgstr "ಹೊಂದಿಸಲಾಗಿಲ್ಲ"
+
+#: admin.py:250 models.py:274
+msgid "Fallback model must be active."
+msgstr "ಫಾಲ್‌ಬ್ಯಾಕ್ ಮಾದರಿ ಸಕ್ರಿಯವಾಗಿರಬೇಕು."
+
+#: admin.py:269
+msgid "Models in the chain must be active."
+msgstr "ಸರಣಿಯಲ್ಲಿರುವ ಮಾದರಿಗಳು ಸಕ್ರಿಯವಾಗಿರಬೇಕು."
+
+#: admin.py:271
+msgid "only_free_models allows only free models."
+msgstr "only_free_models ಉಚಿತ ಮಾದರಿಗಳಿಗೆ ಮಾತ್ರ ಅನುಮತಿಸುತ್ತದೆ."
+
+#: admin.py:273
+msgid "Each model may appear only once."
+msgstr "ಪ್ರತಿ ಮಾದರಿಯು ಒಮ್ಮೆ ಮಾತ್ರ ಕಾಣಿಸಿಕೊಳ್ಳಬಹುದು."
+
+#: admin.py:293
+msgid "Model"
+msgstr "ಮಾದರಿ"
+
+#: admin.py:294
+msgid "Models (priority order)"
+msgstr "ಮಾದರಿಗಳು (ಆದ್ಯತೆ ಕ್ರಮ)"
+
+#: admin.py:324 models.py:148
+msgid "Usage profile"
+msgstr "ಬಳಕೆ ಪ್ರೊಫೈಲ್"
+
+#: admin.py:436
+msgid "Sync catalog with OpenRouter"
+msgstr "OpenRouter ನೊಂದಿಗೆ ಕ್ಯಾಟಲಾಗ್ ಸಿಂಕ್ ಮಾಡಿ"
+
+#: admin.py:450
+#, python-format
+msgid ""
+"Sync complete: %(created)s created, %(updated)s updated, %(deactivated)s "
+"deactivated (%(total)s remote)."
+msgstr ""
+"ಸಿಂಕ್ ಪೂರ್ಣ: %(created)s ರಚಿಸಲಾಗಿದೆ, %(updated)s ನವೀಕರಿಸಲಾಗಿದೆ, "
+"%(deactivated)s ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ (%(total)s ದೂರಸ್ಥ)."
+
+#: admin.py:461
+msgid "Assign to usage profile…"
+msgstr "ಬಳಕೆ ಪ್ರೊಫೈಲ್‌ಗೆ ನಿಯೋಜಿಸಿ…"
+
+#: admin.py:481
+msgid "Assign models to usage profile"
+msgstr "ಬಳಕೆ ಪ್ರೊಫೈಲ್‌ಗೆ ಮಾದರಿಗಳನ್ನು ನಿಯೋಜಿಸಿ"
+
+#: admin.py:534
+#, python-format
+msgid "%(count)s already in the chain"
+msgstr "%(count)s ಸರಣಿಯಲ್ಲಿ ಈಗಾಗಲೇ ಇವೆ"
+
+#: admin.py:535
+#, python-format
+msgid "%(count)s inactive"
+msgstr "%(count)s ನಿಷ್ಕ್ರಿಯ"
+
+#: admin.py:536
+#, python-format
+msgid "%(count)s not free (only_free_models)"
+msgstr "%(count)s ಉಚಿತವಲ್ಲ (only_free_models)"
+
+#: admin.py:542
+#, python-format
+msgid "Added %(count)s model(s) to profile “%(profile)s”."
+msgstr "“%(profile)s” ಪ್ರೊಫೈಲ್‌ಗೆ %(count)s ಮಾದರಿ(ಗಳು) ಸೇರಿಸಲಾಗಿವೆ."
+
+#: admin.py:548
+#, python-format
+msgid "No models were added to profile “%(profile)s”."
+msgstr "“%(profile)s” ಪ್ರೊಫೈಲ್‌ಗೆ ಯಾವುದೇ ಮಾದರಿಗಳನ್ನು ಸೇರಿಸಲಾಗಿಲ್ಲ."
+
+#: admin.py:551
+#, python-format
+msgid "Skipped: %(reasons)s."
+msgstr "ಬಿಟ್ಟುಬಿಡಲಾಗಿದೆ: %(reasons)s."
+
+#: client.py:131
+msgid "No usage profile specified and default_profile is not set."
+msgstr "ಬಳಕೆ ಪ್ರೊಫೈಲ್ ನಿರ್ದಿಷ್ಟಪಡಿಸಲಾಗಿಲ್ಲ ಮತ್ತು default_profile ಹೊಂದಿಸಲಾಗಿಲ್ಲ."
+
+#: client.py:135
+#, python-format
+msgid "Usage profile %(name)r is not found or inactive."
+msgstr "ಬಳಕೆ ಪ್ರೊಫೈಲ್ %(name)r ಕಂಡುಬಂದಿಲ್ಲ ಅಥವಾ ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ."
+
+#: client.py:151
+#, python-format
+msgid "Unknown model %(model_id)r."
+msgstr "ಗೊತ್ತಿಲ್ಲದ ಮಾದರಿ %(model_id)r."
+
+#: client.py:167
+#, python-format
+msgid "Profile %(name)r has no models configured."
+msgstr "ಪ್ರೊಫೈಲ್ %(name)r ಗೆ ಯಾವುದೇ ಮಾದರಿಗಳನ್ನು ಸಂರಚಿಸಲಾಗಿಲ್ಲ."
+
+#: client.py:171
+#, python-format
+msgid "No allowed models left for profile %(name)r."
+msgstr "ಪ್ರೊಫೈಲ್ %(name)r ಗೆ ಯಾವುದೇ ಅನುಮತಿಸಲಾದ ಮಾದರಿಗಳು ಉಳಿದಿಲ್ಲ."
+
+#: client.py:237
+msgid "Streaming is not implemented in django-openrouter MVP."
+msgstr "django-openrouter MVP ನಲ್ಲಿ ಸ್ಟ್ರೀಮಿಂಗ್ ಜಾರಿಗೊಳಿಸಲಾಗಿಲ್ಲ."
+
+#: client.py:240
+msgid "OpenRouter is disabled in admin settings."
+msgstr "OpenRouter ಅನ್ನು ನಿರ್ವಹಣಾ ಸೆಟ್ಟಿಂಗ್‌ಗಳಲ್ಲಿ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ."
+
+#: client.py:242 sync.py:213
+msgid "OpenRouter API key is not configured."
+msgstr "OpenRouter API ಕೀಲಿ ಸಂರಚಿಸಲಾಗಿಲ್ಲ."
+
+#: client.py:268 client.py:358
+msgid "All models failed without a specific error."
+msgstr "ನಿರ್ದಿಷ್ಟ ದೋಷವಿಲ್ಲದೆ ಎಲ್ಲಾ ಮಾದರಿಗಳು ವಿಫಲಗೊಂಡಿವೆ."
+
+#: client.py:321 client.py:436
+#, python-format
+msgid "OpenRouter returned HTTP %(status)s: %(error)s"
+msgstr "OpenRouter HTTP %(status)s ಹಿಂದಿರುಗಿಸಿದೆ: %(error)s"
+
+#: log_backends.py:194
+msgid ""
+"ClickHouseBackend requires 'URL' in the LOG_BACKENDS entry (e.g. http://"
+"localhost:8123)."
+msgstr ""
+"ClickHouseBackend ಗೆ LOG_BACKENDS ನಮೂದಿನಲ್ಲಿ 'URL' ಬೇಕಾಗುತ್ತದೆ (ಉದಾ. http://"
+"localhost:8123)."
+
+#: log_backends.py:204
+#, python-format
+msgid "ClickHouseBackend: invalid %(label)s identifier %(identifier)r."
+msgstr "ClickHouseBackend: ಅಮಾನ್ಯ %(label)s ಗುರುತು %(identifier)r."
+
+#: log_backends.py:245
+msgid "LOG_BACKENDS entry dict requires a 'BACKEND' key."
+msgstr "LOG_BACKENDS ನಮೂದು dict ಗೆ 'BACKEND' ಕೀಲಿ ಬೇಕಾಗುತ್ತದೆ."
+
+#: log_backends.py:250
+#, python-format
+msgid "LOG_BACKENDS entries must be strings or dicts, got %(type)s."
+msgstr "LOG_BACKENDS ನಮೂದುಗಳು string ಅಥವಾ dict ಆಗಿರಬೇಕು, ಸಿಕ್ಕಿದ್ದು %(type)s."
+
+#: log_backends.py:257
+#, python-format
+msgid "Cannot import log backend %(path)r: %(error)s"
+msgstr "ಲಾಗ್ ಬ್ಯಾಕೆಂಡ್ %(path)r ಅನ್ನು ಆಮದು ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ: %(error)s"
+
+#: log_backends.py:260
+#, python-format
+msgid "%(path)r is not a LogBackend subclass."
+msgstr "%(path)r ಎಂಬುದು LogBackend ಉಪವರ್ಗವಲ್ಲ."
+
+#: log_backends.py:276
+msgid "OPENROUTER['LOG_BACKENDS'] must be a list."
+msgstr "OPENROUTER['LOG_BACKENDS'] ಪಟ್ಟಿ ಆಗಿರಬೇಕು."
+
+#: management/commands/sync_models.py:11
+msgid "Fetch GET /api/v1/models and upsert the local OpenRouter catalog."
+msgstr "GET /api/v1/models ಅನ್ನು ಪಡೆದು ಸ್ಥಳೀಯ OpenRouter ಕ್ಯಾಟಲಾಗ್ ಅನ್ನು ಅಪ್‌ಸರ್ಟ್ ಮಾಡಿ."
+
+#: management/commands/sync_models.py:18
+msgid "Override API key for this run."
+msgstr "ಈ ಚಾಲನೆಗಾಗಿ API ಕೀಲಿಯನ್ನು override ಮಾಡಿ."
+
+#: management/commands/sync_models.py:31
+#, python-format
+msgid ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+msgstr ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+
+#: models.py:45
+msgid "OpenRouter model id, e.g. anthropic/claude-3.5-sonnet"
+msgstr "OpenRouter ಮಾದರಿ id, ಉದಾ. anthropic/claude-3.5-sonnet"
+
+#: models.py:52
+msgid "Per-token prices: prompt, completion, optional request/image."
+msgstr "ಟೋಕನ್‌ಗೆ ಬೆಲೆಗಳು: prompt, completion, ಐಚ್ಛಿಕ request/image."
+
+#: models.py:61
+msgid "Prompt price per token from the catalog, for admin sorting."
+msgstr "ಕ್ಯಾಟಲಾಗ್‌ನಿಂದ ಟೋಕನ್‌ಗೆ prompt ಬೆಲೆ, ನಿರ್ವಹಣಾ ವಿಂಗಡಣೆಗಾಗಿ."
+
+#: models.py:68
+msgid "Completion price per token from the catalog, for admin sorting."
+msgstr "ಕ್ಯಾಟಲಾಗ್‌ನಿಂದ ಟೋಕನ್‌ಗೆ completion ಬೆಲೆ, ನಿರ್ವಹಣಾ ವಿಂಗಡಣೆಗಾಗಿ."
+
+#: models.py:73
+msgid "p50 TTFT for the best endpoint, in milliseconds."
+msgstr "ಉತ್ತಮ endpoint ಗಾಗಿ p50 TTFT, ಮಿಲಿಸೆಕೆಂಡ್‌ಗಳಲ್ಲಿ."
+
+#: models.py:78
+msgid "p50 throughput (tok/s) for the best endpoint — load."
+msgstr "ಉತ್ತಮ endpoint ಗಾಗಿ p50 ಥ್ರೂಪುಟ್ (tok/s) — ಲೋಡ್."
+
+#: models.py:85
+msgid "OpenRouter model"
+msgstr "OpenRouter ಮಾದರಿ"
+
+#: models.py:86
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:7
+msgid "OpenRouter models"
+msgstr "OpenRouter ಮಾದರಿಗಳು"
+
+#: models.py:108
+msgid "Stable slug used in code, e.g. chat, translation."
+msgstr "ಕೋಡ್‌ನಲ್ಲಿ ಬಳಸುವ ಸ್ಥಿರ slug, ಉದಾ. chat, translation."
+
+#: models.py:116
+msgid "First model in the chain (synced from the list)."
+msgstr "ಸರಣಿಯಲ್ಲಿನ ಮೊದಲ ಮಾದರಿ (ಪಟ್ಟಿಯಿಂದ ಸಿಂಕ್ ಮಾಡಲಾಗಿದೆ)."
+
+#: models.py:142
+msgid "If enabled, only models with zero catalog price may be used."
+msgstr "ಸಕ್ರಿಯಗೊಳಿಸಿದರೆ, ಶೂನ್ಯ ಕ್ಯಾಟಲಾಗ್ ಬೆಲೆಯಿರುವ ಮಾದರಿಗಳನ್ನು ಮಾತ್ರ ಬಳಸಬಹುದು."
+
+#: models.py:149
+msgid "Usage profiles"
+msgstr "ಬಳಕೆ ಪ್ರೊಫೈಲ್‌ಗಳು"
+
+#: models.py:157
+msgid "Temperature must be between 0 and 2."
+msgstr "ಉಷ್ಣತೆ 0 ಮತ್ತು 2 ರ ನಡುವೆ ಇರಬೇಕು."
+
+#: models.py:163
+msgid "Primary model must be active."
+msgstr "ಪ್ರಾಥಮಿಕ ಮಾದರಿ ಸಕ್ರಿಯವಾಗಿರಬೇಕು."
+
+#: models.py:166
+msgid "only_free_models requires a free primary model."
+msgstr "only_free_models ಗೆ ಉಚಿತ ಪ್ರಾಥಮಿಕ ಮಾದರಿ ಬೇಕಾಗುತ್ತದೆ."
+
+#: models.py:263
+msgid "Profile model"
+msgstr "ಪ್ರೊಫೈಲ್ ಮಾದರಿ"
+
+#: models.py:264
+msgid "Profile models"
+msgstr "ಪ್ರೊಫೈಲ್ ಮಾದರಿಗಳು"
+
+#: models.py:277
+msgid "only_free_models allows only free fallback models."
+msgstr "only_free_models ಉಚಿತ ಫಾಲ್‌ಬ್ಯಾಕ್ ಮಾದರಿಗಳಿಗೆ ಮಾತ್ರ ಅನುಮತಿಸುತ್ತದೆ."
+
+#: models.py:287
+msgid "Leave empty to use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr "OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY'] ಬಳಸಲು ಖಾಲಿ ಬಿಡಿ."
+
+#: models.py:300
+msgid "HTTP timeout in seconds."
+msgstr "ಸೆಕೆಂಡ್‌ಗಳಲ್ಲಿ HTTP ಟೈಮ್ಔಟ್."
+
+#: models.py:304
+msgid "Retries per model on transport / 5xx errors before fallback."
+msgstr "ಫಾಲ್‌ಬ್ಯಾಕ್ ಮೊದಲು ಪ್ರತಿ ಮಾದರಿಗೆ transport / 5xx ದೋಷಗಳ ಮೇಲೆ ಮರುಪ್ರಯತ್ನಗಳು."
+
+#: models.py:308
+msgid "Global kill switch. When off, every chat() call fails."
+msgstr "ಜಾಗತಿಕ kill switch. ಆಫ್ ಆಗಿದ್ದಾಗ, ಪ್ರತಿ chat() ಕರೆ ವಿಫಲಗೊಳ್ಳುತ್ತದೆ."
+
+#: models.py:312 models.py:313 models.py:316
+msgid "OpenRouter settings"
+msgstr "OpenRouter ಸೆಟ್ಟಿಂಗ್‌ಗಳು"
+
+#: models.py:360
+msgid "Request log"
+msgstr "ವಿನಂತಿ ಲಾಗ್"
+
+#: models.py:361
+msgid "Request logs"
+msgstr "ವಿನಂತಿ ಲಾಗ್‌ಗಳು"
+
+#: models.py:366
+msgid "Can view usage logs"
+msgstr "ಬಳಕೆ ಲಾಗ್‌ಗಳನ್ನು ವೀಕ್ಷಿಸಬಹುದು"
+
+#: rules.py:25
+#, python-format
+msgid "Usage profile %(name)r is disabled."
+msgstr "ಬಳಕೆ ಪ್ರೊಫೈಲ್ %(name)r ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ."
+
+#: rules.py:39
+#, python-format
+msgid "Daily request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "ಪ್ರೊಫೈಲ್ %(name)r ಗಾಗಿ ದೈನಂದಿನ ವಿನಂತಿ ಮಿತಿ (%(limit)s) ಮೀರಿದೆ."
+
+#: rules.py:47
+#, python-format
+msgid "Monthly request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "ಪ್ರೊಫೈಲ್ %(name)r ಗಾಗಿ ಮಾಸಿಕ ವಿನಂತಿ ಮಿತಿ (%(limit)s) ಮೀರಿದೆ."
+
+#: rules.py:54
+#, python-format
+msgid "Daily budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "ಪ್ರೊಫೈಲ್ %(name)r ಗಾಗಿ ದೈನಂದಿನ ಬಜೆಟ್ (%(budget)s USD) ಮೀರಿದೆ."
+
+#: rules.py:61
+#, python-format
+msgid "Monthly budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "ಪ್ರೊಫೈಲ್ %(name)r ಗಾಗಿ ಮಾಸಿಕ ಬಜೆಟ್ (%(budget)s USD) ಮೀರಿದೆ."
+
+#: rules.py:69
+#, python-format
+msgid "Model %(model_id)r is disabled."
+msgstr "ಮಾದರಿ %(model_id)r ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ."
+
+#: rules.py:72
+#, python-format
+msgid "Profile %(name)r allows only free models; %(model_id)r is not free."
+msgstr "ಪ್ರೊಫೈಲ್ %(name)r ಉಚಿತ ಮಾದರಿಗಳಿಗೆ ಮಾತ್ರ ಅನುಮತಿಸುತ್ತದೆ; %(model_id)r ಉಚಿತವಲ್ಲ."
+
+#: sync.py:242
+msgid "Unexpected OpenRouter /models response."
+msgstr "ಅನಿರೀಕ್ಷಿತ OpenRouter /models ಪ್ರತಿಕ್ರಿಯೆ."
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:5
+msgid "Home"
+msgstr "ಮುಖಪುಟ"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:6
+msgid "Django_openrouter"
+msgstr "Django_openrouter"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:8
+msgid "Assign to usage profile"
+msgstr "ಬಳಕೆ ಪ್ರೊಫೈಲ್‌ಗೆ ನಿಯೋಜಿಸಿ"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:18
+#, python-format
+msgid "The selected model will be appended to the model chain of the profile:"
+msgid_plural ""
+"The %(counter)s selected models will be appended to the model chain of the "
+"profile:"
+msgstr[0] "ಆಯ್ದ ಮಾದರಿಯನ್ನು ಪ್ರೊಫೈಲ್‌ನ ಮಾದರಿ ಸರಣಿಗೆ ಸೇರಿಸಲಾಗುತ್ತದೆ:"
+msgstr[1] ""
+"ಆಯ್ದ %(counter)s ಮಾದರಿಗಳನ್ನು ಪ್ರೊಫೈಲ್‌ನ ಮಾದರಿ ಸರಣಿಗೆ "
+"ಸೇರಿಸಲಾಗುತ್ತದೆ:"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:30
+msgid "Assign"
+msgstr "ನಿಯೋಜಿಸಿ"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:31
+msgid "Cancel"
+msgstr "ರದ್ದುಮಾಡಿ"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:5
+msgid "Total requests"
+msgstr "ಒಟ್ಟು ವಿನಂತಿಗಳು"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:7
+msgid "Total cost (USD)"
+msgstr "ಒಟ್ಟು ವೆಚ್ಚ (USD)"

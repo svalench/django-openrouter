@@ -1,0 +1,453 @@
+# Uighur translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-04 11:06+0000\n"
+"PO-Revision-Date: 2026-09-04 11:06+0000\n"
+"Last-Translator: django-openrouter contributors\n"
+"Language-Team: ug\n"
+"Language: ug\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: admin.py:78 admin.py:429
+msgid "Price"
+msgstr "باھا"
+
+#: admin.py:85
+msgid "Free"
+msgstr "ھەقسىز"
+
+#: admin.py:86
+msgid "Cheap (< $1 / 1M)"
+msgstr "ئەرزان (< $1 / 1M)"
+
+#: admin.py:87
+msgid "Mid ($1-$10 / 1M)"
+msgstr "ئوتتۇرىچە ($1-$10 / 1M)"
+
+#: admin.py:88
+msgid "Expensive (>= $10 / 1M)"
+msgstr "قىممەت (>= $10 / 1M)"
+
+#: admin.py:98
+msgid "Speed"
+msgstr "سۈرئەت"
+
+#: admin.py:105
+msgid "Fast (< 400 ms)"
+msgstr "تېز (< 400 ms)"
+
+#: admin.py:106
+msgid "Medium (400-1200 ms)"
+msgstr "ئوتتۇرا (400-1200 ms)"
+
+#: admin.py:107
+msgid "Slow (>= 1200 ms)"
+msgstr "ئاستا (>= 1200 ms)"
+
+#: admin.py:108
+msgid "Unknown latency"
+msgstr "نامەلۇم كېچىكىش"
+
+#: admin.py:136
+msgid "API key"
+msgstr "API ئاچقۇچى"
+
+#: admin.py:145
+msgid "Clear stored API key"
+msgstr "ساقلانغان API ئاچقۇچىنى تازىلاش"
+
+#: admin.py:168
+msgid ""
+"A key is stored encrypted. Leave blank to keep it, or enter a new key to "
+"replace it. The stored value cannot be viewed."
+msgstr ""
+"بىر ئاچقۇچ شىفىرلانغان ھالدە ساقلانغان. ساقلاش ئۈچۈن بوش قويۇڭ، ياكى "
+"ئالماشتۇرۇش ئۈچۈن يېڭى ئاچقۇچ كىرگۈزۈڭ. ساقلانغان قىممەت كۆرسىتىلەلمەيدۇ."
+
+#: admin.py:173
+msgid ""
+"Entered once, stored encrypted, and cannot be viewed again. Leave empty to "
+"use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+"بىر قېتىم كىرگۈزۈلىدۇ، شىفىرلانغان ھالدە ساقلىنىدۇ، قايتا كۆرسىتىلەلمەيدۇ. "
+"OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY'] نى ئىشلىتىش ئۈچۈن بوش قويۇڭ."
+
+#: admin.py:216
+msgid "API key status"
+msgstr "API ئاچقۇچ ھالىتى"
+
+#: admin.py:219
+msgid "Stored (encrypted, not visible)"
+msgstr "ساقلانغان (شىفىرلانغان، كۆرۈنمەيدۇ)"
+
+#: admin.py:220
+msgid "Not set"
+msgstr "تەڭشەلمىگەن"
+
+#: admin.py:250 models.py:274
+msgid "Fallback model must be active."
+msgstr "زاپاس مودېل ئاكتىپ بولۇشى كېرەك."
+
+#: admin.py:269
+msgid "Models in the chain must be active."
+msgstr "زەنجىردىكى مودېللار ئاكتىپ بولۇشى كېرەك."
+
+#: admin.py:271
+msgid "only_free_models allows only free models."
+msgstr "only_free_models پەقەت ھەقسىز مودېللارغا يول قويىدۇ."
+
+#: admin.py:273
+msgid "Each model may appear only once."
+msgstr "ھەر بىر مودېل پەقەت بىر قېتىم كەلتۈرۈلسە بولىدۇ."
+
+#: admin.py:293
+msgid "Model"
+msgstr "مودېل"
+
+#: admin.py:294
+msgid "Models (priority order)"
+msgstr "مودېللار (مۇھىملىق تەرتىپى)"
+
+#: admin.py:324 models.py:148
+msgid "Usage profile"
+msgstr "ئىشلىتىش پروفىلى"
+
+#: admin.py:436
+msgid "Sync catalog with OpenRouter"
+msgstr "كاتالوگنى OpenRouter بىلەن سىنكرونلاش"
+
+#: admin.py:450
+#, python-format
+msgid ""
+"Sync complete: %(created)s created, %(updated)s updated, %(deactivated)s "
+"deactivated (%(total)s remote)."
+msgstr ""
+"سىنكرونلاش تامام: %(created)s قۇرۇلدى، %(updated)s يېڭىلاندى، %(deactivated)s "
+"چەكلەندى (يىراقتىن %(total)s)."
+
+#: admin.py:461
+msgid "Assign to usage profile…"
+msgstr "ئىشلىتىش پروفىلىگە تەقسىم قىلىش…"
+
+#: admin.py:481
+msgid "Assign models to usage profile"
+msgstr "مودېللارنى ئىشلىتىش پروفىلىگە تەقسىم قىلىش"
+
+#: admin.py:534
+#, python-format
+msgid "%(count)s already in the chain"
+msgstr "زەنجىردە %(count)s بار"
+
+#: admin.py:535
+#, python-format
+msgid "%(count)s inactive"
+msgstr "%(count)s ئاكتىپ ئەمەس"
+
+#: admin.py:536
+#, python-format
+msgid "%(count)s not free (only_free_models)"
+msgstr "%(count)s ھەقسىز ئەمەس (only_free_models)"
+
+#: admin.py:542
+#, python-format
+msgid "Added %(count)s model(s) to profile “%(profile)s”."
+msgstr "«%(profile)s» پروفىلىگە %(count)s مودېل قوشۇلدى."
+
+#: admin.py:548
+#, python-format
+msgid "No models were added to profile “%(profile)s”."
+msgstr "«%(profile)s» پروفىلىگە ھېچقانداق مودېل قوشۇلمىدى."
+
+#: admin.py:551
+#, python-format
+msgid "Skipped: %(reasons)s."
+msgstr "ئۆتكۈزۈۋېتىلدى: %(reasons)s."
+
+#: client.py:131
+msgid "No usage profile specified and default_profile is not set."
+msgstr "ھېچقانداق ئىشلىتىش پروفىلى كۆرسىتىلمىگەن ھەمدە default_profile تەڭشەلمىگەن."
+
+#: client.py:135
+#, python-format
+msgid "Usage profile %(name)r is not found or inactive."
+msgstr "ئىشلىتىش پروفىلى %(name)r تېپىلمىدى ياكى ئاكتىپ ئەمەس."
+
+#: client.py:151
+#, python-format
+msgid "Unknown model %(model_id)r."
+msgstr "نامەلۇم مودېل %(model_id)r."
+
+#: client.py:167
+#, python-format
+msgid "Profile %(name)r has no models configured."
+msgstr "پروفىل %(name)r غا تەڭشەلگەن مودېل يوق."
+
+#: client.py:171
+#, python-format
+msgid "No allowed models left for profile %(name)r."
+msgstr "پروفىل %(name)r ئۈچۈن رۇخسەتلىك مودېل قالمىدى."
+
+#: client.py:237
+msgid "Streaming is not implemented in django-openrouter MVP."
+msgstr "django-openrouter MVP دا ئېقىم (streaming) ئەمەلگە ئاشۇرۇلمىغان."
+
+#: client.py:240
+msgid "OpenRouter is disabled in admin settings."
+msgstr "OpenRouter باشقۇرۇش تەڭشىكىدە چەكلەنگەن."
+
+#: client.py:242 sync.py:213
+msgid "OpenRouter API key is not configured."
+msgstr "OpenRouter API ئاچقۇچى تەڭشەلمىگەن."
+
+#: client.py:268 client.py:358
+msgid "All models failed without a specific error."
+msgstr "بارلىق مودېللار مەلۇم خاتالىقسىز مەغلۇپ بولدى."
+
+#: client.py:321 client.py:436
+#, python-format
+msgid "OpenRouter returned HTTP %(status)s: %(error)s"
+msgstr "OpenRouter HTTP %(status)s قايتۇردى: %(error)s"
+
+#: log_backends.py:194
+msgid ""
+"ClickHouseBackend requires 'URL' in the LOG_BACKENDS entry (e.g. http://"
+"localhost:8123)."
+msgstr ""
+"ClickHouseBackend نىڭ LOG_BACKENDS تۈرىدە «URL» بولۇشى كېرەك (مەسىلەن http://"
+"localhost:8123)."
+
+#: log_backends.py:204
+#, python-format
+msgid "ClickHouseBackend: invalid %(label)s identifier %(identifier)r."
+msgstr "ClickHouseBackend: ئىناۋەتسىز %(label)s بەلگىسى %(identifier)r."
+
+#: log_backends.py:245
+msgid "LOG_BACKENDS entry dict requires a 'BACKEND' key."
+msgstr "LOG_BACKENDS تۈر لۇغىتىدە «BACKEND» ئاچقۇچى بولۇشى كېرەك."
+
+#: log_backends.py:250
+#, python-format
+msgid "LOG_BACKENDS entries must be strings or dicts, got %(type)s."
+msgstr "LOG_BACKENDS تۈرلىرى ھەرپ-بەلگە تىزىقى ياكى لۇغەت بولۇشى كېرەك، تېپىلغىنى %(type)s."
+
+#: log_backends.py:257
+#, python-format
+msgid "Cannot import log backend %(path)r: %(error)s"
+msgstr "خاتىرە ئارقا سۇپىسى %(path)r ئىمپورت قىلىنمىدى: %(error)s"
+
+#: log_backends.py:260
+#, python-format
+msgid "%(path)r is not a LogBackend subclass."
+msgstr "%(path)r LogBackend تارمىقى ئەمەس."
+
+#: log_backends.py:276
+msgid "OPENROUTER['LOG_BACKENDS'] must be a list."
+msgstr "OPENROUTER['LOG_BACKENDS'] تىزىم بولۇشى كېرەك."
+
+#: management/commands/sync_models.py:11
+msgid "Fetch GET /api/v1/models and upsert the local OpenRouter catalog."
+msgstr "GET /api/v1/models نى ئېلىپ يەرلىك OpenRouter كاتالوگىنى يېڭىلاش."
+
+#: management/commands/sync_models.py:18
+msgid "Override API key for this run."
+msgstr "بۇ قېتىملىق ئىجرا ئۈچۈن API ئاچقۇچنى قاپلاش."
+
+#: management/commands/sync_models.py:31
+#, python-format
+msgid ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+msgstr ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+
+#: models.py:45
+msgid "OpenRouter model id, e.g. anthropic/claude-3.5-sonnet"
+msgstr "OpenRouter مودېل كىملىكى، مەسىلەن anthropic/claude-3.5-sonnet"
+
+#: models.py:52
+msgid "Per-token prices: prompt, completion, optional request/image."
+msgstr "ھەر بەلگە باھاسى: prompt، completion، تاللىشىق request/image."
+
+#: models.py:61
+msgid "Prompt price per token from the catalog, for admin sorting."
+msgstr "كاتالوگتىكى ھەر بەلگە prompt باھاسى، باشقۇرۇش تەرتىپلەش ئۈچۈن."
+
+#: models.py:68
+msgid "Completion price per token from the catalog, for admin sorting."
+msgstr "كاتالوگتىكى ھەر بەلگە completion باھاسى، باشقۇرۇش تەرتىپلەش ئۈچۈن."
+
+#: models.py:73
+msgid "p50 TTFT for the best endpoint, in milliseconds."
+msgstr "ئەڭ ياخشى endpoint نىڭ p50 TTFT قىممىتى، مىللىسېكۇنتتا."
+
+#: models.py:78
+msgid "p50 throughput (tok/s) for the best endpoint — load."
+msgstr "ئەڭ ياخشى endpoint نىڭ p50 ئۆتكۈزۈش قۇۋۋىتى (tok/s) — يۈك."
+
+#: models.py:85
+msgid "OpenRouter model"
+msgstr "OpenRouter مودېلى"
+
+#: models.py:86
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:7
+msgid "OpenRouter models"
+msgstr "OpenRouter مودېللىرى"
+
+#: models.py:108
+msgid "Stable slug used in code, e.g. chat, translation."
+msgstr "كودتا ئىشلىتىلىدىغان مۇقىم slug، مەسىلەن chat، translation."
+
+#: models.py:116
+msgid "First model in the chain (synced from the list)."
+msgstr "زەنجىردىكى بىرىنچى مودېل (تىزىمدىن سىنكرونلانغان)."
+
+#: models.py:142
+msgid "If enabled, only models with zero catalog price may be used."
+msgstr "قوزغىتىلسا، پەقەت كاتالوگ باھاسى نۆل بولغان مودېللار ئىشلىتىلسە بولىدۇ."
+
+#: models.py:149
+msgid "Usage profiles"
+msgstr "ئىشلىتىش پروفىلىلىرى"
+
+#: models.py:157
+msgid "Temperature must be between 0 and 2."
+msgstr "تېمپېراتۇرا 0 بىلەن 2 ئاراسىدا بولۇشى كېرەك."
+
+#: models.py:163
+msgid "Primary model must be active."
+msgstr "ئاساسىي مودېل ئاكتىپ بولۇشى كېرەك."
+
+#: models.py:166
+msgid "only_free_models requires a free primary model."
+msgstr "only_free_models ھەقسىز ئاساسىي مودېلنى تەلەپ قىلىدۇ."
+
+#: models.py:263
+msgid "Profile model"
+msgstr "پروفىل مودېلى"
+
+#: models.py:264
+msgid "Profile models"
+msgstr "پروفىل مودېللىرى"
+
+#: models.py:277
+msgid "only_free_models allows only free fallback models."
+msgstr "only_free_models پەقەت ھەقسىز زاپاس مودېللارغا يول قويىدۇ."
+
+#: models.py:287
+msgid "Leave empty to use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr "OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY'] نى ئىشلىتىش ئۈچۈن بوش قويۇڭ."
+
+#: models.py:300
+msgid "HTTP timeout in seconds."
+msgstr "سېكۇنتتا HTTP ۋاقىت چەكلىمىسى."
+
+#: models.py:304
+msgid "Retries per model on transport / 5xx errors before fallback."
+msgstr "زاپاسقا ئۆتۈشتىن بۇرۇن ھەر بىر مودېلدا transport / 5xx خاتالىقلىرىغا قايتا سىناق."
+
+#: models.py:308
+msgid "Global kill switch. When off, every chat() call fails."
+msgstr "ئومۇمىي توختىتىش ئالمىشىغۇچى. تاقاقدا ھەر بىر chat() چاقىرىشى مەغلۇپ بولىدۇ."
+
+#: models.py:312 models.py:313 models.py:316
+msgid "OpenRouter settings"
+msgstr "OpenRouter تەڭشەكلىرى"
+
+#: models.py:360
+msgid "Request log"
+msgstr "تەلەپ خاتىرىسى"
+
+#: models.py:361
+msgid "Request logs"
+msgstr "تەلەپ خاتىرىلىرى"
+
+#: models.py:366
+msgid "Can view usage logs"
+msgstr "ئىشلىتىش خاتىرىلىرىنى كۆرەلەيدۇ"
+
+#: rules.py:25
+#, python-format
+msgid "Usage profile %(name)r is disabled."
+msgstr "ئىشلىتىش پروفىلى %(name)r چەكلەنگەن."
+
+#: rules.py:39
+#, python-format
+msgid "Daily request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "پروفىل %(name)r نىڭ كۈنلۈك تەلەپ چەكلىمىسى (%(limit)s) ئېشىپ كەتتى."
+
+#: rules.py:47
+#, python-format
+msgid "Monthly request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "پروفىل %(name)r نىڭ ئايلىق تەلەپ چەكلىمىسى (%(limit)s) ئېشىپ كەتتى."
+
+#: rules.py:54
+#, python-format
+msgid "Daily budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "پروفىل %(name)r نىڭ كۈنلۈك بۇجېتى (%(budget)s USD) ئېشىپ كەتتى."
+
+#: rules.py:61
+#, python-format
+msgid "Monthly budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "پروفىل %(name)r نىڭ ئايلىق بۇجېتى (%(budget)s USD) ئېشىپ كەتتى."
+
+#: rules.py:69
+#, python-format
+msgid "Model %(model_id)r is disabled."
+msgstr "مودېل %(model_id)r چەكلەنگەن."
+
+#: rules.py:72
+#, python-format
+msgid "Profile %(name)r allows only free models; %(model_id)r is not free."
+msgstr "پروفىل %(name)r پەقەت ھەقسىز مودېللارغا يول قويىدۇ؛ %(model_id)r ھەقسىز ئەمەس."
+
+#: sync.py:242
+msgid "Unexpected OpenRouter /models response."
+msgstr "كۈتۈلمىگەن OpenRouter /models جاۋابى."
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:5
+msgid "Home"
+msgstr "باش بەت"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:6
+msgid "Django_openrouter"
+msgstr "Django_openrouter"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:8
+msgid "Assign to usage profile"
+msgstr "ئىشلىتىش پروفىلىگە تەقسىم قىلىش"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:18
+#, python-format
+msgid ""
+"The selected model will be appended to the model chain of the profile:"
+msgid_plural ""
+"The %(counter)s selected models will be appended to the model chain of the "
+"profile:"
+msgstr[0] "تاللانغان مودېل پروفىلنىڭ مودېل زەنجىرىگە قوشۇلىدۇ:"
+msgstr[1] "تاللانغان %(counter)s مودېل پروفىلنىڭ مودېل زەنجىرىگە قوشۇلىدۇ:"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:30
+msgid "Assign"
+msgstr "تەقسىم قىلىش"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:31
+msgid "Cancel"
+msgstr "بىكار قىلىش"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:5
+msgid "Total requests"
+msgstr "جەمئىي تەلەپلەر"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:7
+msgid "Total cost (USD)"
+msgstr "جەمئىي خىراجەت (USD)"

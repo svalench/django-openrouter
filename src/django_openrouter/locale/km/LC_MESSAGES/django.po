@@ -1,0 +1,452 @@
+# Central Khmer translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-04 11:06+0000\n"
+"PO-Revision-Date: 2026-09-04 11:06+0000\n"
+"Last-Translator: django-openrouter contributors\n"
+"Language-Team: km\n"
+"Language: km\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: admin.py:78 admin.py:429
+msgid "Price"
+msgstr "តម្លៃ"
+
+#: admin.py:85
+msgid "Free"
+msgstr "ឥតគិតថ្លៃ"
+
+#: admin.py:86
+msgid "Cheap (< $1 / 1M)"
+msgstr "ថោក (< $1 / 1M)"
+
+#: admin.py:87
+msgid "Mid ($1-$10 / 1M)"
+msgstr "មធ្យម ($1-$10 / 1M)"
+
+#: admin.py:88
+msgid "Expensive (>= $10 / 1M)"
+msgstr "ថ្លៃ (>= $10 / 1M)"
+
+#: admin.py:98
+msgid "Speed"
+msgstr "ល្បឿន"
+
+#: admin.py:105
+msgid "Fast (< 400 ms)"
+msgstr "លឿន (< 400 ms)"
+
+#: admin.py:106
+msgid "Medium (400-1200 ms)"
+msgstr "មធ្យម (400-1200 ms)"
+
+#: admin.py:107
+msgid "Slow (>= 1200 ms)"
+msgstr "យឺត (>= 1200 ms)"
+
+#: admin.py:108
+msgid "Unknown latency"
+msgstr "មិនស្គាល់ពេលវេលាឆ្លើយតប"
+
+#: admin.py:136
+msgid "API key"
+msgstr "កូនសោ API"
+
+#: admin.py:145
+msgid "Clear stored API key"
+msgstr "លុបកូនសោ API ដែលបានរក្សាទុក"
+
+#: admin.py:168
+msgid ""
+"A key is stored encrypted. Leave blank to keep it, or enter a new key to "
+"replace it. The stored value cannot be viewed."
+msgstr ""
+"កូនសោត្រូវបានរក្សាទុកដោយបានអ៊ិនគ្រីប។ ទុកទំនេរ ដើម្បីរក្សាវា ឬបញ្ចូលកូនសោថ្មី "
+"ដើម្បីជំនួសវា។ មិនអាចមើលឃើញតម្លៃដែលបានរក្សាទុកបានទេ។"
+
+#: admin.py:173
+msgid ""
+"Entered once, stored encrypted, and cannot be viewed again. Leave empty to "
+"use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+"បញ្ចូលម្តងតែម្តង រក្សាទុកដោយបានអ៊ិនគ្រីប ហើយមិនអាចមើលឃើញម្តងទៀតបានទេ។ ទុកទំនេរ "
+"ដើម្បីប្រើ OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']។"
+
+#: admin.py:216
+msgid "API key status"
+msgstr "ស្ថានភាពកូនសោ API"
+
+#: admin.py:219
+msgid "Stored (encrypted, not visible)"
+msgstr "បានរក្សាទុក (បានអ៊ិនគ្រីប មិនអាចមើលឃើញ)"
+
+#: admin.py:220
+msgid "Not set"
+msgstr "មិនបានកំណត់"
+
+#: admin.py:250 models.py:274
+msgid "Fallback model must be active."
+msgstr "ម៉ូដែលបម្រុងត្រូវតែសកម្ម។"
+
+#: admin.py:269
+msgid "Models in the chain must be active."
+msgstr "ម៉ូដែលក្នុងខ្សែស្រឡាយត្រូវតែសកម្ម។"
+
+#: admin.py:271
+msgid "only_free_models allows only free models."
+msgstr "only_free_models អនុញ្ញាតតែម៉ូដែលឥតគិតថ្លៃ។"
+
+#: admin.py:273
+msgid "Each model may appear only once."
+msgstr "ម៉ូដែលនីមួយៗអាចបង្ហាញតែម្តងប៉ុណ្ណោះ។"
+
+#: admin.py:293
+msgid "Model"
+msgstr "ម៉ូដែល"
+
+#: admin.py:294
+msgid "Models (priority order)"
+msgstr "ម៉ូដែល (តាមលំដាប់អាទិភាព)"
+
+#: admin.py:324 models.py:148
+msgid "Usage profile"
+msgstr "ទម្រង់ប្រើប្រាស់"
+
+#: admin.py:436
+msgid "Sync catalog with OpenRouter"
+msgstr "ធ្វើសមកាលកម្មកាតាឡុកជាមួយ OpenRouter"
+
+#: admin.py:450
+#, python-format
+msgid ""
+"Sync complete: %(created)s created, %(updated)s updated, %(deactivated)s "
+"deactivated (%(total)s remote)."
+msgstr ""
+"ការធ្វើសមកាលកម្មរួចរាល់៖ បានបង្កើត %(created)s បានធ្វើបច្ចុប្បន្នភាព %(updated)s "
+"បានធ្វើអោយអសកម្ម %(deactivated)s (%(total)s ពីចម្ងាយ)។"
+
+#: admin.py:461
+msgid "Assign to usage profile…"
+msgstr "កំណត់ទៅទម្រង់ប្រើប្រាស់…"
+
+#: admin.py:481
+msgid "Assign models to usage profile"
+msgstr "កំណត់ម៉ូដែលទៅទម្រង់ប្រើប្រាស់"
+
+#: admin.py:534
+#, python-format
+msgid "%(count)s already in the chain"
+msgstr "%(count)s ស្ថិតក្នុងខ្សែស្រឡាយរួចហើយ"
+
+#: admin.py:535
+#, python-format
+msgid "%(count)s inactive"
+msgstr "%(count)s អសកម្ម"
+
+#: admin.py:536
+#, python-format
+msgid "%(count)s not free (only_free_models)"
+msgstr "%(count)s មិនឥតគិតថ្លៃ (only_free_models)"
+
+#: admin.py:542
+#, python-format
+msgid "Added %(count)s model(s) to profile “%(profile)s”."
+msgstr "បានបន្ថែម %(count)s ម៉ូដែលទៅទម្រង់ “%(profile)s”។"
+
+#: admin.py:548
+#, python-format
+msgid "No models were added to profile “%(profile)s”."
+msgstr "មិនមានម៉ូដែលណាត្រូវបានបន្ថែមទៅទម្រង់ “%(profile)s”។"
+
+#: admin.py:551
+#, python-format
+msgid "Skipped: %(reasons)s."
+msgstr "បានរំលង៖ %(reasons)s។"
+
+#: client.py:131
+msgid "No usage profile specified and default_profile is not set."
+msgstr "មិនបានបញ្ជាក់ទម្រង់ប្រើប្រាស់ និង default_profile មិនបានកំណត់។"
+
+#: client.py:135
+#, python-format
+msgid "Usage profile %(name)r is not found or inactive."
+msgstr "រកមិនឃើញទម្រង់ប្រើប្រាស់ %(name)r ឬ វាអសកម្ម។"
+
+#: client.py:151
+#, python-format
+msgid "Unknown model %(model_id)r."
+msgstr "ម៉ូដែលមិនស្គាល់ %(model_id)r។"
+
+#: client.py:167
+#, python-format
+msgid "Profile %(name)r has no models configured."
+msgstr "ទម្រង់ %(name)r មិនមានការកំណត់ម៉ូដែល។"
+
+#: client.py:171
+#, python-format
+msgid "No allowed models left for profile %(name)r."
+msgstr "មិនមានម៉ូដែលដែលអនុញ្ញាតសល់សម្រាប់ទម្រង់ %(name)r។"
+
+#: client.py:237
+msgid "Streaming is not implemented in django-openrouter MVP."
+msgstr "Streaming មិនត្រូវបានអនុវត្តក្នុង django-openrouter MVP។"
+
+#: client.py:240
+msgid "OpenRouter is disabled in admin settings."
+msgstr "OpenRouter ត្រូវបានបិទក្នុងការកំណត់រដ្ឋបាល។"
+
+#: client.py:242 sync.py:213
+msgid "OpenRouter API key is not configured."
+msgstr "កូនសោ API របស់ OpenRouter មិនបានកំណត់។"
+
+#: client.py:268 client.py:358
+msgid "All models failed without a specific error."
+msgstr "ម៉ូដែលទាំងអស់បរាជ័យដោយគ្មានកំហុសជាក់លាក់។"
+
+#: client.py:321 client.py:436
+#, python-format
+msgid "OpenRouter returned HTTP %(status)s: %(error)s"
+msgstr "OpenRouter បានឆ្លើយតប HTTP %(status)s: %(error)s"
+
+#: log_backends.py:194
+msgid ""
+"ClickHouseBackend requires 'URL' in the LOG_BACKENDS entry (e.g. http://"
+"localhost:8123)."
+msgstr ""
+"ClickHouseBackend ត្រូវការ 'URL' ក្នុងធាតុ LOG_BACKENDS (ឧ. "
+"http://localhost:8123)។"
+
+#: log_backends.py:204
+#, python-format
+msgid "ClickHouseBackend: invalid %(label)s identifier %(identifier)r."
+msgstr "ClickHouseBackend: អត្តសញ្ញាណ %(label)s មិនត្រឹមត្រូវ %(identifier)r។"
+
+#: log_backends.py:245
+msgid "LOG_BACKENDS entry dict requires a 'BACKEND' key."
+msgstr "វចនានុក្រមធាតុ LOG_BACKENDS ត្រូវការសោ 'BACKEND'។"
+
+#: log_backends.py:250
+#, python-format
+msgid "LOG_BACKENDS entries must be strings or dicts, got %(type)s."
+msgstr "ធាតុ LOG_BACKENDS ត្រូវតែជាខ្សែអក្សរ ឬវចនានុក្រម ប៉ុន្តែបានទទួល %(type)s។"
+
+#: log_backends.py:257
+#, python-format
+msgid "Cannot import log backend %(path)r: %(error)s"
+msgstr "មិនអាចនាំចូល log backend %(path)r: %(error)s"
+
+#: log_backends.py:260
+#, python-format
+msgid "%(path)r is not a LogBackend subclass."
+msgstr "%(path)r មិនមែនជាថ្នាក់កូនរបស់ LogBackend។"
+
+#: log_backends.py:276
+msgid "OPENROUTER['LOG_BACKENDS'] must be a list."
+msgstr "OPENROUTER['LOG_BACKENDS'] ត្រូវតែជាបញ្ជី។"
+
+#: management/commands/sync_models.py:11
+msgid "Fetch GET /api/v1/models and upsert the local OpenRouter catalog."
+msgstr "ទាញយក GET /api/v1/models និង upsert កាតាឡុក OpenRouter ក្នុងស្ថានីយ។"
+
+#: management/commands/sync_models.py:18
+msgid "Override API key for this run."
+msgstr "កំណត់កូនសោ API ជំនួសសម្រាប់ការរត់នេះ។"
+
+#: management/commands/sync_models.py:31
+#, python-format
+msgid ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+msgstr ""
+"បានបង្កើត=%(created)s បានធ្វើបច្ចុប្បន្នភាព=%(updated)s បានធ្វើអសកម្ម=%(deactivated)s "
+"ពីចម្ងាយ=%(total)s"
+
+#: models.py:45
+msgid "OpenRouter model id, e.g. anthropic/claude-3.5-sonnet"
+msgstr "លេខសម្គាល់ម៉ូដែល OpenRouter ឧ. anthropic/claude-3.5-sonnet"
+
+#: models.py:52
+msgid "Per-token prices: prompt, completion, optional request/image."
+msgstr "តម្លៃក្នុងមួយតូខេន៖ prompt, completion, សំណើ/រូបភាពជាជម្រើស។"
+
+#: models.py:61
+msgid "Prompt price per token from the catalog, for admin sorting."
+msgstr "តម្លៃ prompt ក្នុងមួយតូខេនពីកាតាឡុក សម្រាប់ការតម្រៀបក្នុងរដ្ឋបាល។"
+
+#: models.py:68
+msgid "Completion price per token from the catalog, for admin sorting."
+msgstr "តម្លៃ completion ក្នុងមួយតូខេនពីកាតាឡុក សម្រាប់ការតម្រៀបក្នុងរដ្ឋបាល។"
+
+#: models.py:73
+msgid "p50 TTFT for the best endpoint, in milliseconds."
+msgstr "p50 TTFT សម្រាប់ endpoint ល្អបំផុត ជាមីលីវិនាទី។"
+
+#: models.py:78
+msgid "p50 throughput (tok/s) for the best endpoint — load."
+msgstr "លំហូរ p50 (tok/s) សម្រាប់ endpoint ល្អបំផុត — ផ្ទុក។"
+
+#: models.py:85
+msgid "OpenRouter model"
+msgstr "ម៉ូដែល OpenRouter"
+
+#: models.py:86
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:7
+msgid "OpenRouter models"
+msgstr "ម៉ូដែល OpenRouter"
+
+#: models.py:108
+msgid "Stable slug used in code, e.g. chat, translation."
+msgstr "slug ថេរដែលប្រើក្នុងកូដ ឧ. chat, translation។"
+
+#: models.py:116
+msgid "First model in the chain (synced from the list)."
+msgstr "ម៉ូដែលដំបូងក្នុងខ្សែស្រឡាយ (បានសមកាលកម្មពីបញ្ជី)។"
+
+#: models.py:142
+msgid "If enabled, only models with zero catalog price may be used."
+msgstr "បើបើក ម៉ូដែលដែលមានតម្លៃកាតាឡុកសូន្យប៉ុណ្ណោះអាចប្រើបាន។"
+
+#: models.py:149
+msgid "Usage profiles"
+msgstr "ទម្រង់ប្រើប្រាស់"
+
+#: models.py:157
+msgid "Temperature must be between 0 and 2."
+msgstr "Temperature ត្រូវតែស្ថិតរវាង 0 និង 2។"
+
+#: models.py:163
+msgid "Primary model must be active."
+msgstr "ម៉ូដែលចម្បងត្រូវតែសកម្ម។"
+
+#: models.py:166
+msgid "only_free_models requires a free primary model."
+msgstr "only_free_models ត្រូវការម៉ូដែលចម្បងឥតគិតថ្លៃ។"
+
+#: models.py:263
+msgid "Profile model"
+msgstr "ម៉ូដែលទម្រង់"
+
+#: models.py:264
+msgid "Profile models"
+msgstr "ម៉ូដែលទម្រង់"
+
+#: models.py:277
+msgid "only_free_models allows only free fallback models."
+msgstr "only_free_models អនុញ្ញាតតែម៉ូដែលបម្រុងឥតគិតថ្លៃ។"
+
+#: models.py:287
+msgid "Leave empty to use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr "ទុកទំនេរ ដើម្បីប្រើ OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']។"
+
+#: models.py:300
+msgid "HTTP timeout in seconds."
+msgstr "ពេលវេលាផុតកំណត់ HTTP ជាវិនាទី។"
+
+#: models.py:304
+msgid "Retries per model on transport / 5xx errors before fallback."
+msgstr "ការព្យាយាមម្តងទៀតក្នុងមួយម៉ូដែលលើកំហុស transport / 5xx មុនការបម្រុង។"
+
+#: models.py:308
+msgid "Global kill switch. When off, every chat() call fails."
+msgstr "កោសិកាបិទសកល។ ពេលបិទ ការហៅ chat() ទាំងអស់បរាជ័យ។"
+
+#: models.py:312 models.py:313 models.py:316
+msgid "OpenRouter settings"
+msgstr "ការកំណត់ OpenRouter"
+
+#: models.py:360
+msgid "Request log"
+msgstr "កំណត់ហេតុសំណើ"
+
+#: models.py:361
+msgid "Request logs"
+msgstr "កំណត់ហេតុសំណើ"
+
+#: models.py:366
+msgid "Can view usage logs"
+msgstr "អាចមើលកំណត់ហេតុប្រើប្រាស់"
+
+#: rules.py:25
+#, python-format
+msgid "Usage profile %(name)r is disabled."
+msgstr "ទម្រង់ប្រើប្រាស់ %(name)r ត្រូវបានបិទ។"
+
+#: rules.py:39
+#, python-format
+msgid "Daily request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "លើសដែនកំណត់សំណើប្រចាំថ្ងៃ (%(limit)s) សម្រាប់ទម្រង់ %(name)r។"
+
+#: rules.py:47
+#, python-format
+msgid "Monthly request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "លើសដែនកំណត់សំណើប្រចាំខែ (%(limit)s) សម្រាប់ទម្រង់ %(name)r។"
+
+#: rules.py:54
+#, python-format
+msgid "Daily budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "លើសថវិកាប្រចាំថ្ងៃ (%(budget)s USD) សម្រាប់ទម្រង់ %(name)r។"
+
+#: rules.py:61
+#, python-format
+msgid "Monthly budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "លើសថវិកាប្រចាំខែ (%(budget)s USD) សម្រាប់ទម្រង់ %(name)r។"
+
+#: rules.py:69
+#, python-format
+msgid "Model %(model_id)r is disabled."
+msgstr "ម៉ូដែល %(model_id)r ត្រូវបានបិទ។"
+
+#: rules.py:72
+#, python-format
+msgid "Profile %(name)r allows only free models; %(model_id)r is not free."
+msgstr "ទម្រង់ %(name)r អនុញ្ញាតតែម៉ូដែលឥតគិតថ្លៃ។ %(model_id)r មិនឥតគិតថ្លៃ។"
+
+#: sync.py:242
+msgid "Unexpected OpenRouter /models response."
+msgstr "ការឆ្លើយតប OpenRouter /models ដែលមិនរំពឹងទុក។"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:5
+msgid "Home"
+msgstr "ទំព័រដើម"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:6
+msgid "Django_openrouter"
+msgstr "Django_openrouter"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:8
+msgid "Assign to usage profile"
+msgstr "កំណត់ទៅទម្រង់ប្រើប្រាស់"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:18
+#, python-format
+msgid "The selected model will be appended to the model chain of the profile:"
+msgid_plural ""
+"The %(counter)s selected models will be appended to the model chain of the "
+"profile:"
+msgstr[0] "ម៉ូដែលដែលបានជ្រើសរើសនឹងត្រូវបានបន្ថែមទៅខ្សែស្រឡាយម៉ូដែលរបស់ទម្រង់។"
+msgstr[1] "ម៉ូដែល %(counter)s ដែលបានជ្រើសរើសនឹងត្រូវបានបន្ថែមទៅខ្សែស្រឡាយម៉ូដែលរបស់ទម្រង់។"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:30
+msgid "Assign"
+msgstr "កំណត់"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:31
+msgid "Cancel"
+msgstr "បោះបង់"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:5
+msgid "Total requests"
+msgstr "សំណើសរុប"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:7
+msgid "Total cost (USD)"
+msgstr "តម្លៃសរុប (USD)"

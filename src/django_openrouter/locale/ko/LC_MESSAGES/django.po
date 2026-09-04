@@ -1,0 +1,448 @@
+# Korean translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-04 11:06+0000\n"
+"PO-Revision-Date: 2026-09-04 11:06+0000\n"
+"Last-Translator: django-openrouter contributors\n"
+"Language-Team: ko\n"
+"Language: ko\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: admin.py:78 admin.py:429
+msgid "Price"
+msgstr "가격"
+
+#: admin.py:85
+msgid "Free"
+msgstr "묣료"
+
+#: admin.py:86
+msgid "Cheap (< $1 / 1M)"
+msgstr "저렴 (< $1 / 1M)"
+
+#: admin.py:87
+msgid "Mid ($1-$10 / 1M)"
+msgstr "중간 ($1-$10 / 1M)"
+
+#: admin.py:88
+msgid "Expensive (>= $10 / 1M)"
+msgstr "고가 (>= $10 / 1M)"
+
+#: admin.py:98
+msgid "Speed"
+msgstr "속도"
+
+#: admin.py:105
+msgid "Fast (< 400 ms)"
+msgstr "빠름 (< 400 ms)"
+
+#: admin.py:106
+msgid "Medium (400-1200 ms)"
+msgstr "보통 (400-1200 ms)"
+
+#: admin.py:107
+msgid "Slow (>= 1200 ms)"
+msgstr "느림 (>= 1200 ms)"
+
+#: admin.py:108
+msgid "Unknown latency"
+msgstr "지연 시간 알 수 없음"
+
+#: admin.py:136
+msgid "API key"
+msgstr "API 키"
+
+#: admin.py:145
+msgid "Clear stored API key"
+msgstr "저장된 API 키 지우기"
+
+#: admin.py:168
+msgid ""
+"A key is stored encrypted. Leave blank to keep it, or enter a new key to "
+"replace it. The stored value cannot be viewed."
+msgstr ""
+"키는 암호화되어 저장됩니다. 유지하려면 비워 두시고, 교체하려면 새 키를 입"
+"력하세요. 저장된 값은 볼 수 없습니다."
+
+#: admin.py:173
+msgid ""
+"Entered once, stored encrypted, and cannot be viewed again. Leave empty to "
+"use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+"한 번 입력되면 암호화되어 저장되며 다시 볼 수 없습니다. 비워 두면 OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']를 사용합니다."
+
+#: admin.py:216
+msgid "API key status"
+msgstr "API 키 상태"
+
+#: admin.py:219
+msgid "Stored (encrypted, not visible)"
+msgstr "저장됨 (암호화됨, 표시 불가)"
+
+#: admin.py:220
+msgid "Not set"
+msgstr "설정되지 않음"
+
+#: admin.py:250 models.py:274
+msgid "Fallback model must be active."
+msgstr "평백 모델은 활성 상태여야 합니다."
+
+#: admin.py:269
+msgid "Models in the chain must be active."
+msgstr "체인의 모델은 활성 상태여야 합니다."
+
+#: admin.py:271
+msgid "only_free_models allows only free models."
+msgstr "only_free_models는 묣료 모델만 허용합니다."
+
+#: admin.py:273
+msgid "Each model may appear only once."
+msgstr "각 모델은 한 번만 나타날 수 있습니다."
+
+#: admin.py:293
+msgid "Model"
+msgstr "모델"
+
+#: admin.py:294
+msgid "Models (priority order)"
+msgstr "모델 (우선순위 순)"
+
+#: admin.py:324 models.py:148
+msgid "Usage profile"
+msgstr "사용 프로필"
+
+#: admin.py:436
+msgid "Sync catalog with OpenRouter"
+msgstr "OpenRouter와 카탈로그 동기화"
+
+#: admin.py:450
+#, python-format
+msgid ""
+"Sync complete: %(created)s created, %(updated)s updated, %(deactivated)s "
+"deactivated (%(total)s remote)."
+msgstr ""
+"동기화 완료: %(created)s 생성, %(updated)s 업데이트, %(deactivated)s 비활성화 (%(total)s 원격)."
+
+#: admin.py:461
+msgid "Assign to usage profile…"
+msgstr "사용 프로필에 할당…"
+
+#: admin.py:481
+msgid "Assign models to usage profile"
+msgstr "모델을 사용 프로필에 할당"
+
+#: admin.py:534
+#, python-format
+msgid "%(count)s already in the chain"
+msgstr "이미 체인에 있는 모델 %(count)s개"
+
+#: admin.py:535
+#, python-format
+msgid "%(count)s inactive"
+msgstr "비활성 모델 %(count)s개"
+
+#: admin.py:536
+#, python-format
+msgid "%(count)s not free (only_free_models)"
+msgstr "묣료 아닌 모델 %(count)s개 (only_free_models)"
+
+#: admin.py:542
+#, python-format
+msgid "Added %(count)s model(s) to profile “%(profile)s”."
+msgstr "프로필 “%(profile)s”에 모델 %(count)s개를 추가했습니다."
+
+#: admin.py:548
+#, python-format
+msgid "No models were added to profile “%(profile)s”."
+msgstr "프로필 “%(profile)s”에 추가된 모델이 없습니다."
+
+#: admin.py:551
+#, python-format
+msgid "Skipped: %(reasons)s."
+msgstr "걸너둠: %(reasons)s."
+
+#: client.py:131
+msgid "No usage profile specified and default_profile is not set."
+msgstr "사용 프로필이 지정되지 않았고 default_profile도 설정되지 않았습니다."
+
+#: client.py:135
+#, python-format
+msgid "Usage profile %(name)r is not found or inactive."
+msgstr "사용 프로필 %(name)r을(를) 찾을 수 없거나 비활성 상태입니다."
+
+#: client.py:151
+#, python-format
+msgid "Unknown model %(model_id)r."
+msgstr "알 수 없는 모델 %(model_id)r."
+
+#: client.py:167
+#, python-format
+msgid "Profile %(name)r has no models configured."
+msgstr "프로필 %(name)r에 구성된 모델이 없습니다."
+
+#: client.py:171
+#, python-format
+msgid "No allowed models left for profile %(name)r."
+msgstr "프로필 %(name)r에 허용된 모델이 남아 있지 않습니다."
+
+#: client.py:237
+msgid "Streaming is not implemented in django-openrouter MVP."
+msgstr "django-openrouter MVP에는 스트리밍이 구현되지 않았습니다."
+
+#: client.py:240
+msgid "OpenRouter is disabled in admin settings."
+msgstr "관리자 설정에서 OpenRouter가 비활성화되었습니다."
+
+#: client.py:242 sync.py:213
+msgid "OpenRouter API key is not configured."
+msgstr "OpenRouter API 키가 구성되지 않았습니다."
+
+#: client.py:268 client.py:358
+msgid "All models failed without a specific error."
+msgstr "모든 모델이 특정 오류 없이 실패했습니다."
+
+#: client.py:321 client.py:436
+#, python-format
+msgid "OpenRouter returned HTTP %(status)s: %(error)s"
+msgstr "OpenRouter가 HTTP %(status)s을(를) 반환했습니다: %(error)s"
+
+#: log_backends.py:194
+msgid ""
+"ClickHouseBackend requires 'URL' in the LOG_BACKENDS entry (e.g. http://"
+"localhost:8123)."
+msgstr ""
+"ClickHouseBackend는 LOG_BACKENDS 항목에 'URL'이 필요합니다 (예: http://localhost:8123)."
+
+#: log_backends.py:204
+#, python-format
+msgid "ClickHouseBackend: invalid %(label)s identifier %(identifier)r."
+msgstr "ClickHouseBackend: 잘못된 %(label)s 식별자 %(identifier)r."
+
+#: log_backends.py:245
+msgid "LOG_BACKENDS entry dict requires a 'BACKEND' key."
+msgstr "LOG_BACKENDS 항목 딕셔너리에는 'BACKEND' 키가 필요합니다."
+
+#: log_backends.py:250
+#, python-format
+msgid "LOG_BACKENDS entries must be strings or dicts, got %(type)s."
+msgstr "LOG_BACKENDS 항목은 문자열 또는 딕셔너리여야 합니다. %(type)s이(가) 전달됨"
+
+#: log_backends.py:257
+#, python-format
+msgid "Cannot import log backend %(path)r: %(error)s"
+msgstr "로그 백엔드 %(path)r을(를) 가져올 수 없음: %(error)s"
+
+#: log_backends.py:260
+#, python-format
+msgid "%(path)r is not a LogBackend subclass."
+msgstr "%(path)r은(는) LogBackend 하위 클래스가 아닙니다."
+
+#: log_backends.py:276
+msgid "OPENROUTER['LOG_BACKENDS'] must be a list."
+msgstr "OPENROUTER['LOG_BACKENDS']는 리스트여야 합니다."
+
+#: management/commands/sync_models.py:11
+msgid "Fetch GET /api/v1/models and upsert the local OpenRouter catalog."
+msgstr "GET /api/v1/models를 가져와 로컬 OpenRouter 카탈로그를 업서트합니다."
+
+#: management/commands/sync_models.py:18
+msgid "Override API key for this run."
+msgstr "이 실행에 대해 API 키 재정의"
+
+#: management/commands/sync_models.py:31
+#, python-format
+msgid ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+msgstr ""
+"생성=%(created)s 업데이트=%(updated)s 비활성화=%(deactivated)s 원격=%(total)s"
+
+#: models.py:45
+msgid "OpenRouter model id, e.g. anthropic/claude-3.5-sonnet"
+msgstr "OpenRouter 모델 ID, 예: anthropic/claude-3.5-sonnet"
+
+#: models.py:52
+msgid "Per-token prices: prompt, completion, optional request/image."
+msgstr "토큰당 가격: prompt, completion, 선택적 request/image."
+
+#: models.py:61
+msgid "Prompt price per token from the catalog, for admin sorting."
+msgstr "관리자 정렬용 카탈로그의 토큰당 prompt 가격."
+
+#: models.py:68
+msgid "Completion price per token from the catalog, for admin sorting."
+msgstr "관리자 정렬용 카탈로그의 토큰당 completion 가격."
+
+#: models.py:73
+msgid "p50 TTFT for the best endpoint, in milliseconds."
+msgstr "최상의 endpoint에 대한 p50 TTFT(밀리초)."
+
+#: models.py:78
+msgid "p50 throughput (tok/s) for the best endpoint — load."
+msgstr "최상의 endpoint에 대한 p50 처리량(tok/s) — 부하."
+
+#: models.py:85
+msgid "OpenRouter model"
+msgstr "OpenRouter 모델"
+
+#: models.py:86
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:7
+msgid "OpenRouter models"
+msgstr "OpenRouter 모델"
+
+#: models.py:108
+msgid "Stable slug used in code, e.g. chat, translation."
+msgstr "코드에서 사용되는 안정적인 slug, 예: chat, translation."
+
+#: models.py:116
+msgid "First model in the chain (synced from the list)."
+msgstr "체인의 첫 번째 모델 (목록에서 동기화됨)."
+
+#: models.py:142
+msgid "If enabled, only models with zero catalog price may be used."
+msgstr "활성화하면 카탈로그 가격이 0인 모델만 사용할 수 있습니다."
+
+#: models.py:149
+msgid "Usage profiles"
+msgstr "사용 프로필"
+
+#: models.py:157
+msgid "Temperature must be between 0 and 2."
+msgstr "Temperature는 0과 2 사이여야 합니다."
+
+#: models.py:163
+msgid "Primary model must be active."
+msgstr "기본 모델은 활성 상태여야 합니다."
+
+#: models.py:166
+msgid "only_free_models requires a free primary model."
+msgstr "only_free_models에는 묣료 기본 모델이 필요합니다."
+
+#: models.py:263
+msgid "Profile model"
+msgstr "프로필 모델"
+
+#: models.py:264
+msgid "Profile models"
+msgstr "프로필 모델"
+
+#: models.py:277
+msgid "only_free_models allows only free fallback models."
+msgstr "only_free_models는 묣료 평백 모델만 허용합니다."
+
+#: models.py:287
+msgid "Leave empty to use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr "비워 두면 OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']를 사용합니다."
+
+#: models.py:300
+msgid "HTTP timeout in seconds."
+msgstr "초 단위 HTTP 타임아웃."
+
+#: models.py:304
+msgid "Retries per model on transport / 5xx errors before fallback."
+msgstr "평백 전 전송 / 5xx 오류에 대한 모델당 재시도 횟수."
+
+#: models.py:308
+msgid "Global kill switch. When off, every chat() call fails."
+msgstr "전역 차단 스위치. 꺼져 있으면 모든 chat() 호출이 실패합니다."
+
+#: models.py:312 models.py:313 models.py:316
+msgid "OpenRouter settings"
+msgstr "OpenRouter 설정"
+
+#: models.py:360
+msgid "Request log"
+msgstr "요청 로그"
+
+#: models.py:361
+msgid "Request logs"
+msgstr "요청 로그"
+
+#: models.py:366
+msgid "Can view usage logs"
+msgstr "사용 로그를 볼 수 있음"
+
+#: rules.py:25
+#, python-format
+msgid "Usage profile %(name)r is disabled."
+msgstr "사용 프로필 %(name)r이(가) 비활성화되었습니다."
+
+#: rules.py:39
+#, python-format
+msgid "Daily request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "프로필 %(name)r의 일일 요청 한도(%(limit)s)를 초과했습니다."
+
+#: rules.py:47
+#, python-format
+msgid "Monthly request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "프로필 %(name)r의 월간 요청 한도(%(limit)s)를 초과했습니다."
+
+#: rules.py:54
+#, python-format
+msgid "Daily budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "프로필 %(name)r의 일일 예산(%(budget)s USD)을 초과했습니다."
+
+#: rules.py:61
+#, python-format
+msgid "Monthly budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "프로필 %(name)r의 월간 예산(%(budget)s USD)을 초과했습니다."
+
+#: rules.py:69
+#, python-format
+msgid "Model %(model_id)r is disabled."
+msgstr "모델 %(model_id)r이(가) 비활성화되었습니다."
+
+#: rules.py:72
+#, python-format
+msgid "Profile %(name)r allows only free models; %(model_id)r is not free."
+msgstr "프로필 %(name)r은(는) 묣료 모델만 허용합니다. %(model_id)r은(는) 묣료가 아닙니다."
+
+#: sync.py:242
+msgid "Unexpected OpenRouter /models response."
+msgstr "예상치 못한 OpenRouter /models 응답입니다."
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:5
+msgid "Home"
+msgstr "홈"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:6
+msgid "Django_openrouter"
+msgstr "Django_openrouter"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:8
+msgid "Assign to usage profile"
+msgstr "사용 프로필에 할당"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:18
+#, python-format
+msgid "The selected model will be appended to the model chain of the profile:"
+msgid_plural ""
+"The %(counter)s selected models will be appended to the model chain of the "
+"profile:"
+msgstr[0] "선택한 모델이 프로필의 모델 체인에 추가됩니다:"
+msgstr[1] "선택한 %(counter)s개 모델이 프로필의 모델 체인에 추가됩니다:"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:30
+msgid "Assign"
+msgstr "할당"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:31
+msgid "Cancel"
+msgstr "취소"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:5
+msgid "Total requests"
+msgstr "총 요청 수"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:7
+msgid "Total cost (USD)"
+msgstr "총 비용 (USD)"

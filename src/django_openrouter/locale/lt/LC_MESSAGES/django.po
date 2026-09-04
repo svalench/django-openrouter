@@ -1,0 +1,464 @@
+# Lithuanian translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-04 11:06+0000\n"
+"PO-Revision-Date: 2026-09-04 11:06+0000\n"
+"Last-Translator: django-openrouter contributors\n"
+"Language-Team: lt\n"
+"Language: lt\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"(n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: admin.py:78 admin.py:429
+msgid "Price"
+msgstr "Kaina"
+
+#: admin.py:85
+msgid "Free"
+msgstr "Nemokama"
+
+#: admin.py:86
+msgid "Cheap (< $1 / 1M)"
+msgstr "Pigi (< 1 $ / 1 mln.)"
+
+#: admin.py:87
+msgid "Mid ($1-$10 / 1M)"
+msgstr "Vidutinė (1–10 $ / 1 mln.)"
+
+#: admin.py:88
+msgid "Expensive (>= $10 / 1M)"
+msgstr "Brangi (≥ 10 $ / 1 mln.)"
+
+#: admin.py:98
+msgid "Speed"
+msgstr "Greitis"
+
+#: admin.py:105
+msgid "Fast (< 400 ms)"
+msgstr "Greitas (< 400 ms)"
+
+#: admin.py:106
+msgid "Medium (400-1200 ms)"
+msgstr "Vidutinis (400–1200 ms)"
+
+#: admin.py:107
+msgid "Slow (>= 1200 ms)"
+msgstr "Lėtas (≥ 1200 ms)"
+
+#: admin.py:108
+msgid "Unknown latency"
+msgstr "Nežinoma delsena"
+
+#: admin.py:136
+msgid "API key"
+msgstr "API raktas"
+
+#: admin.py:145
+msgid "Clear stored API key"
+msgstr "Išvalyti išsaugotą API raktą"
+
+#: admin.py:168
+msgid ""
+"A key is stored encrypted. Leave blank to keep it, or enter a new key to "
+"replace it. The stored value cannot be viewed."
+msgstr ""
+"Raktas saugomas šifruotai. Palikite tuščią, kad jį išlaikytumėte, arba "
+"įveskite naują raktą, kad jį pakeistumėte. Išsaugotos reikšmės peržiūrėti "
+"negalima."
+
+#: admin.py:173
+msgid ""
+"Entered once, stored encrypted, and cannot be viewed again. Leave empty to "
+"use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+"Įvedamas vieną kartą, saugomas šifruotai ir daugiau negali būti peržiūrėtas. "
+"Palikite tuščią, kad būtų naudojamas OPENROUTER_API_KEY / "
+"settings.OPENROUTER['API_KEY']."
+
+#: admin.py:216
+msgid "API key status"
+msgstr "API rakto būsena"
+
+#: admin.py:219
+msgid "Stored (encrypted, not visible)"
+msgstr "Išsaugota (šifruota, nematoma)"
+
+#: admin.py:220
+msgid "Not set"
+msgstr "Nenustatyta"
+
+#: admin.py:250 models.py:274
+msgid "Fallback model must be active."
+msgstr "Atsarginis modelis turi būti aktyvus."
+
+#: admin.py:269
+msgid "Models in the chain must be active."
+msgstr "Modeliai grandinėje turi būti aktyvūs."
+
+#: admin.py:271
+msgid "only_free_models allows only free models."
+msgstr "only_free_models leidžia naudoti tik nemokamus modelius."
+
+#: admin.py:273
+msgid "Each model may appear only once."
+msgstr "Kiekvienas modelis gali būti paminėtas tik kartą."
+
+#: admin.py:293
+msgid "Model"
+msgstr "Modelis"
+
+#: admin.py:294
+msgid "Models (priority order)"
+msgstr "Modeliai (prioritetų tvarka)"
+
+#: admin.py:324 models.py:148
+msgid "Usage profile"
+msgstr "Naudojimo profilis"
+
+#: admin.py:436
+msgid "Sync catalog with OpenRouter"
+msgstr "Sinchronizuoti katalogą su OpenRouter"
+
+#: admin.py:450
+#, python-format
+msgid ""
+"Sync complete: %(created)s created, %(updated)s updated, %(deactivated)s "
+"deactivated (%(total)s remote)."
+msgstr ""
+"Sinchronizavimas baigtas: sukurta %(created)s, atnaujinta %(updated)s, "
+"deaktyvinta %(deactivated)s (viso nuotolinėje sistemoje %(total)s)."
+
+#: admin.py:461
+msgid "Assign to usage profile…"
+msgstr "Priskirti naudojimo profiliui…"
+
+#: admin.py:481
+msgid "Assign models to usage profile"
+msgstr "Priskirti modelius naudojimo profiliui"
+
+#: admin.py:534
+#, python-format
+msgid "%(count)s already in the chain"
+msgstr "%(count)s jau yra grandinėje"
+
+#: admin.py:535
+#, python-format
+msgid "%(count)s inactive"
+msgstr "%(count)s neaktyvūs"
+
+#: admin.py:536
+#, python-format
+msgid "%(count)s not free (only_free_models)"
+msgstr "%(count)s nemokami nėra (only_free_models)"
+
+#: admin.py:542
+#, python-format
+msgid "Added %(count)s model(s) to profile “%(profile)s”."
+msgstr "Į profilį „%(profile)s“ pridėta %(count)s modelis(-ių)."
+
+#: admin.py:548
+#, python-format
+msgid "No models were added to profile “%(profile)s”."
+msgstr "Į profilį „%(profile)s“ modeliai nepridėti."
+
+#: admin.py:551
+#, python-format
+msgid "Skipped: %(reasons)s."
+msgstr "Praleista: %(reasons)s."
+
+#: client.py:131
+msgid "No usage profile specified and default_profile is not set."
+msgstr "Naudojimo profilis nenurodytas ir default_profile nenustatytas."
+
+#: client.py:135
+#, python-format
+msgid "Usage profile %(name)r is not found or inactive."
+msgstr "Naudojimo profilis %(name)r nerastas arba neaktyvus."
+
+#: client.py:151
+#, python-format
+msgid "Unknown model %(model_id)r."
+msgstr "Nežinomas modelis %(model_id)r."
+
+#: client.py:167
+#, python-format
+msgid "Profile %(name)r has no models configured."
+msgstr "Profile %(name)r neturi sukonfigūruotų modelių."
+
+#: client.py:171
+#, python-format
+msgid "No allowed models left for profile %(name)r."
+msgstr "Profiliui %(name)r nebeliko leidžiamų modelių."
+
+#: client.py:237
+msgid "Streaming is not implemented in django-openrouter MVP."
+msgstr "Srautinis perdavimas (streaming) django-openrouter MVP neįgyvendintas."
+
+#: client.py:240
+msgid "OpenRouter is disabled in admin settings."
+msgstr "OpenRouter išjungtas administratoriaus nustatymuose."
+
+#: client.py:242 sync.py:213
+msgid "OpenRouter API key is not configured."
+msgstr "OpenRouter API raktas nesukonfigūruotas."
+
+#: client.py:268 client.py:358
+msgid "All models failed without a specific error."
+msgstr "Visi modeliai nepavyko be konkrečios klaidos."
+
+#: client.py:321 client.py:436
+#, python-format
+msgid "OpenRouter returned HTTP %(status)s: %(error)s"
+msgstr "OpenRouter grąžino HTTP %(status)s: %(error)s"
+
+#: log_backends.py:194
+msgid ""
+"ClickHouseBackend requires 'URL' in the LOG_BACKENDS entry (e.g. http://"
+"localhost:8123)."
+msgstr ""
+"ClickHouseBackend reikalauja „URL“ LOG_BACKENDS įraše (pvz., http://"
+"localhost:8123)."
+
+#: log_backends.py:204
+#, python-format
+msgid "ClickHouseBackend: invalid %(label)s identifier %(identifier)r."
+msgstr "ClickHouseBackend: neteisingas %(label)s identifikatorius %(identifier)r."
+
+#: log_backends.py:245
+msgid "LOG_BACKENDS entry dict requires a 'BACKEND' key."
+msgstr "LOG_BACKENDS įrašo žodynui reikalingas raktas „BACKEND“."
+
+#: log_backends.py:250
+#, python-format
+msgid "LOG_BACKENDS entries must be strings or dicts, got %(type)s."
+msgstr "LOG_BACKENDS įrašai turi būti eilutės arba žodynai, gauta %(type)s."
+
+#: log_backends.py:257
+#, python-format
+msgid "Cannot import log backend %(path)r: %(error)s"
+msgstr "Nepavyko importuoti žurnalo backend %(path)r: %(error)s"
+
+#: log_backends.py:260
+#, python-format
+msgid "%(path)r is not a LogBackend subclass."
+msgstr "%(path)r nėra LogBackend poklasė."
+
+#: log_backends.py:276
+msgid "OPENROUTER['LOG_BACKENDS'] must be a list."
+msgstr "OPENROUTER['LOG_BACKENDS'] turi būti sąrašas."
+
+#: management/commands/sync_models.py:11
+msgid "Fetch GET /api/v1/models and upsert the local OpenRouter catalog."
+msgstr "Atsiunčia GET /api/v1/models ir atnaujina vietinį OpenRouter katalogą."
+
+#: management/commands/sync_models.py:18
+msgid "Override API key for this run."
+msgstr "Šiam paleidimui pakeisti API raktą."
+
+#: management/commands/sync_models.py:31
+#, python-format
+msgid ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+msgstr ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+
+#: models.py:45
+msgid "OpenRouter model id, e.g. anthropic/claude-3.5-sonnet"
+msgstr "OpenRouter modelio id, pvz. anthropic/claude-3.5-sonnet"
+
+#: models.py:52
+msgid "Per-token prices: prompt, completion, optional request/image."
+msgstr "Kainos už žetoną: prompt, completion, papildomai už užklausą / vaizdą."
+
+#: models.py:61
+msgid "Prompt price per token from the catalog, for admin sorting."
+msgstr "Prompt kaina už žetoną iš katalogo, skirta rūšiavimui administratoriuje."
+
+#: models.py:68
+msgid "Completion price per token from the catalog, for admin sorting."
+msgstr ""
+"Completion kaina už žetoną iš katalogo, skirta rūšiavimui administratoriuje."
+
+#: models.py:73
+msgid "p50 TTFT for the best endpoint, in milliseconds."
+msgstr "p50 TTFT geriausiam endpoint, milisekundėmis."
+
+#: models.py:78
+msgid "p50 throughput (tok/s) for the best endpoint — load."
+msgstr "p50 pralaidumas (tok/s) geriausiam endpoint — apkrova."
+
+#: models.py:85
+msgid "OpenRouter model"
+msgstr "OpenRouter modelis"
+
+#: models.py:86
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:7
+msgid "OpenRouter models"
+msgstr "OpenRouter modeliai"
+
+#: models.py:108
+msgid "Stable slug used in code, e.g. chat, translation."
+msgstr "Stabilus kode naudojamas slug, pvz. chat, translation."
+
+#: models.py:116
+msgid "First model in the chain (synced from the list)."
+msgstr "Pirmasis modelis grandinėje (sinchronizuojamas iš sąrašo)."
+
+#: models.py:142
+msgid "If enabled, only models with zero catalog price may be used."
+msgstr ""
+"Jei įjungta, galima naudoti tik modelius, kurių kaina kataloge lygi nuliui."
+
+#: models.py:149
+msgid "Usage profiles"
+msgstr "Naudojimo profiliai"
+
+#: models.py:157
+msgid "Temperature must be between 0 and 2."
+msgstr "Temperatūra turi būti nuo 0 iki 2."
+
+#: models.py:163
+msgid "Primary model must be active."
+msgstr "Pagrindinis modelis turi būti aktyvus."
+
+#: models.py:166
+msgid "only_free_models requires a free primary model."
+msgstr "only_free_models reikalauja nemokamo pagrindinio modelio."
+
+#: models.py:263
+msgid "Profile model"
+msgstr "Profilio modelis"
+
+#: models.py:264
+msgid "Profile models"
+msgstr "Profilio modeliai"
+
+#: models.py:277
+msgid "only_free_models allows only free fallback models."
+msgstr "only_free_models leidžia naudoti tik nemokamus atsarginius modelius."
+
+#: models.py:287
+msgid "Leave empty to use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+"Palikite tuščią, kad būtų naudojamas OPENROUTER_API_KEY / "
+"settings.OPENROUTER['API_KEY']."
+
+#: models.py:300
+msgid "HTTP timeout in seconds."
+msgstr "HTTP laiko limitas sekundėmis."
+
+#: models.py:304
+msgid "Retries per model on transport / 5xx errors before fallback."
+msgstr ""
+"Pakartojimų skaičius kiekvienam modeliui dėl transporto / 5xx klaidų prieš "
+"pereinant prie atsarginio."
+
+#: models.py:308
+msgid "Global kill switch. When off, every chat() call fails."
+msgstr "Globalus išjungimo jungiklis. Kai išjungta, kiekvienas chat() "
+"iškvietimas nepavyksta."
+
+#: models.py:312 models.py:313 models.py:316
+msgid "OpenRouter settings"
+msgstr "OpenRouter nustatymai"
+
+#: models.py:360
+msgid "Request log"
+msgstr "Užklausų žurnalas"
+
+#: models.py:361
+msgid "Request logs"
+msgstr "Užklausų žurnalai"
+
+#: models.py:366
+msgid "Can view usage logs"
+msgstr "Gali peržiūrėti naudojimo žurnalus"
+
+#: rules.py:25
+#, python-format
+msgid "Usage profile %(name)r is disabled."
+msgstr "Naudojimo profilis %(name)r išjungtas."
+
+#: rules.py:39
+#, python-format
+msgid "Daily request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "Viršyta dieninė užklausų riba (%(limit)s) profiliui %(name)r."
+
+#: rules.py:47
+#, python-format
+msgid "Monthly request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "Viršyta mėnesinė užklausų riba (%(limit)s) profiliui %(name)r."
+
+#: rules.py:54
+#, python-format
+msgid "Daily budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "Viršyta dieninė biudžeto riba (%(budget)s USD) profiliui %(name)r."
+
+#: rules.py:61
+#, python-format
+msgid "Monthly budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "Viršyta mėnesinė biudžeto riba (%(budget)s USD) profiliui %(name)r."
+
+#: rules.py:69
+#, python-format
+msgid "Model %(model_id)r is disabled."
+msgstr "Modelis %(model_id)r išjungtas."
+
+#: rules.py:72
+#, python-format
+msgid "Profile %(name)r allows only free models; %(model_id)r is not free."
+msgstr "Profilis %(name)r leidžia tik nemokamus modelius; %(model_id)r nėra "
+"nemokamas."
+
+#: sync.py:242
+msgid "Unexpected OpenRouter /models response."
+msgstr "Netikėtas OpenRouter /models atsakymas."
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:5
+msgid "Home"
+msgstr "Pradžia"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:6
+msgid "Django_openrouter"
+msgstr "Django_openrouter"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:8
+msgid "Assign to usage profile"
+msgstr "Priskirti naudojimo profiliui"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:18
+#, python-format
+msgid "The selected model will be appended to the model chain of the profile:"
+msgid_plural ""
+"The %(counter)s selected models will be appended to the model chain of the "
+"profile:"
+msgstr[0] "%(counter)s pasirinktas modelis bus pridėtas į profilio modelių grandinę:"
+msgstr[1] "%(counter)s pasirinkti modeliai bus pridėti į profilio modelių grandinę:"
+msgstr[2] "%(counter)s pasirinktų modelių bus pridėta į profilio modelių grandinę:"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:30
+msgid "Assign"
+msgstr "Priskirti"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:31
+msgid "Cancel"
+msgstr "Atšaukti"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:5
+msgid "Total requests"
+msgstr "Iš viso užklausų"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:7
+msgid "Total cost (USD)"
+msgstr "Bendra kaina (USD)"

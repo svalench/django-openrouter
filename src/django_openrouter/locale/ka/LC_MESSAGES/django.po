@@ -1,0 +1,442 @@
+# Georgian translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-04 11:06+0000\n"
+"PO-Revision-Date: 2026-09-04 11:06+0000\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: ka\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: admin.py:78 admin.py:429
+msgid "Price"
+msgstr ""
+
+#: admin.py:85
+msgid "Free"
+msgstr ""
+
+#: admin.py:86
+msgid "Cheap (< $1 / 1M)"
+msgstr ""
+
+#: admin.py:87
+msgid "Mid ($1-$10 / 1M)"
+msgstr ""
+
+#: admin.py:88
+msgid "Expensive (>= $10 / 1M)"
+msgstr ""
+
+#: admin.py:98
+msgid "Speed"
+msgstr ""
+
+#: admin.py:105
+msgid "Fast (< 400 ms)"
+msgstr ""
+
+#: admin.py:106
+msgid "Medium (400-1200 ms)"
+msgstr ""
+
+#: admin.py:107
+msgid "Slow (>= 1200 ms)"
+msgstr ""
+
+#: admin.py:108
+msgid "Unknown latency"
+msgstr ""
+
+#: admin.py:136
+msgid "API key"
+msgstr ""
+
+#: admin.py:145
+msgid "Clear stored API key"
+msgstr ""
+
+#: admin.py:168
+msgid ""
+"A key is stored encrypted. Leave blank to keep it, or enter a new key to "
+"replace it. The stored value cannot be viewed."
+msgstr ""
+
+#: admin.py:173
+msgid ""
+"Entered once, stored encrypted, and cannot be viewed again. Leave empty to "
+"use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+
+#: admin.py:216
+msgid "API key status"
+msgstr ""
+
+#: admin.py:219
+msgid "Stored (encrypted, not visible)"
+msgstr ""
+
+#: admin.py:220
+msgid "Not set"
+msgstr ""
+
+#: admin.py:250 models.py:274
+msgid "Fallback model must be active."
+msgstr ""
+
+#: admin.py:269
+msgid "Models in the chain must be active."
+msgstr ""
+
+#: admin.py:271
+msgid "only_free_models allows only free models."
+msgstr ""
+
+#: admin.py:273
+msgid "Each model may appear only once."
+msgstr ""
+
+#: admin.py:293
+msgid "Model"
+msgstr ""
+
+#: admin.py:294
+msgid "Models (priority order)"
+msgstr ""
+
+#: admin.py:324 models.py:148
+msgid "Usage profile"
+msgstr ""
+
+#: admin.py:436
+msgid "Sync catalog with OpenRouter"
+msgstr ""
+
+#: admin.py:450
+#, python-format
+msgid ""
+"Sync complete: %(created)s created, %(updated)s updated, %(deactivated)s "
+"deactivated (%(total)s remote)."
+msgstr ""
+
+#: admin.py:461
+msgid "Assign to usage profile…"
+msgstr ""
+
+#: admin.py:481
+msgid "Assign models to usage profile"
+msgstr ""
+
+#: admin.py:534
+#, python-format
+msgid "%(count)s already in the chain"
+msgstr ""
+
+#: admin.py:535
+#, python-format
+msgid "%(count)s inactive"
+msgstr ""
+
+#: admin.py:536
+#, python-format
+msgid "%(count)s not free (only_free_models)"
+msgstr ""
+
+#: admin.py:542
+#, python-format
+msgid "Added %(count)s model(s) to profile “%(profile)s”."
+msgstr ""
+
+#: admin.py:548
+#, python-format
+msgid "No models were added to profile “%(profile)s”."
+msgstr ""
+
+#: admin.py:551
+#, python-format
+msgid "Skipped: %(reasons)s."
+msgstr ""
+
+#: client.py:131
+msgid "No usage profile specified and default_profile is not set."
+msgstr ""
+
+#: client.py:135
+#, python-format
+msgid "Usage profile %(name)r is not found or inactive."
+msgstr ""
+
+#: client.py:151
+#, python-format
+msgid "Unknown model %(model_id)r."
+msgstr ""
+
+#: client.py:167
+#, python-format
+msgid "Profile %(name)r has no models configured."
+msgstr ""
+
+#: client.py:171
+#, python-format
+msgid "No allowed models left for profile %(name)r."
+msgstr ""
+
+#: client.py:237
+msgid "Streaming is not implemented in django-openrouter MVP."
+msgstr ""
+
+#: client.py:240
+msgid "OpenRouter is disabled in admin settings."
+msgstr ""
+
+#: client.py:242 sync.py:213
+msgid "OpenRouter API key is not configured."
+msgstr ""
+
+#: client.py:268 client.py:358
+msgid "All models failed without a specific error."
+msgstr ""
+
+#: client.py:321 client.py:436
+#, python-format
+msgid "OpenRouter returned HTTP %(status)s: %(error)s"
+msgstr ""
+
+#: log_backends.py:194
+msgid ""
+"ClickHouseBackend requires 'URL' in the LOG_BACKENDS entry (e.g. http://"
+"localhost:8123)."
+msgstr ""
+
+#: log_backends.py:204
+#, python-format
+msgid "ClickHouseBackend: invalid %(label)s identifier %(identifier)r."
+msgstr ""
+
+#: log_backends.py:245
+msgid "LOG_BACKENDS entry dict requires a 'BACKEND' key."
+msgstr ""
+
+#: log_backends.py:250
+#, python-format
+msgid "LOG_BACKENDS entries must be strings or dicts, got %(type)s."
+msgstr ""
+
+#: log_backends.py:257
+#, python-format
+msgid "Cannot import log backend %(path)r: %(error)s"
+msgstr ""
+
+#: log_backends.py:260
+#, python-format
+msgid "%(path)r is not a LogBackend subclass."
+msgstr ""
+
+#: log_backends.py:276
+msgid "OPENROUTER['LOG_BACKENDS'] must be a list."
+msgstr ""
+
+#: management/commands/sync_models.py:11
+msgid "Fetch GET /api/v1/models and upsert the local OpenRouter catalog."
+msgstr ""
+
+#: management/commands/sync_models.py:18
+msgid "Override API key for this run."
+msgstr ""
+
+#: management/commands/sync_models.py:31
+#, python-format
+msgid ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+msgstr ""
+
+#: models.py:45
+msgid "OpenRouter model id, e.g. anthropic/claude-3.5-sonnet"
+msgstr ""
+
+#: models.py:52
+msgid "Per-token prices: prompt, completion, optional request/image."
+msgstr ""
+
+#: models.py:61
+msgid "Prompt price per token from the catalog, for admin sorting."
+msgstr ""
+
+#: models.py:68
+msgid "Completion price per token from the catalog, for admin sorting."
+msgstr ""
+
+#: models.py:73
+msgid "p50 TTFT for the best endpoint, in milliseconds."
+msgstr ""
+
+#: models.py:78
+msgid "p50 throughput (tok/s) for the best endpoint — load."
+msgstr ""
+
+#: models.py:85
+msgid "OpenRouter model"
+msgstr ""
+
+#: models.py:86
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:7
+msgid "OpenRouter models"
+msgstr ""
+
+#: models.py:108
+msgid "Stable slug used in code, e.g. chat, translation."
+msgstr ""
+
+#: models.py:116
+msgid "First model in the chain (synced from the list)."
+msgstr ""
+
+#: models.py:142
+msgid "If enabled, only models with zero catalog price may be used."
+msgstr ""
+
+#: models.py:149
+msgid "Usage profiles"
+msgstr ""
+
+#: models.py:157
+msgid "Temperature must be between 0 and 2."
+msgstr ""
+
+#: models.py:163
+msgid "Primary model must be active."
+msgstr ""
+
+#: models.py:166
+msgid "only_free_models requires a free primary model."
+msgstr ""
+
+#: models.py:263
+msgid "Profile model"
+msgstr ""
+
+#: models.py:264
+msgid "Profile models"
+msgstr ""
+
+#: models.py:277
+msgid "only_free_models allows only free fallback models."
+msgstr ""
+
+#: models.py:287
+msgid "Leave empty to use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+
+#: models.py:300
+msgid "HTTP timeout in seconds."
+msgstr ""
+
+#: models.py:304
+msgid "Retries per model on transport / 5xx errors before fallback."
+msgstr ""
+
+#: models.py:308
+msgid "Global kill switch. When off, every chat() call fails."
+msgstr ""
+
+#: models.py:312 models.py:313 models.py:316
+msgid "OpenRouter settings"
+msgstr ""
+
+#: models.py:360
+msgid "Request log"
+msgstr ""
+
+#: models.py:361
+msgid "Request logs"
+msgstr ""
+
+#: models.py:366
+msgid "Can view usage logs"
+msgstr ""
+
+#: rules.py:25
+#, python-format
+msgid "Usage profile %(name)r is disabled."
+msgstr ""
+
+#: rules.py:39
+#, python-format
+msgid "Daily request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr ""
+
+#: rules.py:47
+#, python-format
+msgid "Monthly request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr ""
+
+#: rules.py:54
+#, python-format
+msgid "Daily budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr ""
+
+#: rules.py:61
+#, python-format
+msgid "Monthly budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr ""
+
+#: rules.py:69
+#, python-format
+msgid "Model %(model_id)r is disabled."
+msgstr ""
+
+#: rules.py:72
+#, python-format
+msgid "Profile %(name)r allows only free models; %(model_id)r is not free."
+msgstr ""
+
+#: sync.py:242
+msgid "Unexpected OpenRouter /models response."
+msgstr ""
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:5
+msgid "Home"
+msgstr ""
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:6
+msgid "Django_openrouter"
+msgstr ""
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:8
+msgid "Assign to usage profile"
+msgstr ""
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:18
+#, python-format
+msgid "The selected model will be appended to the model chain of the profile:"
+msgid_plural ""
+"The %(counter)s selected models will be appended to the model chain of the "
+"profile:"
+msgstr[0] ""
+msgstr[1] ""
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:30
+msgid "Assign"
+msgstr ""
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:31
+msgid "Cancel"
+msgstr ""
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:5
+msgid "Total requests"
+msgstr ""
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:7
+msgid "Total cost (USD)"
+msgstr ""

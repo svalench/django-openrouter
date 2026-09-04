@@ -1,0 +1,473 @@
+# Greek translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-04 11:06+0000\n"
+"PO-Revision-Date: 2026-09-04 11:06+0000\n"
+"Last-Translator: django-openrouter contributors\n"
+"Language-Team: el\n"
+"Language: el\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: admin.py:78 admin.py:429
+msgid "Price"
+msgstr "Τιμή"
+
+#: admin.py:85
+msgid "Free"
+msgstr "Δωρεάν"
+
+#: admin.py:86
+msgid "Cheap (< $1 / 1M)"
+msgstr "Οικονομικά (< $1 / 1M)"
+
+#: admin.py:87
+msgid "Mid ($1-$10 / 1M)"
+msgstr "Μεσαία ($1-$10 / 1M)"
+
+#: admin.py:88
+msgid "Expensive (>= $10 / 1M)"
+msgstr "Ακριβά (>= $10 / 1M)"
+
+#: admin.py:98
+msgid "Speed"
+msgstr "Ταχύτητα"
+
+#: admin.py:105
+msgid "Fast (< 400 ms)"
+msgstr "Γρήγορα (< 400 ms)"
+
+#: admin.py:106
+msgid "Medium (400-1200 ms)"
+msgstr "Μέτρια (400-1200 ms)"
+
+#: admin.py:107
+msgid "Slow (>= 1200 ms)"
+msgstr "Αργά (>= 1200 ms)"
+
+#: admin.py:108
+msgid "Unknown latency"
+msgstr "Άγνωστη καθυστέρηση"
+
+#: admin.py:136
+msgid "API key"
+msgstr "Κλειδί API"
+
+#: admin.py:145
+msgid "Clear stored API key"
+msgstr "Εκκαθάριση αποθηκευμένου κλειδιού API"
+
+#: admin.py:168
+msgid ""
+"A key is stored encrypted. Leave blank to keep it, or enter a new key to "
+"replace it. The stored value cannot be viewed."
+msgstr ""
+"Ένα κλειδί αποθηκεύεται κρυπτογραφημένο. Αφήστε το κενό για να το διατηρήσετε "
+"ή εισαγάγετε νέο κλειδί για να το αντικαταστήσετε. Η αποθηκευμένη τιμή δεν "
+"μπορεί να προβληθεί."
+
+#: admin.py:173
+msgid ""
+"Entered once, stored encrypted, and cannot be viewed again. Leave empty to "
+"use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+"Εισάγεται μία φορά, αποθηκεύεται κρυπτογραφημένο και δεν μπορεί να προβληθεί "
+"ξανά. Αφήστε το κενό για χρήση του OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+
+#: admin.py:216
+msgid "API key status"
+msgstr "Κατάσταση κλειδιού API"
+
+#: admin.py:219
+msgid "Stored (encrypted, not visible)"
+msgstr "Αποθηκευμένο (κρυπτογραφημένο, δεν εμφανίζεται)"
+
+#: admin.py:220
+msgid "Not set"
+msgstr "Δεν έχει οριστεί"
+
+#: admin.py:250 models.py:274
+msgid "Fallback model must be active."
+msgstr "Το εναλλακτικό μοντέλο πρέπει να είναι ενεργό."
+
+#: admin.py:269
+msgid "Models in the chain must be active."
+msgstr "Τα μοντέλα στην αλυσίδα πρέπει να είναι ενεργά."
+
+#: admin.py:271
+msgid "only_free_models allows only free models."
+msgstr "Το only_free_models επιτρέπει μόνο δωρεάν μοντέλα."
+
+#: admin.py:273
+msgid "Each model may appear only once."
+msgstr "Κάθε μοντέλο μπορεί να εμφανίζεται μόνο μία φορά."
+
+#: admin.py:293
+msgid "Model"
+msgstr "Μοντέλο"
+
+#: admin.py:294
+msgid "Models (priority order)"
+msgstr "Μοντέλα (σειρά προτεραιότητας)"
+
+#: admin.py:324 models.py:148
+msgid "Usage profile"
+msgstr "Προφίλ χρήσης"
+
+#: admin.py:436
+msgid "Sync catalog with OpenRouter"
+msgstr "Συγχρονισμός καταλόγου με το OpenRouter"
+
+#: admin.py:450
+#, python-format
+msgid ""
+"Sync complete: %(created)s created, %(updated)s updated, %(deactivated)s "
+"deactivated (%(total)s remote)."
+msgstr ""
+"Ο συγχρονισμός ολοκληρώθηκε: %(created)s δημιουργήθηκαν, %(updated)s "
+"ενημερώθηκαν, %(deactivated)s απενεργοποιήθηκαν (%(total)s απομακρυσμένα)."
+
+#: admin.py:461
+msgid "Assign to usage profile…"
+msgstr "Ανάθεση σε προφίλ χρήσης…"
+
+#: admin.py:481
+msgid "Assign models to usage profile"
+msgstr "Ανάθεση μοντέλων σε προφίλ χρήσης"
+
+#: admin.py:534
+#, python-format
+msgid "%(count)s already in the chain"
+msgstr "%(count)s ήδη στην αλυσίδα"
+
+#: admin.py:535
+#, python-format
+msgid "%(count)s inactive"
+msgstr "%(count)s ανενεργά"
+
+#: admin.py:536
+#, python-format
+msgid "%(count)s not free (only_free_models)"
+msgstr "%(count)s μη δωρεάν (only_free_models)"
+
+#: admin.py:542
+#, python-format
+msgid "Added %(count)s model(s) to profile “%(profile)s”."
+msgstr "Προστέθηκαν %(count)s μοντέλα στο προφίλ «%(profile)s»."
+
+#: admin.py:548
+#, python-format
+msgid "No models were added to profile “%(profile)s”."
+msgstr "Δεν προστέθηκαν μοντέλα στο προφίλ «%(profile)s»."
+
+#: admin.py:551
+#, python-format
+msgid "Skipped: %(reasons)s."
+msgstr "Παραλείφθηκαν: %(reasons)s."
+
+#: client.py:131
+msgid "No usage profile specified and default_profile is not set."
+msgstr "Δεν ορίστηκε προφίλ χρήσης και το default_profile δεν έχει οριστεί."
+
+#: client.py:135
+#, python-format
+msgid "Usage profile %(name)r is not found or inactive."
+msgstr "Το προφίλ χρήσης %(name)r δεν βρέθηκε ή είναι ανενεργό."
+
+#: client.py:151
+#, python-format
+msgid "Unknown model %(model_id)r."
+msgstr "Άγνωστο μοντέλο %(model_id)r."
+
+#: client.py:167
+#, python-format
+msgid "Profile %(name)r has no models configured."
+msgstr "Το προφίλ %(name)r δεν έχει διαμορφωμένα μοντέλα."
+
+#: client.py:171
+#, python-format
+msgid "No allowed models left for profile %(name)r."
+msgstr "Δεν απομένουν επιτρεπόμενα μοντέλα για το προφίλ %(name)r."
+
+#: client.py:237
+msgid "Streaming is not implemented in django-openrouter MVP."
+msgstr "Η ροή (streaming) δεν υλοποιείται στο MVP του django-openrouter."
+
+#: client.py:240
+msgid "OpenRouter is disabled in admin settings."
+msgstr "Το OpenRouter είναι απενεργοποιημένο στις ρυθμίσεις διαχείρισης."
+
+#: client.py:242 sync.py:213
+msgid "OpenRouter API key is not configured."
+msgstr "Το κλειδί API του OpenRouter δεν έχει διαμορφωθεί."
+
+#: client.py:268 client.py:358
+msgid "All models failed without a specific error."
+msgstr "Όλα τα μοντέλα απέτυχαν χωρίς συγκεκριμένο σφάλμα."
+
+#: client.py:321 client.py:436
+#, python-format
+msgid "OpenRouter returned HTTP %(status)s: %(error)s"
+msgstr "Το OpenRouter επέστρεψε HTTP %(status)s: %(error)s"
+
+#: log_backends.py:194
+msgid ""
+"ClickHouseBackend requires 'URL' in the LOG_BACKENDS entry (e.g. http://"
+"localhost:8123)."
+msgstr ""
+"Το ClickHouseBackend απαιτεί το 'URL' στην καταχώριση LOG_BACKENDS (π.χ. "
+"http://localhost:8123)."
+
+#: log_backends.py:204
+#, python-format
+msgid "ClickHouseBackend: invalid %(label)s identifier %(identifier)r."
+msgstr "ClickHouseBackend: μη έγκυρο αναγνωριστικό %(label)s %(identifier)r."
+
+#: log_backends.py:245
+msgid "LOG_BACKENDS entry dict requires a 'BACKEND' key."
+msgstr "Το λεξικό καταχώρισης LOG_BACKENDS απαιτεί κλειδί 'BACKEND'."
+
+#: log_backends.py:250
+#, python-format
+msgid "LOG_BACKENDS entries must be strings or dicts, got %(type)s."
+msgstr ""
+"Οι καταχωρίσεις LOG_BACKENDS πρέπει να είναι συμβολοσειρές ή λεξικά, λήφθηκε "
+"%(type)s."
+
+#: log_backends.py:257
+#, python-format
+msgid "Cannot import log backend %(path)r: %(error)s"
+msgstr "Δεν είναι δυνατή η εισαγωγή του backend καταγραφής %(path)r: %(error)s"
+
+#: log_backends.py:260
+#, python-format
+msgid "%(path)r is not a LogBackend subclass."
+msgstr "Το %(path)r δεν είναι υποκλάση του LogBackend."
+
+#: log_backends.py:276
+msgid "OPENROUTER['LOG_BACKENDS'] must be a list."
+msgstr "Το OPENROUTER['LOG_BACKENDS'] πρέπει να είναι λίστα."
+
+#: management/commands/sync_models.py:11
+msgid "Fetch GET /api/v1/models and upsert the local OpenRouter catalog."
+msgstr ""
+"Λήψη GET /api/v1/models και ενημέρωση/εισαγωγή του τοπικού καταλόγου OpenRouter."
+
+#: management/commands/sync_models.py:18
+msgid "Override API key for this run."
+msgstr "Παράκαμψη κλειδιού API για αυτήν την εκτέλεση."
+
+#: management/commands/sync_models.py:31
+#, python-format
+msgid ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+msgstr ""
+"δημιουργήθηκαν=%(created)s ενημερώθηκαν=%(updated)s απενεργοποιήθηκαν=%(deactivated)s "
+"απομακρυσμένα=%(total)s"
+
+#: models.py:45
+msgid "OpenRouter model id, e.g. anthropic/claude-3.5-sonnet"
+msgstr "Αναγνωριστικό μοντέλου OpenRouter, π.χ. anthropic/claude-3.5-sonnet"
+
+#: models.py:52
+msgid "Per-token prices: prompt, completion, optional request/image."
+msgstr "Τιμές ανά token: prompt, completion, προαιρετικά request/image."
+
+#: models.py:61
+msgid "Prompt price per token from the catalog, for admin sorting."
+msgstr ""
+"Τιμή prompt ανά token από τον κατάλογο, για ταξινόμηση στη διαχείριση."
+
+#: models.py:68
+msgid "Completion price per token from the catalog, for admin sorting."
+msgstr ""
+"Τιμή completion ανά token από τον κατάλογο, για ταξινόμηση στη διαχείριση."
+
+#: models.py:73
+msgid "p50 TTFT for the best endpoint, in milliseconds."
+msgstr "p50 TTFT για το καλύτερο endpoint, σε χιλιοστά δευτερολέπτου."
+
+#: models.py:78
+msgid "p50 throughput (tok/s) for the best endpoint — load."
+msgstr "p50 απόδοση (tok/s) για το καλύτερο endpoint — φορτίο."
+
+#: models.py:85
+msgid "OpenRouter model"
+msgstr "Μοντέλο OpenRouter"
+
+#: models.py:86
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:7
+msgid "OpenRouter models"
+msgstr "Μοντέλα OpenRouter"
+
+#: models.py:108
+msgid "Stable slug used in code, e.g. chat, translation."
+msgstr "Σταθερό slug που χρησιμοποιείται στον κώδικα, π.χ. chat, translation."
+
+#: models.py:116
+msgid "First model in the chain (synced from the list)."
+msgstr "Πρώτο μοντέλο στην αλυσίδα (συγχρονίζεται από τη λίστα)."
+
+#: models.py:142
+msgid "If enabled, only models with zero catalog price may be used."
+msgstr ""
+"Αν ενεργοποιηθεί, μπορούν να χρησιμοποιηθούν μόνο μοντέλα με μηδενική τιμή "
+"καταλόγου."
+
+#: models.py:149
+msgid "Usage profiles"
+msgstr "Προφίλ χρήσης"
+
+#: models.py:157
+msgid "Temperature must be between 0 and 2."
+msgstr "Η θερμοκρασία πρέπει να είναι μεταξύ 0 και 2."
+
+#: models.py:163
+msgid "Primary model must be active."
+msgstr "Το κύριο μοντέλο πρέπει να είναι ενεργό."
+
+#: models.py:166
+msgid "only_free_models requires a free primary model."
+msgstr "Το only_free_models απαιτεί δωρεάν κύριο μοντέλο."
+
+#: models.py:263
+msgid "Profile model"
+msgstr "Μοντέλο προφίλ"
+
+#: models.py:264
+msgid "Profile models"
+msgstr "Μοντέλα προφίλ"
+
+#: models.py:277
+msgid "only_free_models allows only free fallback models."
+msgstr "Το only_free_models επιτρέπει μόνο δωρεάν εναλλακτικά μοντέλα."
+
+#: models.py:287
+msgid "Leave empty to use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+"Αφήστε το κενό για χρήση του OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+
+#: models.py:300
+msgid "HTTP timeout in seconds."
+msgstr "Χρονικό όριο HTTP σε δευτερόλεπτα."
+
+#: models.py:304
+msgid "Retries per model on transport / 5xx errors before fallback."
+msgstr ""
+"Επαναλήψεις ανά μοντέλο για σφάλματα μεταφοράς / 5xx πριν την εναλλαγή."
+
+#: models.py:308
+msgid "Global kill switch. When off, every chat() call fails."
+msgstr ""
+"Γενικός διακόπτης απενεργοποίησης. Όταν είναι κλειστός, κάθε κλήση chat() "
+"αποτυγχάνει."
+
+#: models.py:312 models.py:313 models.py:316
+msgid "OpenRouter settings"
+msgstr "Ρυθμίσεις OpenRouter"
+
+#: models.py:360
+msgid "Request log"
+msgstr "Αρχείο καταγραφής αιτημάτων"
+
+#: models.py:361
+msgid "Request logs"
+msgstr "Αρχεία καταγραφής αιτημάτων"
+
+#: models.py:366
+msgid "Can view usage logs"
+msgstr "Μπορεί να προβάλλει αρχεία χρήσης"
+
+#: rules.py:25
+#, python-format
+msgid "Usage profile %(name)r is disabled."
+msgstr "Το προφίλ χρήσης %(name)r είναι απενεργοποιημένο."
+
+#: rules.py:39
+#, python-format
+msgid "Daily request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr ""
+"Το ημερήσιο όριο αιτημάτων (%(limit)s) υπερβλήθηκε για το προφίλ %(name)r."
+
+#: rules.py:47
+#, python-format
+msgid "Monthly request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr ""
+"Το μηνιαίο όριο αιτημάτων (%(limit)s) υπερβλήθηκε για το προφίλ %(name)r."
+
+#: rules.py:54
+#, python-format
+msgid "Daily budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr ""
+"Ο ημερήσιος προϋπολογισμός (%(budget)s USD) υπερβλήθηκε για το προφίλ %(name)r."
+
+#: rules.py:61
+#, python-format
+msgid "Monthly budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr ""
+"Ο μηνιαίος προϋπολογισμός (%(budget)s USD) υπερβλήθηκε για το προφίλ %(name)r."
+
+#: rules.py:69
+#, python-format
+msgid "Model %(model_id)r is disabled."
+msgstr "Το μοντέλο %(model_id)r είναι απενεργοποιημένο."
+
+#: rules.py:72
+#, python-format
+msgid "Profile %(name)r allows only free models; %(model_id)r is not free."
+msgstr ""
+"Το προφίλ %(name)r επιτρέπει μόνο δωρεάν μοντέλα· το %(model_id)r δεν είναι "
+"δωρεάν."
+
+#: sync.py:242
+msgid "Unexpected OpenRouter /models response."
+msgstr "Μη αναμενόμενη απάντηση /models από το OpenRouter."
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:5
+msgid "Home"
+msgstr "Αρχική"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:6
+msgid "Django_openrouter"
+msgstr "Django_openrouter"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:8
+msgid "Assign to usage profile"
+msgstr "Ανάθεση σε προφίλ χρήσης"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:18
+#, python-format
+msgid "The selected model will be appended to the model chain of the profile:"
+msgid_plural ""
+"The %(counter)s selected models will be appended to the model chain of the "
+"profile:"
+msgstr[0] ""
+"Το επιλεγμένο μοντέλο θα προστεθεί στην αλυσίδα μοντέλων του προφίλ:"
+msgstr[1] ""
+"Τα %(counter)s επιλεγμένα μοντέλα θα προστεθούν στην αλυσίδα μοντέλων του "
+"προφίλ:"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:30
+msgid "Assign"
+msgstr "Ανάθεση"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:31
+msgid "Cancel"
+msgstr "Άκυρο"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:5
+msgid "Total requests"
+msgstr "Συνολικά αιτήματα"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:7
+msgid "Total cost (USD)"
+msgstr "Συνολικό κόστος (USD)"

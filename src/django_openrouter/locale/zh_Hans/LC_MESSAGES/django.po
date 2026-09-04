@@ -1,0 +1,452 @@
+# Chinese translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-04 11:06+0000\n"
+"PO-Revision-Date: 2026-09-04 11:06+0000\n"
+"Last-Translator: django-openrouter contributors\n"
+"Language-Team: zh_Hans\n"
+"Language: zh_Hans\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: admin.py:78 admin.py:429
+msgid "Price"
+msgstr "价格"
+
+#: admin.py:85
+msgid "Free"
+msgstr "免费"
+
+#: admin.py:86
+msgid "Cheap (< $1 / 1M)"
+msgstr "便宜（< $1 / 1M）"
+
+#: admin.py:87
+msgid "Mid ($1-$10 / 1M)"
+msgstr "中等（$1-$10 / 1M）"
+
+#: admin.py:88
+msgid "Expensive (>= $10 / 1M)"
+msgstr "昂贵（>= $10 / 1M）"
+
+#: admin.py:98
+msgid "Speed"
+msgstr "速度"
+
+#: admin.py:105
+msgid "Fast (< 400 ms)"
+msgstr "快（< 400 ms）"
+
+#: admin.py:106
+msgid "Medium (400-1200 ms)"
+msgstr "中等（400-1200 ms）"
+
+#: admin.py:107
+msgid "Slow (>= 1200 ms)"
+msgstr "慢（>= 1200 ms）"
+
+#: admin.py:108
+msgid "Unknown latency"
+msgstr "延迟未知"
+
+#: admin.py:136
+msgid "API key"
+msgstr "API 密钥"
+
+#: admin.py:145
+msgid "Clear stored API key"
+msgstr "清除已存储的 API 密钥"
+
+#: admin.py:168
+msgid ""
+"A key is stored encrypted. Leave blank to keep it, or enter a new key to "
+"replace it. The stored value cannot be viewed."
+msgstr ""
+"密钥已加密存储。留空表示保留现有密钥，输入新密钥可将其替换。"
+"已存储的值无法查看。"
+
+#: admin.py:173
+msgid ""
+"Entered once, stored encrypted, and cannot be viewed again. Leave empty to "
+"use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+"仅输入一次，加密存储后无法再次查看。留空则使用 OPENROUTER_API_KEY / "
+"settings.OPENROUTER['API_KEY']。"
+
+#: admin.py:216
+msgid "API key status"
+msgstr "API 密钥状态"
+
+#: admin.py:219
+msgid "Stored (encrypted, not visible)"
+msgstr "已存储（加密，不可见）"
+
+#: admin.py:220
+msgid "Not set"
+msgstr "未设置"
+
+#: admin.py:250 models.py:274
+msgid "Fallback model must be active."
+msgstr "回退模型必须处于启用状态。"
+
+#: admin.py:269
+msgid "Models in the chain must be active."
+msgstr "链中的模型必须处于启用状态。"
+
+#: admin.py:271
+msgid "only_free_models allows only free models."
+msgstr "only_free_models 只允许使用免费模型。"
+
+#: admin.py:273
+msgid "Each model may appear only once."
+msgstr "每个模型只能出现一次。"
+
+#: admin.py:293
+msgid "Model"
+msgstr "模型"
+
+#: admin.py:294
+msgid "Models (priority order)"
+msgstr "模型（按优先级顺序）"
+
+#: admin.py:324 models.py:148
+msgid "Usage profile"
+msgstr "使用配置文件"
+
+#: admin.py:436
+msgid "Sync catalog with OpenRouter"
+msgstr "与 OpenRouter 同步目录"
+
+#: admin.py:450
+#, python-format
+msgid ""
+"Sync complete: %(created)s created, %(updated)s updated, %(deactivated)s "
+"deactivated (%(total)s remote)."
+msgstr ""
+"同步完成：新建 %(created)s 个，更新 %(updated)s 个，停用 %(deactivated)s "
+"个（远端共 %(total)s 个）。"
+
+#: admin.py:461
+msgid "Assign to usage profile…"
+msgstr "分配到使用配置文件…"
+
+#: admin.py:481
+msgid "Assign models to usage profile"
+msgstr "将模型分配到使用配置文件"
+
+#: admin.py:534
+#, python-format
+msgid "%(count)s already in the chain"
+msgstr "%(count)s 个已在链中"
+
+#: admin.py:535
+#, python-format
+msgid "%(count)s inactive"
+msgstr "%(count)s 个未启用"
+
+#: admin.py:536
+#, python-format
+msgid "%(count)s not free (only_free_models)"
+msgstr "%(count)s 个非免费（only_free_models）"
+
+#: admin.py:542
+#, python-format
+msgid "Added %(count)s model(s) to profile “%(profile)s”."
+msgstr "已将 %(count)s 个模型添加到配置文件“%(profile)s”。"
+
+#: admin.py:548
+#, python-format
+msgid "No models were added to profile “%(profile)s”."
+msgstr "没有模型被添加到配置文件“%(profile)s”。"
+
+#: admin.py:551
+#, python-format
+msgid "Skipped: %(reasons)s."
+msgstr "已跳过：%(reasons)s。"
+
+#: client.py:131
+msgid "No usage profile specified and default_profile is not set."
+msgstr "未指定使用配置文件，且未设置 default_profile。"
+
+#: client.py:135
+#, python-format
+msgid "Usage profile %(name)r is not found or inactive."
+msgstr "使用配置文件 %(name)r 不存在或未启用。"
+
+#: client.py:151
+#, python-format
+msgid "Unknown model %(model_id)r."
+msgstr "未知模型 %(model_id)r。"
+
+#: client.py:167
+#, python-format
+msgid "Profile %(name)r has no models configured."
+msgstr "配置文件 %(name)r 尚未配置任何模型。"
+
+#: client.py:171
+#, python-format
+msgid "No allowed models left for profile %(name)r."
+msgstr "配置文件 %(name)r 没有可用模型。"
+
+#: client.py:237
+msgid "Streaming is not implemented in django-openrouter MVP."
+msgstr "django-openrouter MVP 尚未实现流式传输。"
+
+#: client.py:240
+msgid "OpenRouter is disabled in admin settings."
+msgstr "已在管理设置中禁用 OpenRouter。"
+
+#: client.py:242 sync.py:213
+msgid "OpenRouter API key is not configured."
+msgstr "尚未配置 OpenRouter API 密钥。"
+
+#: client.py:268 client.py:358
+msgid "All models failed without a specific error."
+msgstr "所有模型均失败，没有具体错误信息。"
+
+#: client.py:321 client.py:436
+#, python-format
+msgid "OpenRouter returned HTTP %(status)s: %(error)s"
+msgstr "OpenRouter 返回 HTTP %(status)s：%(error)s"
+
+#: log_backends.py:194
+msgid ""
+"ClickHouseBackend requires 'URL' in the LOG_BACKENDS entry (e.g. http://"
+"localhost:8123)."
+msgstr ""
+"ClickHouseBackend 要求 LOG_BACKENDS 条目包含 'URL'（例如 http://"
+"localhost:8123）。"
+
+#: log_backends.py:204
+#, python-format
+msgid "ClickHouseBackend: invalid %(label)s identifier %(identifier)r."
+msgstr "ClickHouseBackend：%(label)s 标识符 %(identifier)r 无效。"
+
+#: log_backends.py:245
+msgid "LOG_BACKENDS entry dict requires a 'BACKEND' key."
+msgstr "LOG_BACKENDS 条目字典必须包含 'BACKEND' 键。"
+
+#: log_backends.py:250
+#, python-format
+msgid "LOG_BACKENDS entries must be strings or dicts, got %(type)s."
+msgstr "LOG_BACKENDS 条目必须是字符串或字典，实际得到 %(type)s。"
+
+#: log_backends.py:257
+#, python-format
+msgid "Cannot import log backend %(path)r: %(error)s"
+msgstr "无法导入日志后端 %(path)r：%(error)s"
+
+#: log_backends.py:260
+#, python-format
+msgid "%(path)r is not a LogBackend subclass."
+msgstr "%(path)r 不是 LogBackend 的子类。"
+
+#: log_backends.py:276
+msgid "OPENROUTER['LOG_BACKENDS'] must be a list."
+msgstr "OPENROUTER['LOG_BACKENDS'] 必须是列表。"
+
+#: management/commands/sync_models.py:11
+msgid "Fetch GET /api/v1/models and upsert the local OpenRouter catalog."
+msgstr "请求 GET /api/v1/models 并更新本地 OpenRouter 目录。"
+
+#: management/commands/sync_models.py:18
+msgid "Override API key for this run."
+msgstr "覆盖本次运行使用的 API 密钥。"
+
+#: management/commands/sync_models.py:31
+#, python-format
+msgid ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+msgstr ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+
+#: models.py:45
+msgid "OpenRouter model id, e.g. anthropic/claude-3.5-sonnet"
+msgstr "OpenRouter 模型 ID，例如 anthropic/claude-3.5-sonnet"
+
+#: models.py:52
+msgid "Per-token prices: prompt, completion, optional request/image."
+msgstr "按 token 计价的价格：prompt、completion，可选的 request/image。"
+
+#: models.py:61
+msgid "Prompt price per token from the catalog, for admin sorting."
+msgstr "目录中的 prompt 每 token 价格，用于后台排序。"
+
+#: models.py:68
+msgid "Completion price per token from the catalog, for admin sorting."
+msgstr "目录中的 completion 每 token 价格，用于后台排序。"
+
+#: models.py:73
+msgid "p50 TTFT for the best endpoint, in milliseconds."
+msgstr "最优 endpoint 的 p50 TTFT，单位为毫秒。"
+
+#: models.py:78
+msgid "p50 throughput (tok/s) for the best endpoint — load."
+msgstr "最优 endpoint 的 p50 吞吐量（tok/s）——负载。"
+
+#: models.py:85
+msgid "OpenRouter model"
+msgstr "OpenRouter 模型"
+
+#: models.py:86
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:7
+msgid "OpenRouter models"
+msgstr "OpenRouter 模型"
+
+#: models.py:108
+msgid "Stable slug used in code, e.g. chat, translation."
+msgstr "代码中使用的稳定 slug，例如 chat、translation。"
+
+#: models.py:116
+msgid "First model in the chain (synced from the list)."
+msgstr "链中的第一个模型（从列表同步）。"
+
+#: models.py:142
+msgid "If enabled, only models with zero catalog price may be used."
+msgstr "启用后，仅可使用目录价格为零的模型。"
+
+#: models.py:149
+msgid "Usage profiles"
+msgstr "使用配置文件"
+
+#: models.py:157
+msgid "Temperature must be between 0 and 2."
+msgstr "Temperature 必须介于 0 和 2 之间。"
+
+#: models.py:163
+msgid "Primary model must be active."
+msgstr "主模型必须处于启用状态。"
+
+#: models.py:166
+msgid "only_free_models requires a free primary model."
+msgstr "only_free_models 要求主模型为免费模型。"
+
+#: models.py:263
+msgid "Profile model"
+msgstr "配置文件模型"
+
+#: models.py:264
+msgid "Profile models"
+msgstr "配置文件模型"
+
+#: models.py:277
+msgid "only_free_models allows only free fallback models."
+msgstr "only_free_models 只允许使用免费的回退模型。"
+
+#: models.py:287
+msgid "Leave empty to use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr "留空则使用 OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']。"
+
+#: models.py:300
+msgid "HTTP timeout in seconds."
+msgstr "HTTP 超时时间（秒）。"
+
+#: models.py:304
+msgid "Retries per model on transport / 5xx errors before fallback."
+msgstr "回退之前每个模型在传输错误 / 5xx 错误时的重试次数。"
+
+#: models.py:308
+msgid "Global kill switch. When off, every chat() call fails."
+msgstr "全局总开关。关闭时，每次 chat() 调用都会失败。"
+
+#: models.py:312 models.py:313 models.py:316
+msgid "OpenRouter settings"
+msgstr "OpenRouter 设置"
+
+#: models.py:360
+msgid "Request log"
+msgstr "请求日志"
+
+#: models.py:361
+msgid "Request logs"
+msgstr "请求日志"
+
+#: models.py:366
+msgid "Can view usage logs"
+msgstr "可查看使用日志"
+
+#: rules.py:25
+#, python-format
+msgid "Usage profile %(name)r is disabled."
+msgstr "使用配置文件 %(name)r 已禁用。"
+
+#: rules.py:39
+#, python-format
+msgid "Daily request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "配置文件 %(name)r 已超出每日请求限制（%(limit)s）。"
+
+#: rules.py:47
+#, python-format
+msgid "Monthly request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "配置文件 %(name)r 已超出每月请求限制（%(limit)s）。"
+
+#: rules.py:54
+#, python-format
+msgid "Daily budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "配置文件 %(name)r 已超出每日预算（%(budget)s USD）。"
+
+#: rules.py:61
+#, python-format
+msgid "Monthly budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "配置文件 %(name)r 已超出每月预算（%(budget)s USD）。"
+
+#: rules.py:69
+#, python-format
+msgid "Model %(model_id)r is disabled."
+msgstr "模型 %(model_id)r 已禁用。"
+
+#: rules.py:72
+#, python-format
+msgid "Profile %(name)r allows only free models; %(model_id)r is not free."
+msgstr "配置文件 %(name)r 只允许使用免费模型；%(model_id)r 不是免费模型。"
+
+#: sync.py:242
+msgid "Unexpected OpenRouter /models response."
+msgstr "意外的 OpenRouter /models 响应。"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:5
+msgid "Home"
+msgstr "首页"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:6
+msgid "Django_openrouter"
+msgstr "Django_openrouter"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:8
+msgid "Assign to usage profile"
+msgstr "分配到使用配置文件"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:18
+#, python-format
+msgid "The selected model will be appended to the model chain of the profile:"
+msgid_plural ""
+"The %(counter)s selected models will be appended to the model chain of the "
+"profile:"
+msgstr[0] "所选模型将附加到该配置文件的模型链末尾："
+msgstr[1] "所选 %(counter)s 个模型将附加到该配置文件的模型链末尾："
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:30
+msgid "Assign"
+msgstr "分配"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:31
+msgid "Cancel"
+msgstr "取消"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:5
+msgid "Total requests"
+msgstr "请求总数"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:7
+msgid "Total cost (USD)"
+msgstr "总费用（USD）"

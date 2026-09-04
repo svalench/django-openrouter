@@ -1,0 +1,475 @@
+# Tamil translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-04 11:06+0000\n"
+"PO-Revision-Date: 2026-09-04 11:06+0000\n"
+"Last-Translator: django-openrouter contributors\n"
+"Language-Team: ta\n"
+"Language: ta\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: admin.py:78 admin.py:429
+msgid "Price"
+msgstr "விலை"
+
+#: admin.py:85
+msgid "Free"
+msgstr "இலவசம்"
+
+#: admin.py:86
+msgid "Cheap (< $1 / 1M)"
+msgstr "மலிவு (< $1 / 1M)"
+
+#: admin.py:87
+msgid "Mid ($1-$10 / 1M)"
+msgstr "நடுத்தரம் ($1-$10 / 1M)"
+
+#: admin.py:88
+msgid "Expensive (>= $10 / 1M)"
+msgstr "அதிக விலை (>= $10 / 1M)"
+
+#: admin.py:98
+msgid "Speed"
+msgstr "வேகம்"
+
+#: admin.py:105
+msgid "Fast (< 400 ms)"
+msgstr "வேகமானது (< 400 ms)"
+
+#: admin.py:106
+msgid "Medium (400-1200 ms)"
+msgstr "நடுத்தரம் (400-1200 ms)"
+
+#: admin.py:107
+msgid "Slow (>= 1200 ms)"
+msgstr "மெதுவானது (>= 1200 ms)"
+
+#: admin.py:108
+msgid "Unknown latency"
+msgstr "தெரியாத தாமதம்"
+
+#: admin.py:136
+msgid "API key"
+msgstr "API விசை"
+
+#: admin.py:145
+msgid "Clear stored API key"
+msgstr "சேமிக்கப்பட்ட API விசையை அழி"
+
+#: admin.py:168
+msgid ""
+"A key is stored encrypted. Leave blank to keep it, or enter a new key to "
+"replace it. The stored value cannot be viewed."
+msgstr ""
+"விசை குறியாக்கம் செய்யப்பட்டு சேமிக்கப்பட்டுள்ளது. அதை வைத்திருக்க வெறுமையாக "
+"விடவும், அல்லது மாற்ற புதிய விசையை உள்ளிடவும். சேமிக்கப்பட்ட மதிப்பைக் காண "
+"முடியாது."
+
+#: admin.py:173
+msgid ""
+"Entered once, stored encrypted, and cannot be viewed again. Leave empty to "
+"use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+"ஒருமுறை உள்ளிடப்பட்டு, குறியாக்கம் செய்யப்பட்டு சேமிக்கப்படும்; மீண்டும் காண "
+"முடியாது. OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY'] ஐப் பயன்படுத்த "
+"வெறுமையாக விடவும்."
+
+#: admin.py:216
+msgid "API key status"
+msgstr "API விசை நிலை"
+
+#: admin.py:219
+msgid "Stored (encrypted, not visible)"
+msgstr "சேமிக்கப்பட்டது (குறியாக்கப்பட்டது, காண முடியாது)"
+
+#: admin.py:220
+msgid "Not set"
+msgstr "அமைக்கப்படவில்லை"
+
+#: admin.py:250 models.py:274
+msgid "Fallback model must be active."
+msgstr "fallback மாதிரி செயலில் இருக்க வேண்டும்."
+
+#: admin.py:269
+msgid "Models in the chain must be active."
+msgstr "சங்கிலியிலுள்ள மாதிரிகள் செயலில் இருக்க வேண்டும்."
+
+#: admin.py:271
+msgid "only_free_models allows only free models."
+msgstr "only_free_models இலவச மாதிரிகளை மட்டுமே அனுமதிக்கிறது."
+
+#: admin.py:273
+msgid "Each model may appear only once."
+msgstr "ஒவ்வொரு மாதிரியும் ஒருமுறை மட்டுமே இருக்கலாம்."
+
+#: admin.py:293
+msgid "Model"
+msgstr "மாதிரி"
+
+#: admin.py:294
+msgid "Models (priority order)"
+msgstr "மாதிரிகள் (முன்னுரிமை வரிசை)"
+
+#: admin.py:324 models.py:148
+msgid "Usage profile"
+msgstr "பயன்பாட்டு சுயவிவரம்"
+
+#: admin.py:436
+msgid "Sync catalog with OpenRouter"
+msgstr "OpenRouter உடன் பட்டியலை ஒத்திசை"
+
+#: admin.py:450
+#, python-format
+msgid ""
+"Sync complete: %(created)s created, %(updated)s updated, %(deactivated)s "
+"deactivated (%(total)s remote)."
+msgstr ""
+"ஒத்திசைவு முடிந்தது: %(created)s உருவாக்கப்பட்டன, %(updated)s புதுப்பிக்கப்பட்டன, "
+"%(deactivated)s செயலிழக்கச் செய்யப்பட்டன (தொலைபேசி %(total)s)."
+
+#: admin.py:461
+msgid "Assign to usage profile…"
+msgstr "பயன்பாட்டு சுயவிவரத்திற்கு ஒதுக்கு…"
+
+#: admin.py:481
+msgid "Assign models to usage profile"
+msgstr "மாதிரிகளைப் பயன்பாட்டு சுயவிவரத்திற்கு ஒதுக்கு"
+
+#: admin.py:534
+#, python-format
+msgid "%(count)s already in the chain"
+msgstr "சங்கிலியில் ஏற்கனவே %(count)s உள்ளன"
+
+#: admin.py:535
+#, python-format
+msgid "%(count)s inactive"
+msgstr "செயலில் இல்லாதவை %(count)s"
+
+#: admin.py:536
+#, python-format
+msgid "%(count)s not free (only_free_models)"
+msgstr "இலவசம் அல்லாதவை %(count)s (only_free_models)"
+
+#: admin.py:542
+#, python-format
+msgid "Added %(count)s model(s) to profile “%(profile)s”."
+msgstr "“%(profile)s” சுயவிவரத்தில் %(count)s மாதிரி(கள்) சேர்க்கப்பட்டன."
+
+#: admin.py:548
+#, python-format
+msgid "No models were added to profile “%(profile)s”."
+msgstr "“%(profile)s” சுயவிவரத்திற்கு மாதிரிகள் எதுவும் சேர்க்கப்படவில்லை."
+
+#: admin.py:551
+#, python-format
+msgid "Skipped: %(reasons)s."
+msgstr "தவிர்க்கப்பட்டது: %(reasons)s."
+
+#: client.py:131
+msgid "No usage profile specified and default_profile is not set."
+msgstr ""
+"பயன்பாட்டு சுயவிவரம் குறிப்பிடப்படவில்லை; default_profile அமைக்கப்படவில்லை."
+
+#: client.py:135
+#, python-format
+msgid "Usage profile %(name)r is not found or inactive."
+msgstr ""
+"பயன்பாட்டு சுயவிவரம் %(name)r கண்டறியப்படவில்லை அல்லது செயலில் இல்லை."
+
+#: client.py:151
+#, python-format
+msgid "Unknown model %(model_id)r."
+msgstr "தெரியாத மாதிரி %(model_id)r."
+
+#: client.py:167
+#, python-format
+msgid "Profile %(name)r has no models configured."
+msgstr "%(name)r சுயவிவரத்தில் மாதிரிகள் எதுவும் கட்டமைக்கப்படவில்லை."
+
+#: client.py:171
+#, python-format
+msgid "No allowed models left for profile %(name)r."
+msgstr "%(name)r சுயவிவரத்திற்கு அனுமதிக்கப்பட்ட மாதிரிகள் எதுவும் மீதமில்லை."
+
+#: client.py:237
+msgid "Streaming is not implemented in django-openrouter MVP."
+msgstr "django-openrouter MVP-ல் Streaming செயல்படுத்தப்படவில்லை."
+
+#: client.py:240
+msgid "OpenRouter is disabled in admin settings."
+msgstr "நிர்வாக அமைப்புகளில் OpenRouter முடக்கப்பட்டுள்ளது."
+
+#: client.py:242 sync.py:213
+msgid "OpenRouter API key is not configured."
+msgstr "OpenRouter API விசை கட்டமைக்கப்படவில்லை."
+
+#: client.py:268 client.py:358
+msgid "All models failed without a specific error."
+msgstr "அனைத்து மாதிரிகளும் குறிப்பிட்ட பிழையின்றி தோல்வியடைந்தன."
+
+#: client.py:321 client.py:436
+#, python-format
+msgid "OpenRouter returned HTTP %(status)s: %(error)s"
+msgstr "OpenRouter HTTP %(status)s ஐத் திருப்பியனுப்பியது: %(error)s"
+
+#: log_backends.py:194
+msgid ""
+"ClickHouseBackend requires 'URL' in the LOG_BACKENDS entry (e.g. http://"
+"localhost:8123)."
+msgstr ""
+"ClickHouseBackend-க்கு LOG_BACKENDS உள்ளீட்டில் 'URL' தேவை (எ.கா. http://"
+"localhost:8123)."
+
+#: log_backends.py:204
+#, python-format
+msgid "ClickHouseBackend: invalid %(label)s identifier %(identifier)r."
+msgstr "ClickHouseBackend: தவறான %(label)s அடையாளம் %(identifier)r."
+
+#: log_backends.py:245
+msgid "LOG_BACKENDS entry dict requires a 'BACKEND' key."
+msgstr "LOG_BACKENDS உள்ளீட்டு dict-க்கு 'BACKEND' விசை தேவை."
+
+#: log_backends.py:250
+#, python-format
+msgid "LOG_BACKENDS entries must be strings or dicts, got %(type)s."
+msgstr ""
+"LOG_BACKENDS உள்ளீடுகள் strings அல்லது dicts ஆக இருக்க வேண்டும்; கிடைத்தது "
+"%(type)s."
+
+#: log_backends.py:257
+#, python-format
+msgid "Cannot import log backend %(path)r: %(error)s"
+msgstr "பதிவு பின்தளம் %(path)r ஐ இறக்குமதி செய்ய முடியவில்லை: %(error)s"
+
+#: log_backends.py:260
+#, python-format
+msgid "%(path)r is not a LogBackend subclass."
+msgstr "%(path)r என்பது LogBackend துணை வகுப்பு அல்ல."
+
+#: log_backends.py:276
+msgid "OPENROUTER['LOG_BACKENDS'] must be a list."
+msgstr "OPENROUTER['LOG_BACKENDS'] ஒரு பட்டியலாக இருக்க வேண்டும்."
+
+#: management/commands/sync_models.py:11
+msgid "Fetch GET /api/v1/models and upsert the local OpenRouter catalog."
+msgstr ""
+"GET /api/v1/models ஐப் பெற்று உள்ளூர் OpenRouter பட்டியலை upsert செய்."
+
+#: management/commands/sync_models.py:18
+msgid "Override API key for this run."
+msgstr "இந்த இயக்கத்திற்கு API விசையை மேலெழுது."
+
+#: management/commands/sync_models.py:31
+#, python-format
+msgid ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+msgstr ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+
+#: models.py:45
+msgid "OpenRouter model id, e.g. anthropic/claude-3.5-sonnet"
+msgstr "OpenRouter மாதிரி id, எ.கா. anthropic/claude-3.5-sonnet"
+
+#: models.py:52
+msgid "Per-token prices: prompt, completion, optional request/image."
+msgstr "டோக்கன் ஒன்றுக்கான விலைகள்: prompt, completion, விருப்ப request/image."
+
+#: models.py:61
+msgid "Prompt price per token from the catalog, for admin sorting."
+msgstr ""
+"பட்டியலிலிருந்து டோக்கன் ஒன்றுக்கான prompt விலை, நிர்வாக வரிசைப்படுத்தலுக்காக."
+
+#: models.py:68
+msgid "Completion price per token from the catalog, for admin sorting."
+msgstr ""
+"பட்டியலிலிருந்து டோக்கன் ஒன்றுக்கான completion விலை, நிர்வாக வரிசைப்படுத்தலுக்காக."
+
+#: models.py:73
+msgid "p50 TTFT for the best endpoint, in milliseconds."
+msgstr "சிறந்த endpoint-க்கான p50 TTFT, மில்லி வினாடிகளில்."
+
+#: models.py:78
+msgid "p50 throughput (tok/s) for the best endpoint — load."
+msgstr "சிறந்த endpoint-க்கான p50 வழிதிறன் (tok/s) — சுமை."
+
+#: models.py:85
+msgid "OpenRouter model"
+msgstr "OpenRouter மாதிரி"
+
+#: models.py:86
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:7
+msgid "OpenRouter models"
+msgstr "OpenRouter மாதிரிகள்"
+
+#: models.py:108
+msgid "Stable slug used in code, e.g. chat, translation."
+msgstr "குறியீட்டில் பயன்படும் நிலையான slug, எ.கா. chat, translation."
+
+#: models.py:116
+msgid "First model in the chain (synced from the list)."
+msgstr "சங்கிலியின் முதல் மாதிரி (பட்டியலிலிருந்து ஒத்திசைக்கப்பட்டது)."
+
+#: models.py:142
+msgid "If enabled, only models with zero catalog price may be used."
+msgstr ""
+"இயக்கினால், பட்டியல் விலை பூச்சியமாக உள்ள மாதிரிகள் மட்டுமே பயன்படுத்தப்படலாம்."
+
+#: models.py:149
+msgid "Usage profiles"
+msgstr "பயன்பாட்டு சுயவிவரங்கள்"
+
+#: models.py:157
+msgid "Temperature must be between 0 and 2."
+msgstr "Temperature 0 மற்றும் 2 இடையே இருக்க வேண்டும்."
+
+#: models.py:163
+msgid "Primary model must be active."
+msgstr "முதன்மை மாதிரி செயலில் இருக்க வேண்டும்."
+
+#: models.py:166
+msgid "only_free_models requires a free primary model."
+msgstr "only_free_models-க்கு இலவச முதன்மை மாதிரி தேவை."
+
+#: models.py:263
+msgid "Profile model"
+msgstr "சுயவிவர மாதிரி"
+
+#: models.py:264
+msgid "Profile models"
+msgstr "சுயவிவர மாதிரிகள்"
+
+#: models.py:277
+msgid "only_free_models allows only free fallback models."
+msgstr "only_free_models இலவச fallback மாதிரிகளை மட்டுமே அனுமதிக்கிறது."
+
+#: models.py:287
+msgid "Leave empty to use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+"OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY'] ஐப் பயன்படுத்த வெறுமையாக "
+"விடவும்."
+
+#: models.py:300
+msgid "HTTP timeout in seconds."
+msgstr "வினாடிகளில் HTTP நேரம் முடிவு."
+
+#: models.py:304
+msgid "Retries per model on transport / 5xx errors before fallback."
+msgstr ""
+"fallback-க்கு முன் transport / 5xx பிழைகளில் மாதிரி ஒன்றுக்கு மீண்டும் முயற்சிகள்."
+
+#: models.py:308
+msgid "Global kill switch. When off, every chat() call fails."
+msgstr ""
+"மொத்த kill switch. அணைக்கப்பட்டிருந்தால் ஒவ்வொரு chat() அழைப்பும் "
+"தோல்வியடையும்."
+
+#: models.py:312 models.py:313 models.py:316
+msgid "OpenRouter settings"
+msgstr "OpenRouter அமைப்புகள்"
+
+#: models.py:360
+msgid "Request log"
+msgstr "கோரிக்கை பதிவு"
+
+#: models.py:361
+msgid "Request logs"
+msgstr "கோரிக்கை பதிவுகள்"
+
+#: models.py:366
+msgid "Can view usage logs"
+msgstr "பயன்பாட்டுப் பதிவுகளைக் காணலாம்"
+
+#: rules.py:25
+#, python-format
+msgid "Usage profile %(name)r is disabled."
+msgstr "பயன்பாட்டு சுயவிவரம் %(name)r முடக்கப்பட்டுள்ளது."
+
+#: rules.py:39
+#, python-format
+msgid "Daily request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "%(name)r சுயவிவரத்திற்கான தினசரி கோரிக்கை வரம்பு (%(limit)s) மீறப்பட்டது."
+
+#: rules.py:47
+#, python-format
+msgid "Monthly request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr ""
+"%(name)r சுயவிவரத்திற்கான மாதாந்திர கோரிக்கை வரம்பு (%(limit)s) மீறப்பட்டது."
+
+#: rules.py:54
+#, python-format
+msgid "Daily budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "%(name)r சுயவிவரத்திற்கான தினசரி பட்ஜெட் (%(budget)s USD) மீறப்பட்டது."
+
+#: rules.py:61
+#, python-format
+msgid "Monthly budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr ""
+"%(name)r சுயவிவரத்திற்கான மாதாந்திர பட்ஜெட் (%(budget)s USD) மீறப்பட்டது."
+
+#: rules.py:69
+#, python-format
+msgid "Model %(model_id)r is disabled."
+msgstr "மாதிரி %(model_id)r முடக்கப்பட்டுள்ளது."
+
+#: rules.py:72
+#, python-format
+msgid "Profile %(name)r allows only free models; %(model_id)r is not free."
+msgstr ""
+"சுயவிவரம் %(name)r இலவச மாதிரிகளை மட்டுமே அனுமதிக்கிறது; %(model_id)r இலவசம் "
+"அல்ல."
+
+#: sync.py:242
+msgid "Unexpected OpenRouter /models response."
+msgstr "எதிர்பாராத OpenRouter /models பதில்."
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:5
+msgid "Home"
+msgstr "முகப்பு"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:6
+msgid "Django_openrouter"
+msgstr "Django_openrouter"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:8
+msgid "Assign to usage profile"
+msgstr "பயன்பாட்டு சுயவிவரத்திற்கு ஒதுக்கு"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:18
+#, python-format
+msgid "The selected model will be appended to the model chain of the profile:"
+msgid_plural ""
+"The %(counter)s selected models will be appended to the model chain of the "
+"profile:"
+msgstr[0] ""
+"தேர்ந்தெடுக்கப்பட்ட மாதிரி சுயவிவரத்தின் மாதிரி சங்கிலியின் முடிவில் "
+"சேர்க்கப்படும்:"
+msgstr[1] ""
+"%(counter)s தேர்ந்தெடுக்கப்பட்ட மாதிரிகள் சுயவிவரத்தின் மாதிரி சங்கிலியின் "
+"முடிவில் சேர்க்கப்படும்:"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:30
+msgid "Assign"
+msgstr "ஒதுக்கு"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:31
+msgid "Cancel"
+msgstr "ரத்து செய்"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:5
+msgid "Total requests"
+msgstr "மொத்த கோரிக்கைகள்"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:7
+msgid "Total cost (USD)"
+msgstr "மொத்த செலவு (USD)"

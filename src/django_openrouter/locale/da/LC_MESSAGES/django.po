@@ -1,0 +1,453 @@
+# Danish translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-04 11:06+0000\n"
+"PO-Revision-Date: 2026-09-04 11:06+0000\n"
+"Last-Translator: django-openrouter contributors\n"
+"Language-Team: da\n"
+"Language: da\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: admin.py:78 admin.py:429
+msgid "Price"
+msgstr "Pris"
+
+#: admin.py:85
+msgid "Free"
+msgstr "Gratis"
+
+#: admin.py:86
+msgid "Cheap (< $1 / 1M)"
+msgstr "Billig (< $1 / 1 mio.)"
+
+#: admin.py:87
+msgid "Mid ($1-$10 / 1M)"
+msgstr "Middel ($1-$10 / 1 mio.)"
+
+#: admin.py:88
+msgid "Expensive (>= $10 / 1M)"
+msgstr "Dyr (>= $10 / 1 mio.)"
+
+#: admin.py:98
+msgid "Speed"
+msgstr "Hastighed"
+
+#: admin.py:105
+msgid "Fast (< 400 ms)"
+msgstr "Hurtig (< 400 ms)"
+
+#: admin.py:106
+msgid "Medium (400-1200 ms)"
+msgstr "Middel (400-1200 ms)"
+
+#: admin.py:107
+msgid "Slow (>= 1200 ms)"
+msgstr "Langsom (>= 1200 ms)"
+
+#: admin.py:108
+msgid "Unknown latency"
+msgstr "Ukendt svartid"
+
+#: admin.py:136
+msgid "API key"
+msgstr "API-nøgle"
+
+#: admin.py:145
+msgid "Clear stored API key"
+msgstr "Ryd gemt API-nøgle"
+
+#: admin.py:168
+msgid ""
+"A key is stored encrypted. Leave blank to keep it, or enter a new key to "
+"replace it. The stored value cannot be viewed."
+msgstr ""
+"Der gemmes en krypteret nøgle. Lad feltet være tomt for at beholde den, "
+"eller indtast en ny nøgle for at erstatte den. Den gemte værdi kan ikke "
+"vises."
+
+#: admin.py:173
+msgid ""
+"Entered once, stored encrypted, and cannot be viewed again. Leave empty to "
+"use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+"Indtastes én gang, gemmes krypteret og kan ikke vises igen. Lad feltet "
+"være tomt for at bruge OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+
+#: admin.py:216
+msgid "API key status"
+msgstr "API-nøglets status"
+
+#: admin.py:219
+msgid "Stored (encrypted, not visible)"
+msgstr "Gemt (krypteret, kan ikke vises)"
+
+#: admin.py:220
+msgid "Not set"
+msgstr "Ikke angivet"
+
+#: admin.py:250 models.py:274
+msgid "Fallback model must be active."
+msgstr "Fallback-modellen skal være aktiv."
+
+#: admin.py:269
+msgid "Models in the chain must be active."
+msgstr "Modeller i kæden skal være aktive."
+
+#: admin.py:271
+msgid "only_free_models allows only free models."
+msgstr "only_free_models tillader kun gratis modeller."
+
+#: admin.py:273
+msgid "Each model may appear only once."
+msgstr "Hver model må kun forekomme én gang."
+
+#: admin.py:293
+msgid "Model"
+msgstr "Model"
+
+#: admin.py:294
+msgid "Models (priority order)"
+msgstr "Modeller (prioritetsrækkefølge)"
+
+#: admin.py:324 models.py:148
+msgid "Usage profile"
+msgstr "Brugsprofil"
+
+#: admin.py:436
+msgid "Sync catalog with OpenRouter"
+msgstr "Synkronisér katalog med OpenRouter"
+
+#: admin.py:450
+#, python-format
+msgid ""
+"Sync complete: %(created)s created, %(updated)s updated, %(deactivated)s "
+"deactivated (%(total)s remote)."
+msgstr ""
+"Synkronisering fuldført: %(created)s oprettet, %(updated)s opdateret, "
+"%(deactivated)s deaktiveret (%(total)s eksterne)."
+
+#: admin.py:461
+msgid "Assign to usage profile…"
+msgstr "Tildel til brugsprofil…"
+
+#: admin.py:481
+msgid "Assign models to usage profile"
+msgstr "Tildel modeller til brugsprofil"
+
+#: admin.py:534
+#, python-format
+msgid "%(count)s already in the chain"
+msgstr "%(count)s allerede i kæden"
+
+#: admin.py:535
+#, python-format
+msgid "%(count)s inactive"
+msgstr "%(count)s inaktive"
+
+#: admin.py:536
+#, python-format
+msgid "%(count)s not free (only_free_models)"
+msgstr "%(count)s ikke gratis (only_free_models)"
+
+#: admin.py:542
+#, python-format
+msgid "Added %(count)s model(s) to profile “%(profile)s”."
+msgstr "Tilføjede %(count)s model(ler) til profilen “%(profile)s”."
+
+#: admin.py:548
+#, python-format
+msgid "No models were added to profile “%(profile)s”."
+msgstr "Ingen modeller blev tilføjet til profilen “%(profile)s”."
+
+#: admin.py:551
+#, python-format
+msgid "Skipped: %(reasons)s."
+msgstr "Sprunget over: %(reasons)s."
+
+#: client.py:131
+msgid "No usage profile specified and default_profile is not set."
+msgstr "Ingen brugsprofil angivet, og default_profile er ikke indstillet."
+
+#: client.py:135
+#, python-format
+msgid "Usage profile %(name)r is not found or inactive."
+msgstr "Brugsprofilen %(name)r blev ikke fundet eller er inaktiv."
+
+#: client.py:151
+#, python-format
+msgid "Unknown model %(model_id)r."
+msgstr "Ukendt model %(model_id)r."
+
+#: client.py:167
+#, python-format
+msgid "Profile %(name)r has no models configured."
+msgstr "Profilen %(name)r har ingen konfigurerede modeller."
+
+#: client.py:171
+#, python-format
+msgid "No allowed models left for profile %(name)r."
+msgstr "Ingen tilladte modeller tilbage for profilen %(name)r."
+
+#: client.py:237
+msgid "Streaming is not implemented in django-openrouter MVP."
+msgstr "Streaming er ikke implementeret i django-openrouter MVP."
+
+#: client.py:240
+msgid "OpenRouter is disabled in admin settings."
+msgstr "OpenRouter er deaktiveret i admin-indstillingerne."
+
+#: client.py:242 sync.py:213
+msgid "OpenRouter API key is not configured."
+msgstr "OpenRouter API-nøglen er ikke konfigureret."
+
+#: client.py:268 client.py:358
+msgid "All models failed without a specific error."
+msgstr "Alle modeller fejlede uden en specifik fejl."
+
+#: client.py:321 client.py:436
+#, python-format
+msgid "OpenRouter returned HTTP %(status)s: %(error)s"
+msgstr "OpenRouter returnerede HTTP %(status)s: %(error)s"
+
+#: log_backends.py:194
+msgid ""
+"ClickHouseBackend requires 'URL' in the LOG_BACKENDS entry (e.g. http://"
+"localhost:8123)."
+msgstr ""
+"ClickHouseBackend kræver 'URL' i LOG_BACKENDS-posten (f.eks. http://"
+"localhost:8123)."
+
+#: log_backends.py:204
+#, python-format
+msgid "ClickHouseBackend: invalid %(label)s identifier %(identifier)r."
+msgstr "ClickHouseBackend: ugyldig %(label)s-identifikator %(identifier)r."
+
+#: log_backends.py:245
+msgid "LOG_BACKENDS entry dict requires a 'BACKEND' key."
+msgstr "LOG_BACKENDS-postens dict kræver en 'BACKEND'-nøgle."
+
+#: log_backends.py:250
+#, python-format
+msgid "LOG_BACKENDS entries must be strings or dicts, got %(type)s."
+msgstr "LOG_BACKENDS-poster skal være strenge eller dicts, fik %(type)s."
+
+#: log_backends.py:257
+#, python-format
+msgid "Cannot import log backend %(path)r: %(error)s"
+msgstr "Kan ikke importere log-backend %(path)r: %(error)s"
+
+#: log_backends.py:260
+#, python-format
+msgid "%(path)r is not a LogBackend subclass."
+msgstr "%(path)r er ikke en LogBackend-underklasse."
+
+#: log_backends.py:276
+msgid "OPENROUTER['LOG_BACKENDS'] must be a list."
+msgstr "OPENROUTER['LOG_BACKENDS'] skal være en liste."
+
+#: management/commands/sync_models.py:11
+msgid "Fetch GET /api/v1/models and upsert the local OpenRouter catalog."
+msgstr "Hent GET /api/v1/models og upsert det lokale OpenRouter-katalog."
+
+#: management/commands/sync_models.py:18
+msgid "Override API key for this run."
+msgstr "Tilsidesæt API-nøgle for denne kørsel."
+
+#: management/commands/sync_models.py:31
+#, python-format
+msgid ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+msgstr ""
+"oprettet=%(created)s opdateret=%(updated)s deaktiveret=%(deactivated)s "
+"eksterne=%(total)s"
+
+#: models.py:45
+msgid "OpenRouter model id, e.g. anthropic/claude-3.5-sonnet"
+msgstr "OpenRouter-model-id, f.eks. anthropic/claude-3.5-sonnet"
+
+#: models.py:52
+msgid "Per-token prices: prompt, completion, optional request/image."
+msgstr "Priser pr. token: prompt, completion, valgfri forespørsel/billede."
+
+#: models.py:61
+msgid "Prompt price per token from the catalog, for admin sorting."
+msgstr "Promptpris pr. token fra kataloget, til adminsortering."
+
+#: models.py:68
+msgid "Completion price per token from the catalog, for admin sorting."
+msgstr "Completionpris pr. token fra kataloget, til adminsortering."
+
+#: models.py:73
+msgid "p50 TTFT for the best endpoint, in milliseconds."
+msgstr "p50 TTFT for det bedste endpoint, i millisekunder."
+
+#: models.py:78
+msgid "p50 throughput (tok/s) for the best endpoint — load."
+msgstr "p50-gennemløb (tok/s) for det bedste endpoint — belastning."
+
+#: models.py:85
+msgid "OpenRouter model"
+msgstr "OpenRouter-model"
+
+#: models.py:86
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:7
+msgid "OpenRouter models"
+msgstr "OpenRouter-modeller"
+
+#: models.py:108
+msgid "Stable slug used in code, e.g. chat, translation."
+msgstr "Stabil slug brugt i kode, f.eks. chat, oversættelse."
+
+#: models.py:116
+msgid "First model in the chain (synced from the list)."
+msgstr "Første model i kæden (synkroniseret fra listen)."
+
+#: models.py:142
+msgid "If enabled, only models with zero catalog price may be used."
+msgstr "Hvis aktiveret, må kun modeller med nul katalogpris bruges."
+
+#: models.py:149
+msgid "Usage profiles"
+msgstr "Brugsprofiler"
+
+#: models.py:157
+msgid "Temperature must be between 0 and 2."
+msgstr "Temperature skal være mellem 0 og 2."
+
+#: models.py:163
+msgid "Primary model must be active."
+msgstr "Den primære model skal være aktiv."
+
+#: models.py:166
+msgid "only_free_models requires a free primary model."
+msgstr "only_free_models kræver en gratis primær model."
+
+#: models.py:263
+msgid "Profile model"
+msgstr "Profilmodel"
+
+#: models.py:264
+msgid "Profile models"
+msgstr "Profilmodeller"
+
+#: models.py:277
+msgid "only_free_models allows only free fallback models."
+msgstr "only_free_models tillader kun gratis fallback-modeller."
+
+#: models.py:287
+msgid "Leave empty to use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr "Lad feltet være tomt for at bruge OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+
+#: models.py:300
+msgid "HTTP timeout in seconds."
+msgstr "HTTP-timeout i sekunder."
+
+#: models.py:304
+msgid "Retries per model on transport / 5xx errors before fallback."
+msgstr "Genforsøg pr. model ved transport- / 5xx-fejl før fallback."
+
+#: models.py:308
+msgid "Global kill switch. When off, every chat() call fails."
+msgstr "Global afbryder. Når den er slået fra, fejler alle chat()-kald."
+
+#: models.py:312 models.py:313 models.py:316
+msgid "OpenRouter settings"
+msgstr "OpenRouter-indstillinger"
+
+#: models.py:360
+msgid "Request log"
+msgstr "Forespørgselslog"
+
+#: models.py:361
+msgid "Request logs"
+msgstr "Forespørgselslogs"
+
+#: models.py:366
+msgid "Can view usage logs"
+msgstr "Kan se brugslogs"
+
+#: rules.py:25
+#, python-format
+msgid "Usage profile %(name)r is disabled."
+msgstr "Brugsprofilen %(name)r er deaktiveret."
+
+#: rules.py:39
+#, python-format
+msgid "Daily request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "Daglig grænse for forespørgsler (%(limit)s) overskredet for profilen %(name)r."
+
+#: rules.py:47
+#, python-format
+msgid "Monthly request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "Månedlig grænse for forespørgsler (%(limit)s) overskredet for profilen %(name)r."
+
+#: rules.py:54
+#, python-format
+msgid "Daily budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "Dagligt budget (%(budget)s USD) overskredet for profilen %(name)r."
+
+#: rules.py:61
+#, python-format
+msgid "Monthly budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "Månedligt budget (%(budget)s USD) overskredet for profilen %(name)r."
+
+#: rules.py:69
+#, python-format
+msgid "Model %(model_id)r is disabled."
+msgstr "Modellen %(model_id)r er deaktiveret."
+
+#: rules.py:72
+#, python-format
+msgid "Profile %(name)r allows only free models; %(model_id)r is not free."
+msgstr "Profilen %(name)r tillader kun gratis modeller; %(model_id)r er ikke gratis."
+
+#: sync.py:242
+msgid "Unexpected OpenRouter /models response."
+msgstr "Uventet OpenRouter /models-svar."
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:5
+msgid "Home"
+msgstr "Hjem"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:6
+msgid "Django_openrouter"
+msgstr "Django_openrouter"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:8
+msgid "Assign to usage profile"
+msgstr "Tildel til brugsprofil"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:18
+#, python-format
+msgid "The selected model will be appended to the model chain of the profile:"
+msgid_plural ""
+"The %(counter)s selected models will be appended to the model chain of the "
+"profile:"
+msgstr[0] "Den valgte model tilføjes til profilens modelkæde:"
+msgstr[1] "De %(counter)s valgte modeller tilføjes til profilens modelkæde:"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:30
+msgid "Assign"
+msgstr "Tildel"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:31
+msgid "Cancel"
+msgstr "Annullér"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:5
+msgid "Total requests"
+msgstr "Forespørgsler i alt"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:7
+msgid "Total cost (USD)"
+msgstr "Samlede omkostninger (USD)"

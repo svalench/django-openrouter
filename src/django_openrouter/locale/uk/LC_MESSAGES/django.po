@@ -1,0 +1,456 @@
+# Ukrainian translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-04 11:06+0000\n"
+"PO-Revision-Date: 2026-09-04 11:06+0000\n"
+"Last-Translator: django-openrouter contributors\n"
+"Language-Team: uk\n"
+"Language: uk\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: admin.py:78 admin.py:429
+msgid "Price"
+msgstr "Ціна"
+
+#: admin.py:85
+msgid "Free"
+msgstr "Безкоштовні"
+
+#: admin.py:86
+msgid "Cheap (< $1 / 1M)"
+msgstr "Дешеві (< $1 / 1M)"
+
+#: admin.py:87
+msgid "Mid ($1-$10 / 1M)"
+msgstr "Середні ($1-$10 / 1M)"
+
+#: admin.py:88
+msgid "Expensive (>= $10 / 1M)"
+msgstr "Дорогі (>= $10 / 1M)"
+
+#: admin.py:98
+msgid "Speed"
+msgstr "Швидкість"
+
+#: admin.py:105
+msgid "Fast (< 400 ms)"
+msgstr "Швидкі (< 400 мс)"
+
+#: admin.py:106
+msgid "Medium (400-1200 ms)"
+msgstr "Середні (400-1200 мс)"
+
+#: admin.py:107
+msgid "Slow (>= 1200 ms)"
+msgstr "Повільні (>= 1200 мс)"
+
+#: admin.py:108
+msgid "Unknown latency"
+msgstr "Невідома затримка"
+
+#: admin.py:136
+msgid "API key"
+msgstr "Ключ API"
+
+#: admin.py:145
+msgid "Clear stored API key"
+msgstr "Очистити збережений ключ API"
+
+#: admin.py:168
+msgid ""
+"A key is stored encrypted. Leave blank to keep it, or enter a new key to "
+"replace it. The stored value cannot be viewed."
+msgstr ""
+"Ключ збережено в зашифрованому вигляді. Залиште поле порожнім, щоб зберегти "
+"його, або введіть новий ключ для заміни. Збережене значення переглянути "
+"неможливо."
+
+#: admin.py:173
+msgid ""
+"Entered once, stored encrypted, and cannot be viewed again. Leave empty to "
+"use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+"Вводиться один раз, зберігається в зашифрованому вигляді та не може бути "
+"переглянутий повторно. Залиште порожнім, щоб використовувати "
+"OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+
+#: admin.py:216
+msgid "API key status"
+msgstr "Статус ключа API"
+
+#: admin.py:219
+msgid "Stored (encrypted, not visible)"
+msgstr "Збережено (зашифровано, не відображається)"
+
+#: admin.py:220
+msgid "Not set"
+msgstr "Не встановлено"
+
+#: admin.py:250 models.py:274
+msgid "Fallback model must be active."
+msgstr "Резервна модель має бути активною."
+
+#: admin.py:269
+msgid "Models in the chain must be active."
+msgstr "Моделі в ланцюжку мають бути активними."
+
+#: admin.py:271
+msgid "only_free_models allows only free models."
+msgstr "only_free_models дозволяє лише безкоштовні моделі."
+
+#: admin.py:273
+msgid "Each model may appear only once."
+msgstr "Кожна модель може з’являтися лише один раз."
+
+#: admin.py:293
+msgid "Model"
+msgstr "Модель"
+
+#: admin.py:294
+msgid "Models (priority order)"
+msgstr "Моделі (за пріоритетом)"
+
+#: admin.py:324 models.py:148
+msgid "Usage profile"
+msgstr "Профіль використання"
+
+#: admin.py:436
+msgid "Sync catalog with OpenRouter"
+msgstr "Синхронізувати каталог із OpenRouter"
+
+#: admin.py:450
+#, python-format
+msgid ""
+"Sync complete: %(created)s created, %(updated)s updated, %(deactivated)s "
+"deactivated (%(total)s remote)."
+msgstr ""
+"Синхронізацію завершено: створено %(created)s, оновлено %(updated)s, "
+"деактивовано %(deactivated)s (%(total)s віддалених)."
+
+#: admin.py:461
+msgid "Assign to usage profile…"
+msgstr "Призначити профілю використання…"
+
+#: admin.py:481
+msgid "Assign models to usage profile"
+msgstr "Призначити моделі профілю використання"
+
+#: admin.py:534
+#, python-format
+msgid "%(count)s already in the chain"
+msgstr "%(count)s уже в ланцюжку"
+
+#: admin.py:535
+#, python-format
+msgid "%(count)s inactive"
+msgstr "%(count)s неактивних"
+
+#: admin.py:536
+#, python-format
+msgid "%(count)s not free (only_free_models)"
+msgstr "%(count)s не безкоштовні (only_free_models)"
+
+#: admin.py:542
+#, python-format
+msgid "Added %(count)s model(s) to profile “%(profile)s”."
+msgstr "Додано %(count)s моделей до профілю «%(profile)s»."
+
+#: admin.py:548
+#, python-format
+msgid "No models were added to profile “%(profile)s”."
+msgstr "Жодну модель не додано до профілю «%(profile)s»."
+
+#: admin.py:551
+#, python-format
+msgid "Skipped: %(reasons)s."
+msgstr "Пропущено: %(reasons)s."
+
+#: client.py:131
+msgid "No usage profile specified and default_profile is not set."
+msgstr "Профіль використання не вказано, а default_profile не встановлено."
+
+#: client.py:135
+#, python-format
+msgid "Usage profile %(name)r is not found or inactive."
+msgstr "Профіль використання %(name)r не знайдено або він неактивний."
+
+#: client.py:151
+#, python-format
+msgid "Unknown model %(model_id)r."
+msgstr "Невідома модель %(model_id)r."
+
+#: client.py:167
+#, python-format
+msgid "Profile %(name)r has no models configured."
+msgstr "Профіль %(name)r не має налаштованих моделей."
+
+#: client.py:171
+#, python-format
+msgid "No allowed models left for profile %(name)r."
+msgstr "Для профілю %(name)r не залишилося дозволених моделей."
+
+#: client.py:237
+msgid "Streaming is not implemented in django-openrouter MVP."
+msgstr "Потокову передачу (streaming) не реалізовано в django-openrouter MVP."
+
+#: client.py:240
+msgid "OpenRouter is disabled in admin settings."
+msgstr "OpenRouter вимкнено в налаштуваннях адмінки."
+
+#: client.py:242 sync.py:213
+msgid "OpenRouter API key is not configured."
+msgstr "Ключ API OpenRouter не налаштовано."
+
+#: client.py:268 client.py:358
+msgid "All models failed without a specific error."
+msgstr "Усі моделі завершилися невдало без конкретної помилки."
+
+#: client.py:321 client.py:436
+#, python-format
+msgid "OpenRouter returned HTTP %(status)s: %(error)s"
+msgstr "OpenRouter повернув HTTP %(status)s: %(error)s"
+
+#: log_backends.py:194
+msgid ""
+"ClickHouseBackend requires 'URL' in the LOG_BACKENDS entry (e.g. http://"
+"localhost:8123)."
+msgstr ""
+"ClickHouseBackend вимагає ключ 'URL' у записі LOG_BACKENDS (наприклад, "
+"http://localhost:8123)."
+
+#: log_backends.py:204
+#, python-format
+msgid "ClickHouseBackend: invalid %(label)s identifier %(identifier)r."
+msgstr "ClickHouseBackend: недійсний ідентифікатор %(label)s %(identifier)r."
+
+#: log_backends.py:245
+msgid "LOG_BACKENDS entry dict requires a 'BACKEND' key."
+msgstr "Словник запису LOG_BACKENDS вимагає ключ 'BACKEND'."
+
+#: log_backends.py:250
+#, python-format
+msgid "LOG_BACKENDS entries must be strings or dicts, got %(type)s."
+msgstr "Записи LOG_BACKENDS мають бути рядками або словниками, отримано %(type)s."
+
+#: log_backends.py:257
+#, python-format
+msgid "Cannot import log backend %(path)r: %(error)s"
+msgstr "Неможливо імпортувати бекенд журналювання %(path)r: %(error)s"
+
+#: log_backends.py:260
+#, python-format
+msgid "%(path)r is not a LogBackend subclass."
+msgstr "%(path)r не є підкласом LogBackend."
+
+#: log_backends.py:276
+msgid "OPENROUTER['LOG_BACKENDS'] must be a list."
+msgstr "OPENROUTER['LOG_BACKENDS'] має бути списком."
+
+#: management/commands/sync_models.py:11
+msgid "Fetch GET /api/v1/models and upsert the local OpenRouter catalog."
+msgstr "Отримати GET /api/v1/models і виконати upsert локального каталогу OpenRouter."
+
+#: management/commands/sync_models.py:18
+msgid "Override API key for this run."
+msgstr "Перевизначити ключ API для цього запуску."
+
+#: management/commands/sync_models.py:31
+#, python-format
+msgid ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+msgstr ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+
+#: models.py:45
+msgid "OpenRouter model id, e.g. anthropic/claude-3.5-sonnet"
+msgstr "Ідентифікатор моделі OpenRouter, напр. anthropic/claude-3.5-sonnet"
+
+#: models.py:52
+msgid "Per-token prices: prompt, completion, optional request/image."
+msgstr "Ціни за токен: prompt, completion, за бажанням request/image."
+
+#: models.py:61
+msgid "Prompt price per token from the catalog, for admin sorting."
+msgstr "Ціна prompt за токен із каталогу, для сортування в адмінці."
+
+#: models.py:68
+msgid "Completion price per token from the catalog, for admin sorting."
+msgstr "Ціна completion за токен із каталогу, для сортування в адмінці."
+
+#: models.py:73
+msgid "p50 TTFT for the best endpoint, in milliseconds."
+msgstr "p50 TTFT для найкращого endpoint, у мілісекундах."
+
+#: models.py:78
+msgid "p50 throughput (tok/s) for the best endpoint — load."
+msgstr "p50 пропускна здатність (tok/s) для найкращого endpoint — навантаження."
+
+#: models.py:85
+msgid "OpenRouter model"
+msgstr "Модель OpenRouter"
+
+#: models.py:86
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:7
+msgid "OpenRouter models"
+msgstr "Моделі OpenRouter"
+
+#: models.py:108
+msgid "Stable slug used in code, e.g. chat, translation."
+msgstr "Стабільний slug, що використовується в коді, напр. chat, translation."
+
+#: models.py:116
+msgid "First model in the chain (synced from the list)."
+msgstr "Перша модель у ланцюжку (синхронізовано зі списку)."
+
+#: models.py:142
+msgid "If enabled, only models with zero catalog price may be used."
+msgstr "Якщо ввімкнено, можна використовувати лише моделі з нульовою ціною в каталозі."
+
+#: models.py:149
+msgid "Usage profiles"
+msgstr "Профілі використання"
+
+#: models.py:157
+msgid "Temperature must be between 0 and 2."
+msgstr "Temperature має бути від 0 до 2."
+
+#: models.py:163
+msgid "Primary model must be active."
+msgstr "Основна модель має бути активною."
+
+#: models.py:166
+msgid "only_free_models requires a free primary model."
+msgstr "only_free_models вимагає безкоштовної основної моделі."
+
+#: models.py:263
+msgid "Profile model"
+msgstr "Модель профілю"
+
+#: models.py:264
+msgid "Profile models"
+msgstr "Моделі профілю"
+
+#: models.py:277
+msgid "only_free_models allows only free fallback models."
+msgstr "only_free_models дозволяє лише безкоштовні резервні моделі."
+
+#: models.py:287
+msgid "Leave empty to use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr "Залиште порожнім, щоб використовувати OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+
+#: models.py:300
+msgid "HTTP timeout in seconds."
+msgstr "HTTP-таймаут у секундах."
+
+#: models.py:304
+msgid "Retries per model on transport / 5xx errors before fallback."
+msgstr "Повторні спроби на модель при помилках транспорту / 5xx перед переходом на резерв."
+
+#: models.py:308
+msgid "Global kill switch. When off, every chat() call fails."
+msgstr "Глобальний перемикач вимкнення. Коли вимкнено, кожен виклик chat() завершується помилкою."
+
+#: models.py:312 models.py:313 models.py:316
+msgid "OpenRouter settings"
+msgstr "Налаштування OpenRouter"
+
+#: models.py:360
+msgid "Request log"
+msgstr "Журнал запитів"
+
+#: models.py:361
+msgid "Request logs"
+msgstr "Журнали запитів"
+
+#: models.py:366
+msgid "Can view usage logs"
+msgstr "Може переглядати журнали використання"
+
+#: rules.py:25
+#, python-format
+msgid "Usage profile %(name)r is disabled."
+msgstr "Профіль використання %(name)r вимкнено."
+
+#: rules.py:39
+#, python-format
+msgid "Daily request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "Добовий ліміт запитів (%(limit)s) перевищено для профілю %(name)r."
+
+#: rules.py:47
+#, python-format
+msgid "Monthly request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "Місячний ліміт запитів (%(limit)s) перевищено для профілю %(name)r."
+
+#: rules.py:54
+#, python-format
+msgid "Daily budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "Добовий бюджет (%(budget)s USD) перевищено для профілю %(name)r."
+
+#: rules.py:61
+#, python-format
+msgid "Monthly budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "Місячний бюджет (%(budget)s USD) перевищено для профілю %(name)r."
+
+#: rules.py:69
+#, python-format
+msgid "Model %(model_id)r is disabled."
+msgstr "Модель %(model_id)r вимкнено."
+
+#: rules.py:72
+#, python-format
+msgid "Profile %(name)r allows only free models; %(model_id)r is not free."
+msgstr "Профіль %(name)r дозволяє лише безкоштовні моделі; %(model_id)r не безкоштовна."
+
+#: sync.py:242
+msgid "Unexpected OpenRouter /models response."
+msgstr "Неочікувана відповідь OpenRouter /models."
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:5
+msgid "Home"
+msgstr "Головна"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:6
+msgid "Django_openrouter"
+msgstr "Django_openrouter"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:8
+msgid "Assign to usage profile"
+msgstr "Призначити профілю використання"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:18
+#, python-format
+msgid "The selected model will be appended to the model chain of the profile:"
+msgid_plural ""
+"The %(counter)s selected models will be appended to the model chain of the "
+"profile:"
+msgstr[0] "Буде додано %(counter)s вибрану модель до ланцюжка моделей профілю:"
+msgstr[1] "Вибрані %(counter)s моделі буде додано до ланцюжка моделей профілю:"
+msgstr[2] "Вибрані %(counter)s моделей буде додано до ланцюжка моделей профілю:"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:30
+msgid "Assign"
+msgstr "Призначити"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:31
+msgid "Cancel"
+msgstr "Скасувати"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:5
+msgid "Total requests"
+msgstr "Усього запитів"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:7
+msgid "Total cost (USD)"
+msgstr "Загальна вартість (USD)"

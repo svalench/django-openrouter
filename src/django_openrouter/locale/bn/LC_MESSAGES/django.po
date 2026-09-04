@@ -1,0 +1,453 @@
+# Bengali translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-04 11:06+0000\n"
+"PO-Revision-Date: 2026-09-04 11:06+0000\n"
+"Last-Translator: django-openrouter contributors\n"
+"Language-Team: bn\n"
+"Language: bn\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: admin.py:78 admin.py:429
+msgid "Price"
+msgstr "মূল্য"
+
+#: admin.py:85
+msgid "Free"
+msgstr "বিনামূল্যে"
+
+#: admin.py:86
+msgid "Cheap (< $1 / 1M)"
+msgstr "সস্তা (< $1 / 1M)"
+
+#: admin.py:87
+msgid "Mid ($1-$10 / 1M)"
+msgstr "মাঝারি ($1-$10 / 1M)"
+
+#: admin.py:88
+msgid "Expensive (>= $10 / 1M)"
+msgstr "ব্যয়বহুল (>= $10 / 1M)"
+
+#: admin.py:98
+msgid "Speed"
+msgstr "গতি"
+
+#: admin.py:105
+msgid "Fast (< 400 ms)"
+msgstr "দ্রুত (< 400 ms)"
+
+#: admin.py:106
+msgid "Medium (400-1200 ms)"
+msgstr "মাঝারি (400-1200 ms)"
+
+#: admin.py:107
+msgid "Slow (>= 1200 ms)"
+msgstr "ধীর (>= 1200 ms)"
+
+#: admin.py:108
+msgid "Unknown latency"
+msgstr "অজানা বিলম্ব"
+
+#: admin.py:136
+msgid "API key"
+msgstr "API কী"
+
+#: admin.py:145
+msgid "Clear stored API key"
+msgstr "সংরক্ষিত API কী মুছুন"
+
+#: admin.py:168
+msgid ""
+"A key is stored encrypted. Leave blank to keep it, or enter a new key to "
+"replace it. The stored value cannot be viewed."
+msgstr ""
+"কীটি এনক্রিপ্ট করে সংরক্ষিত আছে। এটি রেখে দিতে ফাঁকা রাখুন, অথবা প্রতিস্থাপনের "
+"জন্য নতুন কী লিখুন। সংরক্ষিত মান দেখা যায় না।"
+
+#: admin.py:173
+msgid ""
+"Entered once, stored encrypted, and cannot be viewed again. Leave empty to "
+"use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+"একবার লিখলে এনক্রিপ্ট করে সংরক্ষণ হয় এবং আবার দেখা যায় না। "
+"OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY'] ব্যবহার করতে ফাঁকা রাখুন।"
+
+#: admin.py:216
+msgid "API key status"
+msgstr "API কী-এর অবস্থা"
+
+#: admin.py:219
+msgid "Stored (encrypted, not visible)"
+msgstr "সংরক্ষিত (এনক্রিপ্টেড, দৃশ্যমান নয়)"
+
+#: admin.py:220
+msgid "Not set"
+msgstr "সেট করা হয়নি"
+
+#: admin.py:250 models.py:274
+msgid "Fallback model must be active."
+msgstr "ফলব্যাক মডেল সক্রিয় হতে হবে।"
+
+#: admin.py:269
+msgid "Models in the chain must be active."
+msgstr "চেইনের মডেলগুলো সক্রিয় হতে হবে।"
+
+#: admin.py:271
+msgid "only_free_models allows only free models."
+msgstr "only_free_models কেবল বিনামূল্যের মডেলের অনুমতি দেয়।"
+
+#: admin.py:273
+msgid "Each model may appear only once."
+msgstr "প্রতিটি মডেল কেবল একবার থাকতে পারে।"
+
+#: admin.py:293
+msgid "Model"
+msgstr "মডেল"
+
+#: admin.py:294
+msgid "Models (priority order)"
+msgstr "মডেল (অগ্রাধিকার অনুযায়ী)"
+
+#: admin.py:324 models.py:148
+msgid "Usage profile"
+msgstr "ব্যবহার প্রোফাইল"
+
+#: admin.py:436
+msgid "Sync catalog with OpenRouter"
+msgstr "OpenRouter-এর সাথে ক্যাটালগ সিঙ্ক করুন"
+
+#: admin.py:450
+#, python-format
+msgid ""
+"Sync complete: %(created)s created, %(updated)s updated, %(deactivated)s "
+"deactivated (%(total)s remote)."
+msgstr ""
+"সিঙ্ক সম্পন্ন: %(created)sটি তৈরি, %(updated)sটি আপডেট, %(deactivated)sটি "
+"নিষ্ক্রিয় (%(total)sটি রিমোট)।"
+
+#: admin.py:461
+msgid "Assign to usage profile…"
+msgstr "ব্যবহার প্রোফাইলে নির্ধারণ করুন…"
+
+#: admin.py:481
+msgid "Assign models to usage profile"
+msgstr "ব্যবহার প্রোফাইলে মডেল নির্ধারণ করুন"
+
+#: admin.py:534
+#, python-format
+msgid "%(count)s already in the chain"
+msgstr "%(count)sটি ইতিমধ্যে চেইনে আছে"
+
+#: admin.py:535
+#, python-format
+msgid "%(count)s inactive"
+msgstr "%(count)sটি নিষ্ক্রিয়"
+
+#: admin.py:536
+#, python-format
+msgid "%(count)s not free (only_free_models)"
+msgstr "%(count)sটি বিনামূল্যে নয় (only_free_models)"
+
+#: admin.py:542
+#, python-format
+msgid "Added %(count)s model(s) to profile “%(profile)s”."
+msgstr "প্রোফাইল “%(profile)s”-এ %(count)sটি মডেল যোগ করা হয়েছে।"
+
+#: admin.py:548
+#, python-format
+msgid "No models were added to profile “%(profile)s”."
+msgstr "প্রোফাইল “%(profile)s”-এ কোনো মডেল যোগ করা হয়নি।"
+
+#: admin.py:551
+#, python-format
+msgid "Skipped: %(reasons)s."
+msgstr "বাদ দেওয়া হয়েছে: %(reasons)s।"
+
+#: client.py:131
+msgid "No usage profile specified and default_profile is not set."
+msgstr "কোনো ব্যবহার প্রোফাইল নির্দিষ্ট করা হয়নি এবং default_profile সেট করা নেই।"
+
+#: client.py:135
+#, python-format
+msgid "Usage profile %(name)r is not found or inactive."
+msgstr "ব্যবহার প্রোফাইল %(name)r পাওয়া যায়নি বা নিষ্ক্রিয়।"
+
+#: client.py:151
+#, python-format
+msgid "Unknown model %(model_id)r."
+msgstr "অজানা মডেল %(model_id)r।"
+
+#: client.py:167
+#, python-format
+msgid "Profile %(name)r has no models configured."
+msgstr "প্রোফাইল %(name)r-এ কোনো মডেল কনফিগার করা নেই।"
+
+#: client.py:171
+#, python-format
+msgid "No allowed models left for profile %(name)r."
+msgstr "প্রোফাইল %(name)r-এর জন্য কোনো অনুমোদিত মডেল অবশিষ্ট নেই।"
+
+#: client.py:237
+msgid "Streaming is not implemented in django-openrouter MVP."
+msgstr "django-openrouter MVP-তে স্ট্রিমিং বাস্তবায়ন করা হয়নি।"
+
+#: client.py:240
+msgid "OpenRouter is disabled in admin settings."
+msgstr "অ্যাডমিন সেটিংসে OpenRouter নিষ্ক্রিয় করা আছে।"
+
+#: client.py:242 sync.py:213
+msgid "OpenRouter API key is not configured."
+msgstr "OpenRouter API কী কনফিগার করা নেই।"
+
+#: client.py:268 client.py:358
+msgid "All models failed without a specific error."
+msgstr "সব মডেল কোনো নির্দিষ্ট ত্রুটি ছাড়াই ব্যর্থ হয়েছে।"
+
+#: client.py:321 client.py:436
+#, python-format
+msgid "OpenRouter returned HTTP %(status)s: %(error)s"
+msgstr "OpenRouter HTTP %(status)s ফিরিয়েছে: %(error)s"
+
+#: log_backends.py:194
+msgid ""
+"ClickHouseBackend requires 'URL' in the LOG_BACKENDS entry (e.g. http://"
+"localhost:8123)."
+msgstr ""
+"ClickHouseBackend-এর জন্য LOG_BACKENDS এন্ট্রিতে 'URL' প্রয়োজন (যেমন http://"
+"localhost:8123)।"
+
+#: log_backends.py:204
+#, python-format
+msgid "ClickHouseBackend: invalid %(label)s identifier %(identifier)r."
+msgstr "ClickHouseBackend: অবৈধ %(label)s শনাক্তকারী %(identifier)r।"
+
+#: log_backends.py:245
+msgid "LOG_BACKENDS entry dict requires a 'BACKEND' key."
+msgstr "LOG_BACKENDS এন্ট্রি ডিকশনারিতে 'BACKEND' কী প্রয়োজন।"
+
+#: log_backends.py:250
+#, python-format
+msgid "LOG_BACKENDS entries must be strings or dicts, got %(type)s."
+msgstr "LOG_BACKENDS এন্ট্রি অবশ্যই স্ট্রিং বা ডিকশনারি হতে হবে, পাওয়া গেছে %(type)s।"
+
+#: log_backends.py:257
+#, python-format
+msgid "Cannot import log backend %(path)r: %(error)s"
+msgstr "লগ ব্যাকএন্ড %(path)r ইমপোর্ট করা যায়নি: %(error)s"
+
+#: log_backends.py:260
+#, python-format
+msgid "%(path)r is not a LogBackend subclass."
+msgstr "%(path)r কোনো LogBackend সাবক্লাস নয়।"
+
+#: log_backends.py:276
+msgid "OPENROUTER['LOG_BACKENDS'] must be a list."
+msgstr "OPENROUTER['LOG_BACKENDS'] অবশ্যই একটি তালিকা হতে হবে।"
+
+#: management/commands/sync_models.py:11
+msgid "Fetch GET /api/v1/models and upsert the local OpenRouter catalog."
+msgstr "GET /api/v1/models ফেচ করুন এবং লোকাল OpenRouter ক্যাটালগ আপসার্ট করুন।"
+
+#: management/commands/sync_models.py:18
+msgid "Override API key for this run."
+msgstr "এই রানের জন্য API কী ওভাররাইড করুন।"
+
+#: management/commands/sync_models.py:31
+#, python-format
+msgid ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+msgstr ""
+"তৈরি=%(created)s আপডেট=%(updated)s নিষ্ক্রিয়=%(deactivated)s "
+"রিমোট=%(total)s"
+
+#: models.py:45
+msgid "OpenRouter model id, e.g. anthropic/claude-3.5-sonnet"
+msgstr "OpenRouter মডেল আইডি, যেমন anthropic/claude-3.5-sonnet"
+
+#: models.py:52
+msgid "Per-token prices: prompt, completion, optional request/image."
+msgstr "প্রতি-টোকেন মূল্য: prompt, completion, ঐচ্ছিক request/image।"
+
+#: models.py:61
+msgid "Prompt price per token from the catalog, for admin sorting."
+msgstr "ক্যাটালগ থেকে প্রতি টোকেনে prompt মূল্য, অ্যাডমিন সর্টিং-এর জন্য।"
+
+#: models.py:68
+msgid "Completion price per token from the catalog, for admin sorting."
+msgstr "ক্যাটালগ থেকে প্রতি টোকেনে completion মূল্য, অ্যাডমিন সর্টিং-এর জন্য।"
+
+#: models.py:73
+msgid "p50 TTFT for the best endpoint, in milliseconds."
+msgstr "সেরা endpoint-এর জন্য p50 TTFT, মিলিসেকেন্ডে।"
+
+#: models.py:78
+msgid "p50 throughput (tok/s) for the best endpoint — load."
+msgstr "সেরা endpoint-এর জন্য p50 থ্রুপুট (tok/s) — লোড।"
+
+#: models.py:85
+msgid "OpenRouter model"
+msgstr "OpenRouter মডেল"
+
+#: models.py:86
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:7
+msgid "OpenRouter models"
+msgstr "OpenRouter মডেলগুলো"
+
+#: models.py:108
+msgid "Stable slug used in code, e.g. chat, translation."
+msgstr "কোডে ব্যবহৃত স্থির slug, যেমন chat, translation।"
+
+#: models.py:116
+msgid "First model in the chain (synced from the list)."
+msgstr "চেইনের প্রথম মডেল (তালিকা থেকে সিঙ্ক হয়)।"
+
+#: models.py:142
+msgid "If enabled, only models with zero catalog price may be used."
+msgstr "সক্রিয় থাকলে কেবল শূন্য ক্যাটালগ মূল্যবিশিষ্ট মডেল ব্যবহার করা যাবে।"
+
+#: models.py:149
+msgid "Usage profiles"
+msgstr "ব্যবহার প্রোফাইলগুলো"
+
+#: models.py:157
+msgid "Temperature must be between 0 and 2."
+msgstr "টেম্পারেচার ০ থেকে ২-এর মধ্যে হতে হবে।"
+
+#: models.py:163
+msgid "Primary model must be active."
+msgstr "প্রাথমিক মডেল সক্রিয় হতে হবে।"
+
+#: models.py:166
+msgid "only_free_models requires a free primary model."
+msgstr "only_free_models-এর জন্য বিনামূল্যের প্রাথমিক মডেল প্রয়োজন।"
+
+#: models.py:263
+msgid "Profile model"
+msgstr "প্রোফাইল মডেল"
+
+#: models.py:264
+msgid "Profile models"
+msgstr "প্রোফাইল মডেলগুলো"
+
+#: models.py:277
+msgid "only_free_models allows only free fallback models."
+msgstr "only_free_models কেবল বিনামূল্যের ফলব্যাক মডেলের অনুমতি দেয়।"
+
+#: models.py:287
+msgid "Leave empty to use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr "OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY'] ব্যবহার করতে ফাঁকা রাখুন।"
+
+#: models.py:300
+msgid "HTTP timeout in seconds."
+msgstr "HTTP টাইমআউট, সেকেন্ডে।"
+
+#: models.py:304
+msgid "Retries per model on transport / 5xx errors before fallback."
+msgstr "ফলব্যাকের আগে প্রতি মডেলে ট্রান্সপোর্ট / 5xx ত্রুটিতে পুনঃচেষ্টা সংখ্যা।"
+
+#: models.py:308
+msgid "Global kill switch. When off, every chat() call fails."
+msgstr "গ্লোবাল kill সুইচ। বন্ধ থাকলে প্রতিটি chat() কল ব্যর্থ হয়।"
+
+#: models.py:312 models.py:313 models.py:316
+msgid "OpenRouter settings"
+msgstr "OpenRouter সেটিংস"
+
+#: models.py:360
+msgid "Request log"
+msgstr "অনুরোধ লগ"
+
+#: models.py:361
+msgid "Request logs"
+msgstr "অনুরোধ লগগুলো"
+
+#: models.py:366
+msgid "Can view usage logs"
+msgstr "ব্যবহারের লগ দেখতে পারে"
+
+#: rules.py:25
+#, python-format
+msgid "Usage profile %(name)r is disabled."
+msgstr "ব্যবহার প্রোফাইল %(name)r নিষ্ক্রিয়।"
+
+#: rules.py:39
+#, python-format
+msgid "Daily request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "প্রোফাইল %(name)r-এর দৈনিক অনুরোধ সীমা (%(limit)s) অতিক্রম করা হয়েছে।"
+
+#: rules.py:47
+#, python-format
+msgid "Monthly request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "প্রোফাইল %(name)r-এর মাসিক অনুরোধ সীমা (%(limit)s) অতিক্রম করা হয়েছে।"
+
+#: rules.py:54
+#, python-format
+msgid "Daily budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "প্রোফাইল %(name)r-এর দৈনিক বাজেট (%(budget)s USD) অতিক্রম করা হয়েছে।"
+
+#: rules.py:61
+#, python-format
+msgid "Monthly budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "প্রোফাইল %(name)r-এর মাসিক বাজেট (%(budget)s USD) অতিক্রম করা হয়েছে।"
+
+#: rules.py:69
+#, python-format
+msgid "Model %(model_id)r is disabled."
+msgstr "মডেল %(model_id)r নিষ্ক্রিয়।"
+
+#: rules.py:72
+#, python-format
+msgid "Profile %(name)r allows only free models; %(model_id)r is not free."
+msgstr "প্রোফাইল %(name)r কেবল বিনামূল্যের মডেলের অনুমতি দেয়; %(model_id)r বিনামূল্যে নয়।"
+
+#: sync.py:242
+msgid "Unexpected OpenRouter /models response."
+msgstr "অপ্রত্যাশিত OpenRouter /models উত্তর।"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:5
+msgid "Home"
+msgstr "হোম"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:6
+msgid "Django_openrouter"
+msgstr "Django_openrouter"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:8
+msgid "Assign to usage profile"
+msgstr "ব্যবহার প্রোফাইলে নির্ধারণ করুন"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:18
+#, python-format
+msgid "The selected model will be appended to the model chain of the profile:"
+msgid_plural ""
+"The %(counter)s selected models will be appended to the model chain of the "
+"profile:"
+msgstr[0] "নির্বাচিত মডেলটি প্রোফাইলের মডেল চেইনে যোগ করা হবে:"
+msgstr[1] "%(counter)sটি নির্বাচিত মডেল প্রোফাইলের মডেল চেইনে যোগ "
+"করা হবে:"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:30
+msgid "Assign"
+msgstr "নির্ধারণ করুন"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:31
+msgid "Cancel"
+msgstr "বাতিল করুন"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:5
+msgid "Total requests"
+msgstr "মোট অনুরোধ"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:7
+msgid "Total cost (USD)"
+msgstr "মোট ব্যয় (USD)"

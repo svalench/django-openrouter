@@ -1,0 +1,453 @@
+# Irish translations for django-openrouter package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-04 11:06+0000\n"
+"PO-Revision-Date: 2026-09-04 11:06+0000\n"
+"Last-Translator: django-openrouter contributors\n"
+"Language-Team: ga\n"
+"Language: ga\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=n==1 ? 0 : n==2 ? 1 : 2;\n"
+
+#: admin.py:78 admin.py:429
+msgid "Price"
+msgstr "Praghas"
+
+#: admin.py:85
+msgid "Free"
+msgstr "Saor in aisce"
+
+#: admin.py:86
+msgid "Cheap (< $1 / 1M)"
+msgstr "Saor (< $1 / 1M)"
+
+#: admin.py:87
+msgid "Mid ($1-$10 / 1M)"
+msgstr "Mheán ($1-$10 / 1M)"
+
+#: admin.py:88
+msgid "Expensive (>= $10 / 1M)"
+msgstr "Daor (>= $10 / 1M)"
+
+#: admin.py:98
+msgid "Speed"
+msgstr "Luas"
+
+#: admin.py:105
+msgid "Fast (< 400 ms)"
+msgstr "Tapaidh (< 400 ms)"
+
+#: admin.py:106
+msgid "Medium (400-1200 ms)"
+msgstr "Mheánach (400-1200 ms)"
+
+#: admin.py:107
+msgid "Slow (>= 1200 ms)"
+msgstr "Mall (>= 1200 ms)"
+
+#: admin.py:108
+msgid "Unknown latency"
+msgstr "Fanaiste anaithnid"
+
+#: admin.py:136
+msgid "API key"
+msgstr "Eochair API"
+
+#: admin.py:145
+msgid "Clear stored API key"
+msgstr "Glan an eochair API stóráilte"
+
+#: admin.py:168
+msgid ""
+"A key is stored encrypted. Leave blank to keep it, or enter a new key to "
+"replace it. The stored value cannot be viewed."
+msgstr ""
+"Tá eochair stóráilte criptithe. Fágtar bán chun í a choinneáil, nó iontráil "
+"eochair nua chun í a athsholáthar. Ní féidir an luach stóráilte a fheiceáil."
+
+#: admin.py:173
+msgid ""
+"Entered once, stored encrypted, and cannot be viewed again. Leave empty to "
+"use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+"Iontráilte uair amháin, stóráilte criptithe, agus ní féidir é a fheiceáil arís. "
+"Fágtar bán chun OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY'] a úsáid."
+
+#: admin.py:216
+msgid "API key status"
+msgstr "Stádas na heochrach API"
+
+#: admin.py:219
+msgid "Stored (encrypted, not visible)"
+msgstr "Stóráilte (criptithe, le feiceáil)"
+
+#: admin.py:220
+msgid "Not set"
+msgstr "Níl sé socraithe"
+
+#: admin.py:250 models.py:274
+msgid "Fallback model must be active."
+msgstr "Caithfidh an sámhail leithscorachta a bheith gníomhach."
+
+#: admin.py:269
+msgid "Models in the chain must be active."
+msgstr "Caithfidh na samhlacha sa tslabhra a bheith gníomhach."
+
+#: admin.py:271
+msgid "only_free_models allows only free models."
+msgstr "Ní ligeann only_free_models ach samhlacha saor in aisce."
+
+#: admin.py:273
+msgid "Each model may appear only once."
+msgstr "Ní féidir ach le sámhail amháin a bheith ann uair amháin."
+
+#: admin.py:293
+msgid "Model"
+msgstr "Sámhail"
+
+#: admin.py:294
+msgid "Models (priority order)"
+msgstr "Samhlacha (ord rogha)"
+
+#: admin.py:324 models.py:148
+msgid "Usage profile"
+msgstr "Próifíl úsáide"
+
+#: admin.py:436
+msgid "Sync catalog with OpenRouter"
+msgstr "Sioncrónaigh an catalóg le OpenRouter"
+
+#: admin.py:450
+#, python-format
+msgid ""
+"Sync complete: %(created)s created, %(updated)s updated, %(deactivated)s "
+"deactivated (%(total)s remote)."
+msgstr ""
+"Sioncrónú críochnaithe: %(created)s cruthaithe, %(updated)s nuashonraithe, "
+"%(deactivated)s díghníomhachtaithe (%(total)s iargúlta)."
+
+#: admin.py:461
+msgid "Assign to usage profile…"
+msgstr "Sann chuig próifíl úsáide…"
+
+#: admin.py:481
+msgid "Assign models to usage profile"
+msgstr "Sann samhlacha chuig próifíl úsáide"
+
+#: admin.py:534
+#, python-format
+msgid "%(count)s already in the chain"
+msgstr "%(count)s sa tslabhra cheana féin"
+
+#: admin.py:535
+#, python-format
+msgid "%(count)s inactive"
+msgstr "%(count)s neamhghníomhach"
+
+#: admin.py:536
+#, python-format
+msgid "%(count)s not free (only_free_models)"
+msgstr "%(count)s nach bhfuil saor in aisce (only_free_models)"
+
+#: admin.py:542
+#, python-format
+msgid "Added %(count)s model(s) to profile “%(profile)s”."
+msgstr "Cuireadh %(count)s sámhail(len) leis an bpróifíl “%(profile)s”."
+
+#: admin.py:548
+#, python-format
+msgid "No models were added to profile “%(profile)s”."
+msgstr "Níor cuireadh aon tsámhail leis an bpróifíl “%(profile)s”."
+
+#: admin.py:551
+#, python-format
+msgid "Skipped: %(reasons)s."
+msgstr "Léimeadh thar: %(reasons)s."
+
+#: client.py:131
+msgid "No usage profile specified and default_profile is not set."
+msgstr "Níl aon phróifíl úsáide sonraithe agus default_profile nach bhfuil socraithe."
+
+#: client.py:135
+#, python-format
+msgid "Usage profile %(name)r is not found or inactive."
+msgstr "Níl próifíl úsáide %(name)r le fáil nó tá sí neamhghníomhach."
+
+#: client.py:151
+#, python-format
+msgid "Unknown model %(model_id)r."
+msgstr "Sámhail anaithnid %(model_id)r."
+
+#: client.py:167
+#, python-format
+msgid "Profile %(name)r has no models configured."
+msgstr "Níl aon tsámhail cumraithe sa phróifíl %(name)r."
+
+#: client.py:171
+#, python-format
+msgid "No allowed models left for profile %(name)r."
+msgstr "Níl aon tsámhail ceadaithe fágtha don phróifíl %(name)r."
+
+#: client.py:237
+msgid "Streaming is not implemented in django-openrouter MVP."
+msgstr "Níl sruthú curtha i bhfeidhm i MVP django-openrouter."
+
+#: client.py:240
+msgid "OpenRouter is disabled in admin settings."
+msgstr "Tá OpenRouter díchumasaithe sna socruithe riaracháin."
+
+#: client.py:242 sync.py:213
+msgid "OpenRouter API key is not configured."
+msgstr "Níl eochair API OpenRouter cumraithe."
+
+#: client.py:268 client.py:358
+msgid "All models failed without a specific error."
+msgstr "Theip ar gach sámhail gan earráid ar leith."
+
+#: client.py:321 client.py:436
+#, python-format
+msgid "OpenRouter returned HTTP %(status)s: %(error)s"
+msgstr "Thug OpenRouter HTTP %(status)s ar ais: %(error)s"
+
+#: log_backends.py:194
+msgid ""
+"ClickHouseBackend requires 'URL' in the LOG_BACKENDS entry (e.g. http://"
+"localhost:8123)."
+msgstr ""
+"Teastaíonn 'URL' i mír LOG_BACKENDS ó ClickHouseBackend (m.sh. http://"
+"localhost:8123)."
+
+#: log_backends.py:204
+#, python-format
+msgid "ClickHouseBackend: invalid %(label)s identifier %(identifier)r."
+msgstr "ClickHouseBackend: aitheantóir %(label)s neamhbhailí %(identifier)r."
+
+#: log_backends.py:245
+msgid "LOG_BACKENDS entry dict requires a 'BACKEND' key."
+msgstr "Teastaíonn eochair 'BACKEND' ó dhicteanna mír LOG_BACKENDS."
+
+#: log_backends.py:250
+#, python-format
+msgid "LOG_BACKENDS entries must be strings or dicts, got %(type)s."
+msgstr "Caithfidh míreanna LOG_BACKENDS a bheith ina sreanga nó ina ndicteanna, fuair %(type)s."
+
+#: log_backends.py:257
+#, python-format
+msgid "Cannot import log backend %(path)r: %(error)s"
+msgstr "Ní féidir inneall loga %(path)r a iompórtáil: %(error)s"
+
+#: log_backends.py:260
+#, python-format
+msgid "%(path)r is not a LogBackend subclass."
+msgstr "Ní fo-aicme de LogBackend é %(path)r."
+
+#: log_backends.py:276
+msgid "OPENROUTER['LOG_BACKENDS'] must be a list."
+msgstr "Caithfidh OPENROUTER['LOG_BACKENDS'] a bheith ina liosta."
+
+#: management/commands/sync_models.py:11
+msgid "Fetch GET /api/v1/models and upsert the local OpenRouter catalog."
+msgstr "Faigh GET /api/v1/models agus cuir in ionad é sa chatalóg logánta OpenRouter."
+
+#: management/commands/sync_models.py:18
+msgid "Override API key for this run."
+msgstr "Sáraigh an eochair API don rith seo."
+
+#: management/commands/sync_models.py:31
+#, python-format
+msgid ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+msgstr ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+
+#: models.py:45
+msgid "OpenRouter model id, e.g. anthropic/claude-3.5-sonnet"
+msgstr "Aitheantas sámhaile OpenRouter, m.sh. anthropic/claude-3.5-sonnet"
+
+#: models.py:52
+msgid "Per-token prices: prompt, completion, optional request/image."
+msgstr "Praghasanna in aghaidh an tocsain: prompt, completion, iarratas/íomhá roghnach."
+
+#: models.py:61
+msgid "Prompt price per token from the catalog, for admin sorting."
+msgstr "Praghas prompt in aghaidh an tocsain ón gcatalóg, le haghaidh sórtála riaracháin."
+
+#: models.py:68
+msgid "Completion price per token from the catalog, for admin sorting."
+msgstr "Praghas completion in aghaidh an tocsain ón gcatalóg, le haghaidh sórtála riaracháin."
+
+#: models.py:73
+msgid "p50 TTFT for the best endpoint, in milliseconds."
+msgstr "p50 TTFT don endpoint is fearr, in milleasoicindí."
+
+#: models.py:78
+msgid "p50 throughput (tok/s) for the best endpoint — load."
+msgstr "Trídshuas p50 (tok/s) don endpoint is fearr — ualach."
+
+#: models.py:85
+msgid "OpenRouter model"
+msgstr "Sámhail OpenRouter"
+
+#: models.py:86
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:7
+msgid "OpenRouter models"
+msgstr "Samhlacha OpenRouter"
+
+#: models.py:108
+msgid "Stable slug used in code, e.g. chat, translation."
+msgstr "Slug cobhsaí a úsáidtear sa chód, m.sh. chat, translation."
+
+#: models.py:116
+msgid "First model in the chain (synced from the list)."
+msgstr "An chéad tsámhail sa tslabhra (sioncrónaithe ón liosta)."
+
+#: models.py:142
+msgid "If enabled, only models with zero catalog price may be used."
+msgstr "Má tá sé cumasaithe, ní féidir ach samhlacha le praghas nialais sa chatalóg a úsáid."
+
+#: models.py:149
+msgid "Usage profiles"
+msgstr "Próifílí úsáide"
+
+#: models.py:157
+msgid "Temperature must be between 0 and 2."
+msgstr "Caithfidh an teocht a bheith idir 0 agus 2."
+
+#: models.py:163
+msgid "Primary model must be active."
+msgstr "Caithfidh an phríomhsámhail a bheith gníomhach."
+
+#: models.py:166
+msgid "only_free_models requires a free primary model."
+msgstr "Teastaíonn príomhsámhail saor in aisce ó only_free_models."
+
+#: models.py:263
+msgid "Profile model"
+msgstr "Sámhail phróifíle"
+
+#: models.py:264
+msgid "Profile models"
+msgstr "Samhlacha próifíle"
+
+#: models.py:277
+msgid "only_free_models allows only free fallback models."
+msgstr "Ní ligeann only_free_models ach samhlacha leithscorachta saor in aisce."
+
+#: models.py:287
+msgid "Leave empty to use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr "Fágtar bán chun OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY'] a úsáid."
+
+#: models.py:300
+msgid "HTTP timeout in seconds."
+msgstr "Am eisiúna HTTP i soicindí."
+
+#: models.py:304
+msgid "Retries per model on transport / 5xx errors before fallback."
+msgstr "Athdhéantar in aghaidh na samhla ar earráidí iompair / 5xx roimh leithscoracht."
+
+#: models.py:308
+msgid "Global kill switch. When off, every chat() call fails."
+msgstr "Cosc domhanda. Nuair atá sé as, teipeann ar ghlao chat() gach uair."
+
+#: models.py:312 models.py:313 models.py:316
+msgid "OpenRouter settings"
+msgstr "Socruithe OpenRouter"
+
+#: models.py:360
+msgid "Request log"
+msgstr "Loga iarratas"
+
+#: models.py:361
+msgid "Request logs"
+msgstr "Loganna iarratas"
+
+#: models.py:366
+msgid "Can view usage logs"
+msgstr "Is féidir loganna úsáide a fheiceáil"
+
+#: rules.py:25
+#, python-format
+msgid "Usage profile %(name)r is disabled."
+msgstr "Tá próifíl úsáide %(name)r díchumasaithe."
+
+#: rules.py:39
+#, python-format
+msgid "Daily request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "Sáraíodh an teorainn iarratas laethúil (%(limit)s) don phróifíl %(name)r."
+
+#: rules.py:47
+#, python-format
+msgid "Monthly request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "Sáraíodh an teorainn iarratas míosúil (%(limit)s) don phróifíl %(name)r."
+
+#: rules.py:54
+#, python-format
+msgid "Daily budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "Sáraíodh an buiséad laethúil (%(budget)s USD) don phróifíl %(name)r."
+
+#: rules.py:61
+#, python-format
+msgid "Monthly budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "Sáraíodh an buiséad míosúil (%(budget)s USD) don phróifíl %(name)r."
+
+#: rules.py:69
+#, python-format
+msgid "Model %(model_id)r is disabled."
+msgstr "Tá sámhail %(model_id)r díchumasaithe."
+
+#: rules.py:72
+#, python-format
+msgid "Profile %(name)r allows only free models; %(model_id)r is not free."
+msgstr "Ní ligeann próifíl %(name)r ach samhlacha saor in aisce; níl %(model_id)r saor in aisce."
+
+#: sync.py:242
+msgid "Unexpected OpenRouter /models response."
+msgstr "Freagra gan choinne ó OpenRouter /models."
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:5
+msgid "Home"
+msgstr "Baile"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:6
+msgid "Django_openrouter"
+msgstr "Django_openrouter"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:8
+msgid "Assign to usage profile"
+msgstr "Sann chuig próifíl úsáide"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:18
+#, python-format
+msgid "The selected model will be appended to the model chain of the profile:"
+msgid_plural ""
+"The %(counter)s selected models will be appended to the model chain of the "
+"profile:"
+msgstr[0] "Cuirfear an tsámhail roghnaithe leis an tslabhra samhail den phróifíl:"
+msgstr[1] "Cuirfear an %(counter)s tsámhail roghnaithe leis an tslabhra samhail den phróifíl:"
+msgstr[2] "Cuirfear na %(counter)s samhlacha roghnaithe leis an tslabhra samhail den phróifíl:"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:30
+msgid "Assign"
+msgstr "Sann"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:31
+msgid "Cancel"
+msgstr "Cealaigh"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:5
+msgid "Total requests"
+msgstr "Iomlán na n-iarratas"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:7
+msgid "Total cost (USD)"
+msgstr "Costas iomlán (USD)"

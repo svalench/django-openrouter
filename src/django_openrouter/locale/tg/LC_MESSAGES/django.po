@@ -1,0 +1,458 @@
+# Tajik translations for django-openrouter package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-04 11:06+0000\n"
+"PO-Revision-Date: 2026-09-04 11:06+0000\n"
+"Last-Translator: django-openrouter contributors\n"
+"Language-Team: tg\n"
+"Language: tg\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n%10==1 && n%100!=11) ? 0 : 1;\n"
+
+#: admin.py:78 admin.py:429
+msgid "Price"
+msgstr "Нарх"
+
+#: admin.py:85
+msgid "Free"
+msgstr "Ройгон"
+
+#: admin.py:86
+msgid "Cheap (< $1 / 1M)"
+msgstr "Арзон (< $1 / 1M)"
+
+#: admin.py:87
+msgid "Mid ($1-$10 / 1M)"
+msgstr "Миёна ($1-$10 / 1M)"
+
+#: admin.py:88
+msgid "Expensive (>= $10 / 1M)"
+msgstr "Гарон (>= $10 / 1M)"
+
+#: admin.py:98
+msgid "Speed"
+msgstr "Суръат"
+
+#: admin.py:105
+msgid "Fast (< 400 ms)"
+msgstr "Тез (< 400 ms)"
+
+#: admin.py:106
+msgid "Medium (400-1200 ms)"
+msgstr "Миёна (400-1200 ms)"
+
+#: admin.py:107
+msgid "Slow (>= 1200 ms)"
+msgstr "Оҳиста (>= 1200 ms)"
+
+#: admin.py:108
+msgid "Unknown latency"
+msgstr "Кушодише номуайян"
+
+#: admin.py:136
+msgid "API key"
+msgstr "Калиди API"
+
+#: admin.py:145
+msgid "Clear stored API key"
+msgstr "Пок кардани калиди API-и нигоҳдошташуда"
+
+#: admin.py:168
+msgid ""
+"A key is stored encrypted. Leave blank to keep it, or enter a new key to "
+"replace it. The stored value cannot be viewed."
+msgstr ""
+"Калид рамзгузоришуда нигоҳ дошта мешавад. Барои нигоҳ доштани он холӣ "
+"гузоред ё барои иваз кардан калиди нав ворид кунед. Қимати нигоҳдошташударо "
+"дидан намешавад."
+
+#: admin.py:173
+msgid ""
+"Entered once, stored encrypted, and cannot be viewed again. Leave empty to "
+"use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr ""
+"Як маротиба ворид мешавад, рамзгузоришуда нигоҳ дошта мешавад ва дигар "
+"дидан намешавад. Барои истифодаи OPENROUTER_API_KEY / "
+"settings.OPENROUTER['API_KEY'] холӣ гузоред."
+
+#: admin.py:216
+msgid "API key status"
+msgstr "Ҳолати калиди API"
+
+#: admin.py:219
+msgid "Stored (encrypted, not visible)"
+msgstr "Нигоҳ дошта шудааст (рамзгузоришуда, намоён нест)"
+
+#: admin.py:220
+msgid "Not set"
+msgstr "Муқаррар нашудааст"
+
+#: admin.py:250 models.py:274
+msgid "Fallback model must be active."
+msgstr "Модели эҳтиётӣ бояд фаъол бошад."
+
+#: admin.py:269
+msgid "Models in the chain must be active."
+msgstr "Моделҳои занҷир бояд фаъол бошанд."
+
+#: admin.py:271
+msgid "only_free_models allows only free models."
+msgstr "only_free_models танҳо моделҳои ройгонро иҷозат медиҳад."
+
+#: admin.py:273
+msgid "Each model may appear only once."
+msgstr "Ҳар модел танҳо як маротиба метавонад ояд."
+
+#: admin.py:293
+msgid "Model"
+msgstr "Модел"
+
+#: admin.py:294
+msgid "Models (priority order)"
+msgstr "Моделҳо (тартиби афзалият)"
+
+#: admin.py:324 models.py:148
+msgid "Usage profile"
+msgstr "Профили истифода"
+
+#: admin.py:436
+msgid "Sync catalog with OpenRouter"
+msgstr "Ҳамоҳангсозии каталог бо OpenRouter"
+
+#: admin.py:450
+#, python-format
+msgid ""
+"Sync complete: %(created)s created, %(updated)s updated, %(deactivated)s "
+"deactivated (%(total)s remote)."
+msgstr ""
+"Ҳамоҳангсозӣ анҷом ёфт: %(created)s эҷод шуд, %(updated)s нав шуд, "
+"%(deactivated)s ғайрифаъол шуд (кул: %(total)s аз дур)."
+
+#: admin.py:461
+msgid "Assign to usage profile…"
+msgstr "Ба профили истифода таъин кардан…"
+
+#: admin.py:481
+msgid "Assign models to usage profile"
+msgstr "Таъин кардани моделҳо ба профили истифода"
+
+#: admin.py:534
+#, python-format
+msgid "%(count)s already in the chain"
+msgstr "%(count)s аллакай дар занҷир"
+
+#: admin.py:535
+#, python-format
+msgid "%(count)s inactive"
+msgstr "%(count)s ғайрифаъол"
+
+#: admin.py:536
+#, python-format
+msgid "%(count)s not free (only_free_models)"
+msgstr "%(count)s ройгон нест (only_free_models)"
+
+#: admin.py:542
+#, python-format
+msgid "Added %(count)s model(s) to profile “%(profile)s”."
+msgstr "Ба профили «%(profile)s» %(count)s модел илова шуд."
+
+#: admin.py:548
+#, python-format
+msgid "No models were added to profile “%(profile)s”."
+msgstr "Ба профили «%(profile)s» ягон модел илова нашуд."
+
+#: admin.py:551
+#, python-format
+msgid "Skipped: %(reasons)s."
+msgstr "Нодида гузаронда шуд: %(reasons)s."
+
+#: client.py:131
+msgid "No usage profile specified and default_profile is not set."
+msgstr "Профили истифода мушаххас нашудааст ва default_profile танзим нашудааст."
+
+#: client.py:135
+#, python-format
+msgid "Usage profile %(name)r is not found or inactive."
+msgstr "Профили истифода %(name)r ёфт нашуд ё ғайрифаъол аст."
+
+#: client.py:151
+#, python-format
+msgid "Unknown model %(model_id)r."
+msgstr "Модели номаълум %(model_id)r."
+
+#: client.py:167
+#, python-format
+msgid "Profile %(name)r has no models configured."
+msgstr "Профили %(name)r ягон модел надорад."
+
+#: client.py:171
+#, python-format
+msgid "No allowed models left for profile %(name)r."
+msgstr "Барои профили %(name)r ягон модели иҷозатдодашуда боқӣ намондааст."
+
+#: client.py:237
+msgid "Streaming is not implemented in django-openrouter MVP."
+msgstr "Стриминг дар django-openrouter MVP татбиқ нашудааст."
+
+#: client.py:240
+msgid "OpenRouter is disabled in admin settings."
+msgstr "OpenRouter дар танзимоти админ хомӯш аст."
+
+#: client.py:242 sync.py:213
+msgid "OpenRouter API key is not configured."
+msgstr "Калиди API-и OpenRouter танзим нашудааст."
+
+#: client.py:268 client.py:358
+msgid "All models failed without a specific error."
+msgstr "Ҳамаи моделҳо бидуни хатои мушаххас ноком шуданд."
+
+#: client.py:321 client.py:436
+#, python-format
+msgid "OpenRouter returned HTTP %(status)s: %(error)s"
+msgstr "OpenRouter HTTP %(status)s-ро баргардонд: %(error)s"
+
+#: log_backends.py:194
+msgid ""
+"ClickHouseBackend requires 'URL' in the LOG_BACKENDS entry (e.g. http://"
+"localhost:8123)."
+msgstr ""
+"ClickHouseBackend сифати 'URL'-ро дар сабти LOG_BACKENDS талаб мекунад "
+"(масалан, http://localhost:8123)."
+
+#: log_backends.py:204
+#, python-format
+msgid "ClickHouseBackend: invalid %(label)s identifier %(identifier)r."
+msgstr "ClickHouseBackend: идентификатори нодурусти %(label)s %(identifier)r."
+
+#: log_backends.py:245
+msgid "LOG_BACKENDS entry dict requires a 'BACKEND' key."
+msgstr "Луғати сабти LOG_BACKENDS сифати 'BACKEND'-ро талаб мекунад."
+
+#: log_backends.py:250
+#, python-format
+msgid "LOG_BACKENDS entries must be strings or dicts, got %(type)s."
+msgstr "Сабтҳои LOG_BACKENDS бояд сатр ё луғат бошанд, %(type)s гирифта шуд."
+
+#: log_backends.py:257
+#, python-format
+msgid "Cannot import log backend %(path)r: %(error)s"
+msgstr "Ворид кардани бэкенди сабти журнал %(path)r имконнопазир аст: %(error)s"
+
+#: log_backends.py:260
+#, python-format
+msgid "%(path)r is not a LogBackend subclass."
+msgstr "%(path)r зерсинфи LogBackend нест."
+
+#: log_backends.py:276
+msgid "OPENROUTER['LOG_BACKENDS'] must be a list."
+msgstr "OPENROUTER['LOG_BACKENDS'] бояд рӯйхат бошад."
+
+#: management/commands/sync_models.py:11
+msgid "Fetch GET /api/v1/models and upsert the local OpenRouter catalog."
+msgstr ""
+"Гирифтани GET /api/v1/models ва нав/навсозии каталоги маҳаллии OpenRouter."
+
+#: management/commands/sync_models.py:18
+msgid "Override API key for this run."
+msgstr "Иваз кардани калиди API барои ин иҷро."
+
+#: management/commands/sync_models.py:31
+#, python-format
+msgid ""
+"created=%(created)s updated=%(updated)s deactivated=%(deactivated)s "
+"remote=%(total)s"
+msgstr ""
+"эҷод шуд=%(created)s нав шуд=%(updated)s ғайрифаъол шуд=%(deactivated)s "
+"аз дур=%(total)s"
+
+#: models.py:45
+msgid "OpenRouter model id, e.g. anthropic/claude-3.5-sonnet"
+msgstr "Идентификатори модели OpenRouter, масалан anthropic/claude-3.5-sonnet"
+
+#: models.py:52
+msgid "Per-token prices: prompt, completion, optional request/image."
+msgstr "Нархҳо барои як токен: prompt, completion, интихобӣ дархост/тасвир."
+
+#: models.py:61
+msgid "Prompt price per token from the catalog, for admin sorting."
+msgstr "Нархи prompt барои як токен аз каталог, барои мураттабсозии админ."
+
+#: models.py:68
+msgid "Completion price per token from the catalog, for admin sorting."
+msgstr "Нархи completion барои як токен аз каталог, барои мураттабсозии админ."
+
+#: models.py:73
+msgid "p50 TTFT for the best endpoint, in milliseconds."
+msgstr "p50 TTFT барои беҳтарин endpoint, дар миллисония."
+
+#: models.py:78
+msgid "p50 throughput (tok/s) for the best endpoint — load."
+msgstr "p50 суръати коркард (tok/s) барои беҳтарин endpoint — бор."
+
+#: models.py:85
+msgid "OpenRouter model"
+msgstr "Модели OpenRouter"
+
+#: models.py:86
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:7
+msgid "OpenRouter models"
+msgstr "Моделҳои OpenRouter"
+
+#: models.py:108
+msgid "Stable slug used in code, e.g. chat, translation."
+msgstr "Слогани мустаҳками истифодашаванда дар код, масалан chat, translation."
+
+#: models.py:116
+msgid "First model in the chain (synced from the list)."
+msgstr "Модели якум дар занҷир (аз рӯйхат ҳамоҳанг шудааст)."
+
+#: models.py:142
+msgid "If enabled, only models with zero catalog price may be used."
+msgstr ""
+"Агар фаъол бошад, танҳо моделҳое бо нархи сифри каталог иҷозат дода мешаванд."
+
+#: models.py:149
+msgid "Usage profiles"
+msgstr "Профилҳои истифода"
+
+#: models.py:157
+msgid "Temperature must be between 0 and 2."
+msgstr "Температура бояд дар байни 0 ва 2 бошад."
+
+#: models.py:163
+msgid "Primary model must be active."
+msgstr "Модели асосӣ бояд фаъол бошад."
+
+#: models.py:166
+msgid "only_free_models requires a free primary model."
+msgstr "only_free_models модели асосии ройгонро талаб мекунад."
+
+#: models.py:263
+msgid "Profile model"
+msgstr "Модели профил"
+
+#: models.py:264
+msgid "Profile models"
+msgstr "Моделҳои профил"
+
+#: models.py:277
+msgid "only_free_models allows only free fallback models."
+msgstr "only_free_models танҳо моделҳои эҳтиётии ройгонро иҷозат медиҳад."
+
+#: models.py:287
+msgid "Leave empty to use OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY']."
+msgstr "Барои истифодаи OPENROUTER_API_KEY / settings.OPENROUTER['API_KEY'] холӣ гузоред."
+
+#: models.py:300
+msgid "HTTP timeout in seconds."
+msgstr "Муҳлати HTTP дар сония."
+
+#: models.py:304
+msgid "Retries per model on transport / 5xx errors before fallback."
+msgstr ""
+"Такрорҳо барои ҳар модел дар хатоҳои транспорт / 5xx пеш аз гузашт ба эҳтиётӣ."
+
+#: models.py:308
+msgid "Global kill switch. When off, every chat() call fails."
+msgstr "Калиди кушодани умумӣ. Ҳангоми хомӯш будан, ҳар даъвати chat() ноком мешавад."
+
+#: models.py:312 models.py:313 models.py:316
+msgid "OpenRouter settings"
+msgstr "Танзимоти OpenRouter"
+
+#: models.py:360
+msgid "Request log"
+msgstr "Сабти дархост"
+
+#: models.py:361
+msgid "Request logs"
+msgstr "Сабтҳои дархост"
+
+#: models.py:366
+msgid "Can view usage logs"
+msgstr "Метавонад сабтҳои истифодаро бинад"
+
+#: rules.py:25
+#, python-format
+msgid "Usage profile %(name)r is disabled."
+msgstr "Профили истифода %(name)r хомӯш аст."
+
+#: rules.py:39
+#, python-format
+msgid "Daily request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "Маҳдудияти рӯзонаи дархост (%(limit)s) барои профили %(name)r гузашта шуд."
+
+#: rules.py:47
+#, python-format
+msgid "Monthly request limit (%(limit)s) exceeded for profile %(name)r."
+msgstr "Маҳдудияти моҳонаи дархост (%(limit)s) барои профили %(name)r гузашта шуд."
+
+#: rules.py:54
+#, python-format
+msgid "Daily budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "Буҷети рӯзона (%(budget)s USD) барои профили %(name)r гузашта шуд."
+
+#: rules.py:61
+#, python-format
+msgid "Monthly budget (%(budget)s USD) exceeded for profile %(name)r."
+msgstr "Буҷети моҳона (%(budget)s USD) барои профили %(name)r гузашта шуд."
+
+#: rules.py:69
+#, python-format
+msgid "Model %(model_id)r is disabled."
+msgstr "Модели %(model_id)r хомӯш аст."
+
+#: rules.py:72
+#, python-format
+msgid "Profile %(name)r allows only free models; %(model_id)r is not free."
+msgstr "Профили %(name)r танҳо моделҳои ройгонро иҷозат медиҳад; %(model_id)r ройгон нест."
+
+#: sync.py:242
+msgid "Unexpected OpenRouter /models response."
+msgstr "Ҷавоби ногаҳони OpenRouter /models."
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:5
+msgid "Home"
+msgstr "Асосӣ"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:6
+msgid "Django_openrouter"
+msgstr "Django_openrouter"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:8
+msgid "Assign to usage profile"
+msgstr "Таъин кардан ба профили истифода"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:18
+#, python-format
+msgid "The selected model will be appended to the model chain of the profile:"
+msgid_plural ""
+"The %(counter)s selected models will be appended to the model chain of the "
+"profile:"
+msgstr[0] ""
+"Модели интихобшуда ба занҷири моделҳои профил илова мешавад:"
+msgstr[1] ""
+"%(counter)s модели интихобшуда ба занҷири моделҳои профил илова мешаванд:"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:30
+msgid "Assign"
+msgstr "Таъин кардан"
+
+#: templates/admin/django_openrouter/openroutermodel/assign_to_profile.html:31
+msgid "Cancel"
+msgstr "Бекор кардан"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:5
+msgid "Total requests"
+msgstr "Кулли дархостҳо"
+
+#: templates/admin/django_openrouter/requestlog/change_list.html:7
+msgid "Total cost (USD)"
+msgstr "Кулли хароҷот (USD)"
