@@ -8,6 +8,7 @@ from typing import Any
 
 from django.conf import settings as django_settings
 from django.core.cache import caches
+from django.core.cache.backends.base import BaseCache
 from django.db.models import Prefetch
 
 from django_openrouter.models import (
@@ -18,7 +19,9 @@ from django_openrouter.models import (
 )
 
 CACHE_KEY = "django_openrouter:runtime_config:v1"
+CATALOG_CACHE_KEY = "django_openrouter:admin_catalog:v1"
 _DEFAULT_CACHE_TIMEOUT = 60
+_DEFAULT_CATALOG_CACHE_TIMEOUT = 600
 _DEFAULT_CACHE_ALIAS = "default"
 _DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
 
@@ -87,6 +90,8 @@ class RuntimeConfig:
     base_url: str
     request_timeout: int
     max_retries: int
+    streaming_enabled: bool
+    max_parallel_requests: int
     http_referer: str
     x_title: str
     default_profile_name: str | None
@@ -98,20 +103,45 @@ def _cache_alias() -> str:
     return str(alias)
 
 
+def _cache() -> BaseCache:
+    """Возвращает кэш-бэкенд alias из OPENROUTER['CACHE_ALIAS']."""
+    try:
+        return caches[_cache_alias()]
+    except Exception:
+        return caches["default"]
+
+
+def catalog_cache_timeout() -> int:
+    """TTL живого каталога админки, секунды (дефолт 10 мин)."""
+    return int(
+        openrouter_setting("CATALOG_CACHE_TIMEOUT", _DEFAULT_CATALOG_CACHE_TIMEOUT)
+        or _DEFAULT_CATALOG_CACHE_TIMEOUT
+    )
+
+
+def is_catalog_fresh() -> bool:
+    """True, если каталог админки ещё в 10-минутном кэше."""
+    return _cache().get(CATALOG_CACHE_KEY) is not None
+
+
+def mark_catalog_fresh() -> None:
+    """Помечает каталог свежим после успешного синка."""
+    _cache().set(CATALOG_CACHE_KEY, True, catalog_cache_timeout())
+
+
+def invalidate_catalog_cache() -> None:
+    """Сбрасывает кэш каталога админки (ручной синк / команда)."""
+    _cache().delete(CATALOG_CACHE_KEY)
+
+
 def invalidate_runtime_config() -> None:
     """Сбрасывает кэш конфигурации (вызывается из сигналов)."""
-    try:
-        caches[_cache_alias()].delete(CACHE_KEY)
-    except Exception:
-        caches["default"].delete(CACHE_KEY)
+    _cache().delete(CACHE_KEY)
 
 
 def get_runtime_config(*, force_reload: bool = False) -> RuntimeConfig:
     """Возвращает runtime-конфиг из кэша либо собирает его из БД."""
-    try:
-        cache = caches[_cache_alias()]
-    except Exception:
-        cache = caches["default"]
+    cache = _cache()
     if not force_reload:
         cached = cache.get(CACHE_KEY)
         if isinstance(cached, RuntimeConfig):
@@ -135,12 +165,18 @@ def load_runtime_config() -> RuntimeConfig:
     )
     profiles: dict[str, ProfileSnapshot] = {}
     for profile in profiles_qs:
+        if not profile.ordered_models():
+            continue
         profiles[profile.name] = _profile_snapshot(profile)
 
     default_name: str | None = None
     if settings_obj.default_profile_id:
         default_profile = settings_obj.default_profile
-        if default_profile is not None and default_profile.is_active:
+        if (
+            default_profile is not None
+            and default_profile.is_active
+            and default_profile.ordered_models()
+        ):
             default_name = default_profile.name
             if default_name not in profiles:
                 profiles[default_name] = _profile_snapshot(default_profile)
@@ -153,6 +189,8 @@ def load_runtime_config() -> RuntimeConfig:
         base_url=(settings_obj.base_url or _DEFAULT_BASE_URL).rstrip("/"),
         request_timeout=int(settings_obj.request_timeout),
         max_retries=int(settings_obj.max_retries),
+        streaming_enabled=bool(settings_obj.streaming_enabled),
+        max_parallel_requests=int(settings_obj.max_parallel_requests),
         http_referer=http_referer,
         x_title=x_title,
         default_profile_name=default_name,
@@ -172,13 +210,13 @@ def snapshot_from_model(model: OpenRouterModel) -> ModelSnapshot:
 
 
 def _profile_snapshot(profile: UsageProfile) -> ProfileSnapshot:
-    fallbacks = [
-        snapshot_from_model(link.model) for link in profile.fallback_links.all() if link.model_id
-    ]
+    chain = profile.ordered_models()
+    primary = chain[0]
+    fallbacks = [snapshot_from_model(item) for item in chain[1:]]
     return ProfileSnapshot(
         pk=profile.pk,
         name=profile.name,
-        model=snapshot_from_model(profile.model),
+        model=snapshot_from_model(primary),
         fallback_models=fallbacks,
         max_tokens=profile.max_tokens,
         temperature=profile.temperature,

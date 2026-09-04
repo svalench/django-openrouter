@@ -1,10 +1,9 @@
-# django-openrouter API key encryption
+# Размер модели M/B в списке каталога
 
-## Done
-- EncryptedTextField: Fernet (`or2:`), ключ из SHA-256(SECRET_KEY)
-- legacy `or1:` (signing) читается и при save мигрирует в `or2:`
-- dumpdata пишет ciphertext (`value_to_string`)
-- Admin write-only: ключ не рендерится, статус Stored/Not set, blank = keep, clear checkbox
-- pytest 88 passed, coverage 91%, ruff + mypy clean
+## Progress
+- [x] parse_parameter_size: 70B / 340M / 8×7B
+- [x] поля parameter_count / parameter_label + миграция 0008
+- [x] колонка Params в changelist, сортировка
+- [x] тесты
 
 DONE

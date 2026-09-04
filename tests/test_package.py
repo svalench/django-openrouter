@@ -14,5 +14,8 @@ def test_lazy_package_exports() -> None:
     assert pkg.AsyncOpenRouterClient is not None
     assert pkg.ChatResult is not None
     assert callable(pkg.achat)
+    assert callable(pkg.stream)
+    assert callable(pkg.astream)
+    assert pkg.ChatChunk is not None
     with pytest.raises(AttributeError, match="no attribute"):
         pkg.__getattr__("not_a_real_export")

@@ -1,20 +1,21 @@
 from argparse import ArgumentParser
 
 from django.core.management.base import BaseCommand, CommandError
+from django.utils.translation import gettext as _
 
 from django_openrouter.exceptions import OpenRouterError
 from django_openrouter.sync import sync_openrouter_models
 
 
 class Command(BaseCommand):
-    help = "Fetch GET /api/v1/models and upsert the local OpenRouter catalog."
+    help = _("Fetch GET /api/v1/models and upsert the local OpenRouter catalog.")
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument(
             "--api-key",
             dest="api_key",
             default=None,
-            help="Override API key for this run.",
+            help=_("Override API key for this run."),
         )
 
     def handle(self, *args: object, **options: object) -> None:
@@ -26,7 +27,15 @@ class Command(BaseCommand):
             raise CommandError(str(exc)) from exc
         self.stdout.write(
             self.style.SUCCESS(
-                f"created={summary.created} updated={summary.updated} "
-                f"deactivated={summary.deactivated} remote={summary.total_remote}"
+                _(
+                    "created=%(created)s updated=%(updated)s "
+                    "deactivated=%(deactivated)s remote=%(total)s"
+                )
+                % {
+                    "created": summary.created,
+                    "updated": summary.updated,
+                    "deactivated": summary.deactivated,
+                    "total": summary.total_remote,
+                }
             )
         )

@@ -12,8 +12,10 @@ from django_openrouter.client import (
     AsyncOpenRouterClient,
     OpenRouterClient,
     achat,
+    astream,
     chat,
     compute_cost,
+    stream,
 )
 from django_openrouter.exceptions import (
     BudgetExceeded,
@@ -59,6 +61,7 @@ def test_chat_success_logs_and_cost(
     assert log.cost_usd == expected
     assert log.prompt_tokens == 10
     assert log.profile_id == profile.pk
+    assert log.username == "anonymous"
 
 
 @respx.mock
@@ -69,6 +72,28 @@ def test_client_class_same_as_facade(
     respx_mock.post(CHAT_URL).mock(return_value=httpx.Response(200, json=completion_payload()))
     result = OpenRouterClient("chat").chat(MESSAGES)
     assert result.content == "Hello"
+
+
+@respx.mock
+def test_skips_inactive_primary(
+    respx_mock: respx.MockRouter,
+    or_settings: OpenRouterSettings,
+    profile: UsageProfile,
+    paid_model,
+    fallback_model,
+) -> None:
+    UsageProfileFallback.objects.create(profile=profile, model=fallback_model, order=1)
+    paid_model.is_active = False
+    paid_model.save()
+    respx_mock.post(CHAT_URL).mock(
+        return_value=httpx.Response(
+            200,
+            json=completion_payload(content="next", model="openai/gpt-4o-mini"),
+        )
+    )
+    result = chat("chat", messages=MESSAGES)
+    assert result.model_used == "openai/gpt-4o-mini"
+    assert result.content == "next"
 
 
 @respx.mock
@@ -183,9 +208,11 @@ def test_only_free_models_blocks_paid(
     assert route.call_count == 0
 
 
-def test_stream_not_implemented(or_settings: OpenRouterSettings) -> None:
-    with pytest.raises(NotImplementedError, match="Streaming"):
+def test_stream_disabled_in_settings(or_settings: OpenRouterSettings) -> None:
+    with pytest.raises(ConfigurationError, match="Streaming is disabled"):
         chat("chat", messages=MESSAGES, stream=True)
+    with pytest.raises(ConfigurationError, match="Streaming is disabled"):
+        list(stream("chat", messages=MESSAGES))
 
 
 def test_disabled_kill_switch(or_settings: OpenRouterSettings) -> None:
@@ -206,6 +233,13 @@ def test_missing_api_key(or_settings: OpenRouterSettings, monkeypatch: pytest.Mo
 def test_unknown_profile(or_settings: OpenRouterSettings) -> None:
     with pytest.raises(ConfigurationError, match="not found"):
         chat("missing", messages=MESSAGES)
+
+
+def test_profile_without_models(or_settings: OpenRouterSettings) -> None:
+    # Профиль без моделей валиден в БД, но не попадает в runtime-конфиг.
+    UsageProfile.objects.create(name="empty", is_active=True)
+    with pytest.raises(ConfigurationError, match="not found or inactive"):
+        chat("empty", messages=MESSAGES)
 
 
 def test_messages_required(or_settings: OpenRouterSettings) -> None:
@@ -358,3 +392,216 @@ def test_5xx_retries_same_model(
     )
     result = chat("chat", messages=MESSAGES)
     assert result.content == "recovered"
+
+
+def _sse_body(*events: dict) -> bytes:
+    chunks = [f"data: {json.dumps(event)}\n\n" for event in events]
+    chunks.append("data: [DONE]\n\n")
+    return "".join(chunks).encode()
+
+
+def _sse_response(
+    content: str = "Hello",
+    *,
+    model: str = "anthropic/claude-3.5-sonnet",
+    prompt_tokens: int = 10,
+    completion_tokens: int = 5,
+) -> httpx.Response:
+    mid = max(1, len(content) // 2)
+    events: list[dict] = [
+        {"model": model, "choices": [{"delta": {"content": content[:mid]}}]},
+    ]
+    if content[mid:]:
+        events.append({"choices": [{"delta": {"content": content[mid:]}}]})
+    events.append(
+        {
+            "model": model,
+            "choices": [],
+            "usage": {
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+            },
+        }
+    )
+    return httpx.Response(
+        200,
+        content=_sse_body(*events),
+        headers={"content-type": "text/event-stream"},
+    )
+
+
+def _enable_streaming(or_settings: OpenRouterSettings) -> None:
+    or_settings.streaming_enabled = True
+    or_settings.save()
+
+
+@respx.mock
+def test_stream_yields_deltas(
+    respx_mock: respx.MockRouter,
+    or_settings: OpenRouterSettings,
+    profile: UsageProfile,
+) -> None:
+    _enable_streaming(or_settings)
+    respx_mock.post(CHAT_URL).mock(return_value=_sse_response("Hello"))
+    chunks = list(stream("chat", messages=MESSAGES))
+    deltas = [chunk.delta for chunk in chunks if not chunk.done]
+    assert "".join(deltas) == "Hello"
+    assert chunks[-1].done is True
+    assert chunks[-1].result is not None
+    assert chunks[-1].result.content == "Hello"
+    log = RequestLog.objects.get()
+    assert log.status_code == 200
+    assert log.prompt_tokens == 10
+    assert log.completion_tokens == 5
+
+
+@respx.mock
+def test_chat_stream_true_collects(
+    respx_mock: respx.MockRouter,
+    or_settings: OpenRouterSettings,
+) -> None:
+    _enable_streaming(or_settings)
+    respx_mock.post(CHAT_URL).mock(return_value=_sse_response("pong"))
+    result = chat("chat", messages=MESSAGES, stream=True)
+    assert result.content == "pong"
+
+
+@respx.mock
+def test_chat_uses_sse_when_setting_on(
+    respx_mock: respx.MockRouter,
+    or_settings: OpenRouterSettings,
+) -> None:
+    _enable_streaming(or_settings)
+    route = respx_mock.post(CHAT_URL).mock(return_value=_sse_response("streamed"))
+    result = chat("chat", messages=MESSAGES)
+    assert result.content == "streamed"
+    body = json.loads(route.calls.last.request.content)
+    assert body["stream"] is True
+    assert body["stream_options"] == {"include_usage": True}
+
+
+@respx.mock
+def test_chat_stream_false_keeps_json(
+    respx_mock: respx.MockRouter,
+    or_settings: OpenRouterSettings,
+) -> None:
+    _enable_streaming(or_settings)
+    route = respx_mock.post(CHAT_URL).mock(
+        return_value=httpx.Response(200, json=completion_payload(content="json-ok"))
+    )
+    result = chat("chat", messages=MESSAGES, stream=False)
+    assert result.content == "json-ok"
+    body = json.loads(route.calls.last.request.content)
+    assert "stream" not in body
+
+
+@respx.mock
+def test_stream_fallback_on_429(
+    respx_mock: respx.MockRouter,
+    or_settings: OpenRouterSettings,
+    profile: UsageProfile,
+    fallback_model,
+) -> None:
+    _enable_streaming(or_settings)
+    UsageProfileFallback.objects.create(profile=profile, model=fallback_model, order=0)
+    respx_mock.post(CHAT_URL).mock(
+        side_effect=[
+            httpx.Response(429, json={"error": "rate"}),
+            _sse_response("fallback-ok", model="openai/gpt-4o-mini"),
+        ]
+    )
+    result = chat("chat", messages=MESSAGES, stream=True)
+    assert result.content == "fallback-ok"
+    assert result.model_used == "openai/gpt-4o-mini"
+    assert RequestLog.objects.count() == 2
+
+
+@respx.mock
+def test_stream_skips_comments_and_list_delta(
+    respx_mock: respx.MockRouter,
+    or_settings: OpenRouterSettings,
+) -> None:
+    _enable_streaming(or_settings)
+    payload = {
+        "choices": [
+            {"delta": {"content": [{"type": "text", "text": "A"}]}}
+        ]
+    }
+    body = (
+        ": ping\n\n"
+        f"data: {json.dumps(payload)}\n\n"
+        "data: not-json\n\n"
+        "data: [DONE]\n\n"
+    )
+    respx_mock.post(CHAT_URL).mock(
+        return_value=httpx.Response(
+            200,
+            content=body.encode(),
+            headers={"content-type": "text/event-stream"},
+        )
+    )
+    result = chat("chat", messages=MESSAGES, stream=True)
+    assert result.content == "A"
+
+
+@respx.mock
+@pytest.mark.django_db(transaction=True)
+def test_async_stream(
+    respx_mock: respx.MockRouter,
+    or_settings: OpenRouterSettings,
+) -> None:
+    _enable_streaming(or_settings)
+    respx_mock.post(CHAT_URL).mock(return_value=_sse_response("async-stream"))
+
+    async def _collect() -> str:
+        parts: list[str] = []
+        async for chunk in astream("chat", messages=MESSAGES):
+            if chunk.delta:
+                parts.append(chunk.delta)
+            if chunk.done and chunk.result is not None:
+                return chunk.result.content
+        return "".join(parts)
+
+    assert async_to_sync(_collect)() == "async-stream"
+
+
+@respx.mock
+def test_client_stream_method(
+    respx_mock: respx.MockRouter,
+    or_settings: OpenRouterSettings,
+) -> None:
+    _enable_streaming(or_settings)
+    respx_mock.post(CHAT_URL).mock(return_value=_sse_response("via-class"))
+    chunks = list(OpenRouterClient("chat").stream(MESSAGES))
+    assert chunks[-1].result is not None
+    assert chunks[-1].result.content == "via-class"
+
+
+@respx.mock
+def test_chat_uses_max_parallel_setting(
+    respx_mock: respx.MockRouter,
+    or_settings: OpenRouterSettings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from django_openrouter.concurrency import ParallelismLimiter
+
+    seen: list[int] = []
+    original = ParallelismLimiter.slot
+
+    def wrapped(self: ParallelismLimiter, limit: int):
+        seen.append(limit)
+        return original(self, limit)
+
+    monkeypatch.setattr(ParallelismLimiter, "slot", wrapped)
+    or_settings.max_parallel_requests = 3
+    or_settings.save()
+    respx_mock.post(CHAT_URL).mock(return_value=httpx.Response(200, json=completion_payload()))
+    chat("chat", messages=MESSAGES)
+    assert seen == [3]
+
+
+def test_stream_messages_required(or_settings: OpenRouterSettings) -> None:
+    _enable_streaming(or_settings)
+    with pytest.raises(TypeError):
+        list(stream("chat"))
+

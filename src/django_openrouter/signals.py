@@ -14,6 +14,18 @@ from django_openrouter.models import (
 )
 
 
+@receiver(post_save, sender=UsageProfile)
+def ensure_primary_in_chain(
+    sender: type[object], instance: UsageProfile, raw: bool = False, **kwargs: object
+) -> None:
+    """create(model=...) без инлайнов — primary попадает в through-таблицу."""
+    if raw or not instance.pk or not instance.model_id:
+        return
+    if instance.fallback_links.filter(model_id=instance.model_id).exists():
+        return
+    UsageProfileFallback.objects.create(profile=instance, model_id=instance.model_id, order=0)
+
+
 @receiver(post_save, sender=OpenRouterSettings)
 @receiver(post_delete, sender=OpenRouterSettings)
 @receiver(post_save, sender=OpenRouterModel)

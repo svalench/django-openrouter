@@ -13,6 +13,7 @@ from django_openrouter.models import (
     RequestLog,
     UsageProfile,
     UsageProfileFallback,
+    usage_totals_by_profile,
 )
 
 pytestmark = pytest.mark.django_db
@@ -99,13 +100,73 @@ def test_get_usage_rejects_bad_period(profile: UsageProfile) -> None:
         profile.get_usage("year")  # type: ignore[arg-type]
 
 
-def test_ordered_fallback_models(
+def test_usage_totals_by_profile_empty_ids() -> None:
+    assert usage_totals_by_profile([]) == {}
+
+
+def test_usage_totals_by_profile_aggregates(
+    profile: UsageProfile, paid_model: OpenRouterModel
+) -> None:
+    unused = UsageProfile.objects.create(name="idle", model=paid_model)
+    RequestLog.objects.create(
+        profile=profile,
+        model=paid_model,
+        status_code=200,
+        latency_ms=100,
+        cost_usd=Decimal("1.00"),
+    )
+    RequestLog.objects.create(
+        profile=profile,
+        model=paid_model,
+        status_code=429,
+        latency_ms=300,
+        cost_usd=Decimal("3.00"),
+    )
+    stats = usage_totals_by_profile([profile.pk, unused.pk])
+    assert unused.pk not in stats
+    totals = stats[profile.pk]
+    assert totals.request_count == 2
+    assert totals.avg_latency_ms == 200.0
+    assert totals.total_latency_ms == 400
+    assert totals.avg_cost_usd == Decimal("2.00")
+    assert totals.total_cost_usd == Decimal("4.00")
+
+
+def test_create_puts_primary_in_chain(profile: UsageProfile, paid_model: OpenRouterModel) -> None:
+    links = list(profile.fallback_links.order_by("order", "id"))
+    assert len(links) == 1
+    assert links[0].model_id == paid_model.pk
+    assert profile.ordered_models() == [paid_model]
+
+
+def test_ordered_models_and_fallbacks(
     profile: UsageProfile, fallback_model: OpenRouterModel, free_model: OpenRouterModel
 ) -> None:
     UsageProfileFallback.objects.create(profile=profile, model=free_model, order=1)
     UsageProfileFallback.objects.create(profile=profile, model=fallback_model, order=0)
-    ordered = profile.ordered_fallback_models()
-    assert [m.model_id for m in ordered] == [fallback_model.model_id, free_model.model_id]
+    paid = profile.model
+    assert paid is not None
+    ordered = profile.ordered_models()
+    assert [m.model_id for m in ordered] == [
+        paid.model_id,
+        fallback_model.model_id,
+        free_model.model_id,
+    ]
+    assert [m.model_id for m in profile.ordered_fallback_models()] == [
+        fallback_model.model_id,
+        free_model.model_id,
+    ]
+
+
+def test_sync_primary_from_chain(
+    profile: UsageProfile, paid_model: OpenRouterModel, fallback_model: OpenRouterModel
+) -> None:
+    UsageProfileFallback.objects.filter(profile=profile).delete()
+    UsageProfileFallback.objects.create(profile=profile, model=fallback_model, order=0)
+    UsageProfileFallback.objects.create(profile=profile, model=paid_model, order=1)
+    profile.sync_primary_from_chain()
+    profile.refresh_from_db()
+    assert profile.model_id == fallback_model.pk
 
 
 def test_temperature_out_of_range(paid_model: OpenRouterModel) -> None:
@@ -115,12 +176,12 @@ def test_temperature_out_of_range(paid_model: OpenRouterModel) -> None:
 
 
 def test_fallback_str_and_clean_without_model(
-    profile: UsageProfile, paid_model: OpenRouterModel
+    profile: UsageProfile, fallback_model: OpenRouterModel
 ) -> None:
-    link = UsageProfileFallback(profile=profile, model=paid_model, order=0)
+    link = UsageProfileFallback(profile=profile, model=fallback_model, order=1)
     link.save()
     assert str(link)
-    empty = UsageProfileFallback(profile=profile, order=1)
+    empty = UsageProfileFallback(profile=profile, order=2)
     empty.clean()
 
 

@@ -18,6 +18,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django_openrouter.middleware.CurrentUserMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
 ]
 ROOT_URLCONF = "tests.urls"

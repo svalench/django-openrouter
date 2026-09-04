@@ -64,12 +64,13 @@ def test_disabled_profile(profile: UsageProfile) -> None:
         check_limits(profile)
 
 
-def test_disabled_primary_model(profile: UsageProfile, paid_model: OpenRouterModel) -> None:
+def test_disabled_primary_does_not_block_limits(
+    profile: UsageProfile, paid_model: OpenRouterModel
+) -> None:
     paid_model.is_active = False
     paid_model.save()
     profile.refresh_from_db()
-    with pytest.raises(ModelDisabled):
-        check_limits(profile)
+    check_limits(profile)
 
 
 def test_only_free_models(

@@ -4,9 +4,18 @@ from decimal import Decimal
 
 import pytest
 
+from django_openrouter.concurrency import get_limiter
 from django_openrouter.models import OpenRouterModel, OpenRouterSettings, UsageProfile
 
 pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture(autouse=True)
+def _reset_openrouter_limiter() -> None:
+    limiter = get_limiter()
+    limiter.reset()
+    yield
+    limiter.reset()
 
 
 @pytest.fixture
