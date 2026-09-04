@@ -1,0 +1,12 @@
+---
+description: GitHub remote через HTTPS, если SSH publickey недоступен
+globs: .git/config
+alwaysApply: false
+---
+
+# GitHub remote
+
+- Для `github.com` использовать HTTPS: `https://github.com/<user>/<repo>.git`
+- Не ставить SSH `git@github.com:...`, пока ключ не добавлен в GitHub (Settings → SSH keys)
+- URL без лишнего слэша: `git@github.com:user/repo.git`, не `git@github.com:/user/repo.git`
+- Credential helper `store` уже держит токен GitHub в `~/.git-credentials`
