@@ -45,6 +45,70 @@ python manage.py migrate
 3. Create a **Usage profile** (slug `translation`, `chat`, …), add one or more models in priority order (first is tried first), plus limits and budgets.
 4. Set that profile as **default profile** if you want `chat(messages=...)` without a name.
 
+Screenshots: [`docs/img/`](docs/img/).
+
+## Admin pages
+
+Four models under **OpenRouter**. Runtime policy lives here, not in `settings.py`.
+
+| Page | What it does |
+| --- | --- |
+| [OpenRouter settings](#openrouter-settings) | Kill switch, encrypted API key, streaming, timeouts |
+| [OpenRouter models](#openrouter-models) | Catalog from OpenRouter: price, latency, throughput |
+| [Usage profiles](#usage-profiles) | Ordered model chain, limits, budgets, spend stats |
+| [Request logs](#request-logs) | Per-call tokens, cost, latency (read-only) |
+
+### OpenRouter settings
+
+Singleton: the changelist redirects to the only row. The row cannot be deleted.
+
+![OpenRouter settings](docs/img/settings.png)
+
+- **Enabled** — global kill switch. Off → every `chat()` / `stream()` fails.
+- **API key** — write-only, Fernet-encrypted from `SECRET_KEY`. After save the value cannot be viewed. Blank keeps the stored key; a new value replaces it. **Clear stored API key** wipes the DB key so the process falls back to `OPENROUTER_API_KEY` / `settings.OPENROUTER["API_KEY"]`.
+- **Base URL** — OpenRouter API root (`https://openrouter.ai/api/v1`).
+- **Default profile** — used when `chat(messages=...)` omits a profile name.
+- **Request timeout** / **Max retries** — HTTP timeout and retries on transport / 5xx before the next model in the chain.
+- **Streaming enabled** — allows SSE via `stream()` / `astream()` and `chat(stream=True)`. Off by default.
+- **Max parallel requests** — cap on concurrent HTTP calls in this process (`0` = unlimited).
+
+### OpenRouter models
+
+Catalog from `GET /api/v1/models` (plus `/endpoints` for latency/throughput). Rows cannot be added or deleted by hand; the detail page is read-only.
+
+![OpenRouter models](docs/img/models.png)
+
+Columns: name, `latency_ms` (p50 TTFT), throughput (tok/s), prompt/completion price per 1M tokens, parameter size (`70B` / `8x7B`), `is_active`. Click a column to sort (nulls last).
+
+Filters: active, modality, price (free / cheap &lt; $1 / mid $1–10 / expensive), speed (&lt; 400 ms / 400–1200 / ≥ 1200).
+
+Actions:
+
+- **Sync catalog with OpenRouter** — upsert; models missing remotely get `is_active=False`.
+- **Assign to usage profile…** — append selected models to a profile chain (skips duplicates, inactive, and paid models when the profile has `only_free_models`).
+
+The changelist refreshes from the API on first view, then serves the database for 10 minutes (`CATALOG_CACHE_TIMEOUT`). Same sync: `python manage.py sync_models`.
+
+### Usage profiles
+
+A profile is the slug your code passes (`chat`, `translation`, …) plus an ordered model list (first is tried first; later rows are fallback on `402` / `429` / `5xx`). Exhausted limits/budgets raise; they do not silently fall back.
+
+![Usage profiles](docs/img/profiles.png)
+
+Changelist: name, primary model, active, only-free, daily request/budget caps, and aggregates from logs (request count, avg/total latency, avg/total cost).
+
+On the form: `max_tokens`, `temperature` (0–2), daily/monthly request and USD limits (blank = unlimited), **only free models**, **is active**. Inline **Models (priority order)** uses catalog autocomplete (price + latency in the label; same price/speed query filters as the catalog). Saving syncs the first chain item into `model`.
+
+### Request logs
+
+Read-only. Every HTTP attempt (including fallbacks and errors) is a row when `DatabaseBackend` is enabled (the default). Daily/monthly limits are aggregated from this table.
+
+![Request logs](docs/img/logs.png)
+
+Columns: time, username, profile, model, HTTP status, prompt/completion tokens, cost, latency. Above the table: request count and USD total for the current filter. Filters: profile, status, date.
+
+Username comes from `django_openrouter.middleware.CurrentUserMiddleware` (after `AuthenticationMiddleware`). Without it, rows show `anonymous`. In Celery / management commands use `bound_username("worker")`.
+
 ## Usage
 
 ```python
@@ -133,7 +197,7 @@ OPENROUTER = {
 
 The default cache backend (`LocMemCache`) is enough. Redis/Memcached are optional.
 
-The **OpenRouter models** changelist pulls `GET /api/v1/models` (and per-model `/endpoints` for latency/throughput) on first view, then serves the database for 10 minutes (`CATALOG_CACHE_TIMEOUT`). Columns: name, response time (`latency_ms`), load (`throughput` tok/s), price per 1M tokens. Click a column to sort (nulls last). Sidebar filters: price buckets and speed (latency). The same price/speed info appears in the usage-profile model autocomplete; filter dropdowns on the profile form pass `price` / `speed` query params to that autocomplete.
+Catalog refresh, price/speed columns and profile autocomplete filters are described under [Admin pages](#admin-pages).
 
 ## Request logging backends
 
