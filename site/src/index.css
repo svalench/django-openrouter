@@ -225,7 +225,11 @@
   display: flex;
   border: 1px solid hsl(var(--border));
   border-radius: 9px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-shrink: 1;
+  max-width: min(100%, 28rem);
+  scrollbar-width: thin;
 }
 .lang-btn {
   height: 34px;
@@ -234,6 +238,7 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   color: hsl(var(--muted-foreground));
+  flex-shrink: 0;
   transition: background 0.2s, color 0.2s;
 }
 .lang-btn + .lang-btn {

@@ -6,8 +6,11 @@ import { es } from './es'
 import { fr } from './fr'
 import { ja } from './ja'
 import { de } from './de'
+import { zh } from './zh'
+import { pl } from './pl'
+import { be } from './be'
 
-export type Lang = 'ru' | 'en' | 'es' | 'fr' | 'ja' | 'de'
+export type Lang = 'ru' | 'en' | 'es' | 'fr' | 'ja' | 'de' | 'zh' | 'pl' | 'be'
 
 export const LANGS: { id: Lang; label: string; short: string }[] = [
   { id: 'ru', label: 'Русский', short: 'RU' },
@@ -16,15 +19,18 @@ export const LANGS: { id: Lang; label: string; short: string }[] = [
   { id: 'fr', label: 'Français', short: 'FR' },
   { id: 'ja', label: '日本語', short: 'JA' },
   { id: 'de', label: 'Deutsch', short: 'DE' },
+  { id: 'zh', label: '简体中文', short: 'ZH' },
+  { id: 'pl', label: 'Polski', short: 'PL' },
+  { id: 'be', label: 'Беларуская', short: 'BE' },
 ]
 
-const contents: Record<Lang, DocsContent> = { ru, en, es, fr, ja, de }
+const contents: Record<Lang, DocsContent> = { ru, en, es, fr, ja, de, zh, pl, be }
 
 export function getContent(lang: Lang): DocsContent {
   return contents[lang] ?? en
 }
 
-const LANG_IDS: Lang[] = ['ru', 'en', 'es', 'fr', 'ja', 'de']
+const LANG_IDS: Lang[] = LANGS.map((l) => l.id)
 
 export function detectLang(): Lang {
   try {
