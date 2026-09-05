@@ -4,6 +4,8 @@ Reusable Django application for managing [OpenRouter](https://openrouter.ai) mod
 
 Your product code (translation, chat, summarization, …) talks to OpenRouter through this library instead of hardcoded `settings.py` keys and model ids. An operator picks active models, sets daily/monthly limits, and inspects spend in admin.
 
+**Documentation:** https://svalench.github.io/django-openrouter/
+
 ## Why not `settings.py`?
 
 Hardcoding `OPENROUTER_MODEL = "anthropic/claude-3.5-sonnet"` means a deploy to change models, budgets or a kill switch. `django-openrouter` stores that runtime policy in the database, caches it, and enforces limits before every request.

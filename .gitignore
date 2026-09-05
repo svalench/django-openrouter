@@ -35,3 +35,7 @@ db.sqlite3
 # OS
 .DS_Store
 Thumbs.db
+*.zip
+
+# Node (docs site)
+node_modules/

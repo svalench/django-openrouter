@@ -52,7 +52,7 @@ dev = [
 
 [project.urls]
 Homepage = "https://github.com/svalench/django-openrouter"
-Documentation = "https://github.com/svalench/django-openrouter#readme"
+Documentation = "https://svalench.github.io/django-openrouter/"
 Repository = "https://github.com/svalench/django-openrouter"
 
 [tool.hatch.version]
