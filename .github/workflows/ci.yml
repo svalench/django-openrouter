@@ -6,6 +6,44 @@ on:
   pull_request:
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build wheel from sdist and validate README metadata
+        run: |
+          python -m pip install build twine
+          python -m build
+          python -m twine check --strict dist/*
+      - name: Smoke-test installed wheel contents
+        run: |
+          python -m venv .wheel-venv
+          .wheel-venv/bin/python -m pip install --no-deps dist/*.whl
+          .wheel-venv/bin/python - <<'PY'
+          from importlib.resources import files
+          from pathlib import Path
+
+          package = files("django_openrouter")
+          required = [
+              "py.typed",
+              "templates/admin/django_openrouter/requestlog/change_list.html",
+              "static/django_openrouter/js/model_choice_filters.js",
+              "locale/ru/LC_MESSAGES/django.mo",
+          ]
+          required.extend(
+              f"migrations/{path.name}"
+              for path in Path("src/django_openrouter/migrations").glob("*.py")
+          )
+          for relative_path in required:
+              assert package.joinpath(relative_path).is_file(), relative_path
+          print("Installed wheel includes required Django package resources.")
+          PY
+
   test:
     runs-on: ubuntu-latest
     strategy:

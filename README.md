@@ -1,10 +1,18 @@
 # django-openrouter
 
+[![PyPI](https://img.shields.io/pypi/v/django-openrouter.svg)](https://pypi.org/project/django-openrouter/)
+[![Python](https://img.shields.io/pypi/pyversions/django-openrouter.svg)](https://pypi.org/project/django-openrouter/)
+[![CI](https://github.com/svalench/django-openrouter/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/svalench/django-openrouter/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/svalench/django-openrouter/blob/master/LICENSE)
+
 Reusable Django application for managing [OpenRouter](https://openrouter.ai) models, usage profiles, budgets and request logs from Django admin.
 
 Your product code (translation, chat, summarization, …) talks to OpenRouter through this library instead of hardcoded `settings.py` keys and model ids. An operator picks active models, sets daily/monthly limits, and inspects spend in admin.
 
 **Documentation:** https://svalench.github.io/django-openrouter/
+
+Requires Python 3.11+ and Django 4.2+ (subject to Django's Python compatibility).
+This is a third-party integration, not an official OpenRouter SDK.
 
 ## Why not `settings.py`?
 
@@ -47,7 +55,25 @@ python manage.py migrate
 3. Create a **Usage profile** (slug `translation`, `chat`, …), add one or more models in priority order (first is tried first), plus limits and budgets.
 4. Set that profile as **default profile** if you want `chat(messages=...)` without a name.
 
-Screenshots: [`docs/img/`](docs/img/).
+### 4. Call from your Django application
+
+After configuring the `chat` profile, run this in a view, task, or
+`python manage.py shell`:
+
+```python
+from django_openrouter import chat
+
+result = chat("chat", messages=[{"role": "user", "content": "Hello"}])
+print(result.content)
+print(result.model_used, result.cost_usd, result.latency_ms)
+```
+
+This makes a real API request and may incur provider charges. To try the
+integration without an API key or provider calls, run the mocked tests in
+[Contributing](https://github.com/svalench/django-openrouter/blob/master/CONTRIBUTING.md).
+See [Usage](#usage) for async clients, streaming, and fallback behavior.
+
+Screenshots: [`docs/img/`](https://github.com/svalench/django-openrouter/tree/master/docs/img).
 
 ## Admin pages
 
@@ -64,7 +90,7 @@ Four models under **OpenRouter**. Runtime policy lives here, not in `settings.py
 
 Singleton: the changelist redirects to the only row. The row cannot be deleted.
 
-![OpenRouter settings](docs/img/settings.png)
+![OpenRouter settings](https://raw.githubusercontent.com/svalench/django-openrouter/master/docs/img/settings.png)
 
 - **Enabled** — global kill switch. Off → every `chat()` / `stream()` fails.
 - **API key** — write-only, Fernet-encrypted from `SECRET_KEY`. After save the value cannot be viewed. Blank keeps the stored key; a new value replaces it. **Clear stored API key** wipes the DB key so the process falls back to `OPENROUTER_API_KEY` / `settings.OPENROUTER["API_KEY"]`.
@@ -78,7 +104,7 @@ Singleton: the changelist redirects to the only row. The row cannot be deleted.
 
 Catalog from `GET /api/v1/models` (plus `/endpoints` for latency/throughput). Rows cannot be added or deleted by hand; the detail page is read-only.
 
-![OpenRouter models](docs/img/models.png)
+![OpenRouter models](https://raw.githubusercontent.com/svalench/django-openrouter/master/docs/img/models.png)
 
 Columns: name, `latency_ms` (p50 TTFT), throughput (tok/s), prompt/completion price per 1M tokens, parameter size (`70B` / `8x7B`), `is_active`. Click a column to sort (nulls last).
 
@@ -95,7 +121,7 @@ The changelist refreshes from the API on first view, then serves the database fo
 
 A profile is the slug your code passes (`chat`, `translation`, …) plus an ordered model list (first is tried first; later rows are fallback on `402` / `429` / `5xx`). Exhausted limits/budgets raise; they do not silently fall back.
 
-![Usage profiles](docs/img/profiles.png)
+![Usage profiles](https://raw.githubusercontent.com/svalench/django-openrouter/master/docs/img/profiles.png)
 
 Changelist: name, primary model, active, only-free, daily request/budget caps, and aggregates from logs (request count, avg/total latency, avg/total cost).
 
@@ -105,7 +131,7 @@ On the form: `max_tokens`, `temperature` (0–2), daily/monthly request and USD 
 
 Read-only. Every HTTP attempt (including fallbacks and errors) is a row when `DatabaseBackend` is enabled (the default). Daily/monthly limits are aggregated from this table.
 
-![Request logs](docs/img/logs.png)
+![Request logs](https://raw.githubusercontent.com/svalench/django-openrouter/master/docs/img/logs.png)
 
 Columns: time, username, profile, model, HTTP status, prompt/completion tokens, cost, latency. Above the table: request count and USD total for the current filter. Filters: profile, status, date.
 
@@ -323,3 +349,10 @@ even if `LANGUAGE_CODE` is set.
 ## License
 
 MIT
+
+## Contributing
+
+See [CONTRIBUTING.md](https://github.com/svalench/django-openrouter/blob/master/CONTRIBUTING.md)
+for a local test setup, lint/type checks, and distribution validation.
+Bug reports should include a minimal reproduction and version information,
+never real API keys or private request data.
