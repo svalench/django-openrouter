@@ -1,0 +1,4 @@
+# The React/TypeScript application serves this Python package's documentation.
+# Keep authored documentation distinct from vendored or generated code.
+site/** linguist-documentation
+docs/** linguist-documentation

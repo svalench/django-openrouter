@@ -54,6 +54,7 @@ dev = [
 Homepage = "https://github.com/svalench/django-openrouter"
 Documentation = "https://svalench.github.io/django-openrouter/"
 Repository = "https://github.com/svalench/django-openrouter"
+Issues = "https://github.com/svalench/django-openrouter/issues"
 
 [tool.hatch.version]
 path = "src/django_openrouter/__init__.py"
@@ -63,6 +64,7 @@ include = [
     "/src",
     "/tests",
     "/README.md",
+    "/CONTRIBUTING.md",
     "/LICENSE",
 ]
 
