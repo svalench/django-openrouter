@@ -25,9 +25,15 @@ from django_openrouter.exceptions import (
     OpenRouterAPIError,
     OpenRouterDisabled,
 )
-from django_openrouter.log_backends import adispatch_log, dispatch_log, make_record
+from django_openrouter.log_backends import (
+    adispatch_log,
+    dispatch_log,
+    has_active_budget_reservation,
+    make_record,
+    set_active_reservation,
+)
 from django_openrouter.models import OpenRouterModel, UsageProfile
-from django_openrouter.rules import assert_model_allowed, check_limits
+from django_openrouter.rules import assert_model_allowed, check_limits, reserve_request
 
 ChatMessage = Mapping[str, Any]
 ChatMessages = Sequence[ChatMessage]
@@ -70,9 +76,8 @@ def compute_cost(
     """
     Считает стоимость по токенам usage и pricing каталога.
 
-    Возвращает (cost_usd для лога, catalog_cost для сверки).
-    Если OpenRouter прислал usage.cost — он используется как fallback,
-    когда в каталоге нет цены.
+    Возвращает (фактическую стоимость для лога, каталожную оценку).
+    Если OpenRouter прислал usage.cost, это значение имеет приоритет.
     """
     catalog_cost: Decimal | None = None
     if pricing:
@@ -80,9 +85,11 @@ def compute_cost(
         completion_price = Decimal(str(pricing.get("completion") or 0))
         catalog_cost = prompt_price * prompt_tokens + completion_price * completion_tokens
     api_cost = Decimal(str(usage_cost)) if usage_cost is not None else None
-    if catalog_cost is not None:
-        return catalog_cost, catalog_cost
-    return api_cost or Decimal("0"), catalog_cost
+    if api_cost is not None and (not api_cost.is_finite() or api_cost < 0):
+        raise OpenRouterAPIError(_("OpenRouter reported invalid usage cost."))
+    if api_cost is not None:
+        return api_cost, catalog_cost
+    return catalog_cost or Decimal("0"), catalog_cost
 
 
 def _headers(cfg: RuntimeConfig) -> dict[str, str]:
@@ -222,12 +229,12 @@ def _model_chain(
     chain: list[OpenRouterModel] = list(profile.ordered_models())
     override_id = overrides.get("model")
     if override_id:
-        try:
-            overridden = OpenRouterModel.objects.get(model_id=override_id)
-        except OpenRouterModel.DoesNotExist as exc:
+        overridden = next((item for item in chain if item.model_id == override_id), None)
+        if overridden is None:
             raise ConfigurationError(
-                _("Unknown model %(model_id)r.") % {"model_id": override_id}
-            ) from exc
+                _("Model %(model_id)r is not configured for profile %(name)r.")
+                % {"model_id": override_id, "name": profile.name}
+            )
         chain = [overridden] + [item for item in chain if item.pk != overridden.pk]
     return chain
 
@@ -286,6 +293,13 @@ def _result_from_payload(
     latency_ms: int,
 ) -> ChatResult:
     usage = payload.get("usage") or {}
+    if has_active_budget_reservation() and not (
+        isinstance(usage, dict)
+        and ("cost" in usage or ("prompt_tokens" in usage and "completion_tokens" in usage))
+    ):
+        raise OpenRouterAPIError(
+            _("OpenRouter omitted usage for a budgeted request; reservation remains pending.")
+        )
     prompt_tokens = int(usage.get("prompt_tokens") or 0)
     completion_tokens = int(usage.get("completion_tokens") or 0)
     usage_cost = usage.get("cost")
@@ -341,6 +355,7 @@ def _prepare(
     profile_name: str | None,
     overrides: dict[str, Any],
 ) -> tuple[RuntimeConfig, UsageProfile]:
+    set_active_reservation(None)
     cfg = get_runtime_config()
     if not cfg.enabled:
         raise OpenRouterDisabled(_("OpenRouter is disabled in admin settings."))
@@ -465,6 +480,12 @@ def _attempt_model_sync(
     last_error: Exception | None = None
     limiter = get_limiter()
     for attempt in range(int(cfg.max_retries) + 1):
+        reservation = reserve_request(profile, model)
+        set_active_reservation(
+            reservation.pk if reservation is not None else None,
+            budgeted=profile.budget_usd_per_day is not None
+            or profile.budget_usd_per_month is not None,
+        )
         started = time.perf_counter()
         try:
             with limiter.slot(cfg.max_parallel_requests):
@@ -530,6 +551,12 @@ def _attempt_stream_sync(
     limiter = get_limiter()
     emitted = False
     for attempt in range(int(cfg.max_retries) + 1):
+        reservation = reserve_request(profile, model)
+        set_active_reservation(
+            reservation.pk if reservation is not None else None,
+            budgeted=profile.budget_usd_per_day is not None
+            or profile.budget_usd_per_month is not None,
+        )
         started = time.perf_counter()
         try:
             with limiter.slot(cfg.max_parallel_requests):
@@ -591,10 +618,12 @@ def _consume_sse_sync(
     model_used = model.model_id
     usage: dict[str, Any] = {}
     last_event: dict[str, Any] = {}
+    completed = False
     try:
         for line in lines:
             decoded = _decode_sse_line(line)
             if decoded is True:
+                completed = True
                 break
             if not isinstance(decoded, dict):
                 continue
@@ -627,6 +656,18 @@ def _consume_sse_sync(
             latency_ms=latency_ms,
         )
         raise
+    if not completed:
+        incomplete_error = OpenRouterAPIError(
+            _("OpenRouter stream ended before [DONE]."), status_code=502
+        )
+        _write_log(
+            profile=profile,
+            model=model,
+            status_code=502,
+            error_message=str(incomplete_error),
+            latency_ms=int((time.perf_counter() - started) * 1000),
+        )
+        raise incomplete_error
     latency_ms = int((time.perf_counter() - started) * 1000)
     result = _result_from_sse("".join(parts), usage, model, model_used, latency_ms, last_event)
     _write_log(
@@ -785,6 +826,12 @@ async def _attempt_model_async(
     last_error: Exception | None = None
     limiter = get_limiter()
     for attempt in range(int(cfg.max_retries) + 1):
+        reservation = await sync_to_async(reserve_request, thread_sensitive=True)(profile, model)
+        set_active_reservation(
+            reservation.pk if reservation is not None else None,
+            budgeted=profile.budget_usd_per_day is not None
+            or profile.budget_usd_per_month is not None,
+        )
         started = time.perf_counter()
         try:
             async with limiter.aslot(cfg.max_parallel_requests):
@@ -850,6 +897,12 @@ async def _attempt_stream_async(
     limiter = get_limiter()
     emitted = False
     for attempt in range(int(cfg.max_retries) + 1):
+        reservation = await sync_to_async(reserve_request, thread_sensitive=True)(profile, model)
+        set_active_reservation(
+            reservation.pk if reservation is not None else None,
+            budgeted=profile.budget_usd_per_day is not None
+            or profile.budget_usd_per_month is not None,
+        )
         started = time.perf_counter()
         try:
             async with limiter.aslot(cfg.max_parallel_requests):
@@ -914,10 +967,12 @@ async def _consume_sse_async(
     model_used = model.model_id
     usage: dict[str, Any] = {}
     last_event: dict[str, Any] = {}
+    completed = False
     try:
         async for line in lines:
             decoded = _decode_sse_line(line)
             if decoded is True:
+                completed = True
                 break
             if not isinstance(decoded, dict):
                 continue
@@ -950,6 +1005,18 @@ async def _consume_sse_async(
             latency_ms=latency_ms,
         )
         raise
+    if not completed:
+        incomplete_error = OpenRouterAPIError(
+            _("OpenRouter stream ended before [DONE]."), status_code=502
+        )
+        await _awrite_log(
+            profile=profile,
+            model=model,
+            status_code=502,
+            error_message=str(incomplete_error),
+            latency_ms=int((time.perf_counter() - started) * 1000),
+        )
+        raise incomplete_error
     latency_ms = int((time.perf_counter() - started) * 1000)
     result = _result_from_sse("".join(parts), usage, model, model_used, latency_ms, last_event)
     await _awrite_log(

@@ -340,7 +340,7 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
     messages=[{"role": "user", "content": "Hello"}],
     temperature=0.2,
     max_tokens=512,
-    model="openai/gpt-4o-mini",        # must exist in the catalog
+    model="openai/gpt-4o-mini",        # must be in this profile's model chain
     response_format={"type": "json_object"},  # any OpenRouter parameter
 )`,
         },
@@ -357,7 +357,7 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
             ['`content`', '`str`', 'Response text (text parts joined for multipart content)'],
             ['`prompt_tokens`', '`int`', 'Prompt tokens from `usage`'],
             ['`completion_tokens`', '`int`', 'Completion tokens from `usage`'],
-            ['`cost_usd`', '`Decimal`', 'Cost: from catalog prices, otherwise `usage.cost` from the API'],
+            ['`cost_usd`', '`Decimal`', 'Cost: `usage.cost` from the API when present, otherwise catalog estimate'],
             ['`catalog_cost_usd`', '`Decimal | None`', 'Catalog cost — for reconciling with billing'],
             ['`model_used`', '`str`', 'The model that actually answered'],
             ['`latency_ms`', '`int`', 'Latency of the successful attempt'],
@@ -431,13 +431,13 @@ python manage.py sync_models --api-key sk-or-...  # one-off key, never stored` }
         },
         {
           type: 'p',
-          text: 'The check runs in a transaction: the profile row is locked with `select_for_update` and aggregates are computed under that lock — concurrent requests can’t race past a limit.',
+          text: 'Before each HTTP attempt, a transaction reserves one request and the maximum text-to-text catalog cost for the model’s full context window. Successful calls reconcile the reservation to reported usage; failed or interrupted calls keep it until billing is checked. A budgeted model needs valid catalog pricing and context length. Conservative reservations may reject a request whose likely cost is much lower.',
         },
         {
           type: 'callout',
           kind: 'warning',
           title: 'Limits require DatabaseBackend',
-          text: 'Aggregates are computed from the `RequestLog` table, so `DatabaseBackend` must stay in `LOG_BACKENDS` (it is the default). If you remove it, `check_limits()` sees no spend and limits stop working.',
+          text: 'Aggregates are computed from `RequestLog`. If a profile has limits but `DatabaseBackend` is removed from `LOG_BACKENDS`, requests raise `ConfigurationError`.',
         },
         {
           type: 'callout',
@@ -506,7 +506,7 @@ python manage.py sync_models --api-key sk-or-...  # one-off key, never stored` }
         { type: 'h3', text: 'DatabaseBackend (default)' },
         {
           type: 'p',
-          text: 'Writes rows to the `RequestLog` model. Daily/monthly limits and budgets aggregate from this table — keep this backend enabled if you use limits: without it `check_limits()` sees no spend.',
+          text: 'Writes rows to `RequestLog`, including pre-request reservations. Profiles with limits require this backend; removing it raises `ConfigurationError`.',
         },
         { type: 'h3', text: 'FileBackend' },
         {
@@ -851,7 +851,7 @@ stats.since          # period start (datetime)`,
         { type: 'h3', text: 'Limits don’t trigger' },
         {
           type: 'p',
-          text: 'Check that `django_openrouter.log_backends.DatabaseBackend` is in `OPENROUTER["LOG_BACKENDS"]` (it is by default): limits and budgets aggregate from the `RequestLog` table, and without this backend spend is invisible to the checks.',
+          text: 'Check that `django_openrouter.log_backends.DatabaseBackend` is in `OPENROUTER["LOG_BACKENDS"]` (it is by default). Profiles with limits raise `ConfigurationError` if this backend is absent.',
         },
         { type: 'h3', text: 'How do I get the admin in my language?' },
         {

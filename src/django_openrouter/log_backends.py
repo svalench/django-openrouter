@@ -35,6 +35,7 @@ import asyncio
 import json
 import logging
 import re
+from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
@@ -57,6 +58,20 @@ if TYPE_CHECKING:
     from django_openrouter.models import OpenRouterModel, UsageProfile
 
 logger = logging.getLogger("django_openrouter")
+_active_reservation_id: ContextVar[int | None] = ContextVar(
+    "openrouter_reservation_id", default=None
+)
+_budget_reservation: ContextVar[bool] = ContextVar("openrouter_budget_reservation", default=False)
+
+
+def set_active_reservation(reservation_id: int | None, *, budgeted: bool = False) -> None:
+    _active_reservation_id.set(reservation_id)
+    _budget_reservation.set(budgeted)
+
+
+def has_active_budget_reservation() -> bool:
+    return _active_reservation_id.get() is not None and _budget_reservation.get()
+
 
 _DEFAULT_FILE_PATH = "openrouter-requests.jsonl"
 _DEFAULT_MAX_BYTES = 10 * 1024 * 1024
@@ -81,6 +96,7 @@ class LogRecord:
     latency_ms: int
     username: str
     created_at: datetime
+    reservation_id: int | None = None
 
 
 def record_to_dict(record: LogRecord) -> dict[str, Any]:
@@ -120,6 +136,21 @@ class DatabaseBackend(LogBackend):
     """
 
     def write(self, record: LogRecord) -> None:
+        if record.reservation_id is not None:
+            values: dict[str, Any] = dict(
+                status_code=record.status_code,
+                error_message=record.error_message,
+                prompt_tokens=record.prompt_tokens,
+                completion_tokens=record.completion_tokens,
+                latency_ms=record.latency_ms,
+                username=record.username,
+            )
+            if record.status_code == 200:
+                values["cost_usd"] = record.cost_usd
+            updated = RequestLog.objects.filter(pk=record.reservation_id).update(**values)
+            if updated != 1:
+                raise RuntimeError("OpenRouter reservation row is missing")
+            return
         RequestLog.objects.create(
             profile=record.profile,
             model=record.model,
@@ -133,6 +164,21 @@ class DatabaseBackend(LogBackend):
         )
 
     async def awrite(self, record: LogRecord) -> None:
+        if record.reservation_id is not None:
+            values: dict[str, Any] = dict(
+                status_code=record.status_code,
+                error_message=record.error_message,
+                prompt_tokens=record.prompt_tokens,
+                completion_tokens=record.completion_tokens,
+                latency_ms=record.latency_ms,
+                username=record.username,
+            )
+            if record.status_code == 200:
+                values["cost_usd"] = record.cost_usd
+            updated = await RequestLog.objects.filter(pk=record.reservation_id).aupdate(**values)
+            if updated != 1:
+                raise RuntimeError("OpenRouter reservation row is missing")
+            return
         await RequestLog.objects.acreate(
             profile=record.profile,
             model=record.model,
@@ -301,6 +347,8 @@ def dispatch_log(record: LogRecord) -> None:
             backend.write(record)
         except Exception:
             logger.exception("OpenRouter log backend %s failed.", type(backend).__name__)
+    _active_reservation_id.set(None)
+    _budget_reservation.set(False)
 
 
 async def adispatch_log(record: LogRecord) -> None:
@@ -310,6 +358,8 @@ async def adispatch_log(record: LogRecord) -> None:
             await backend.awrite(record)
         except Exception:
             logger.exception("OpenRouter log backend %s failed.", type(backend).__name__)
+    _active_reservation_id.set(None)
+    _budget_reservation.set(False)
 
 
 def make_record(
@@ -338,4 +388,5 @@ def make_record(
         latency_ms=latency_ms,
         username=username or current_username(),
         created_at=timezone.now(),
+        reservation_id=_active_reservation_id.get(),
     )

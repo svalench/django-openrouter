@@ -271,7 +271,7 @@ def test_compute_cost_from_catalog() -> None:
         usage_cost="9.99",
     )
     assert catalog == Decimal("0.000003") * 10 + Decimal("0.000015") * 5
-    assert cost == catalog
+    assert cost == Decimal("9.99")
 
 
 def test_compute_cost_from_usage_when_no_pricing() -> None:
@@ -337,8 +337,82 @@ def test_unknown_model_override(
     respx_mock: respx.MockRouter,
     or_settings: OpenRouterSettings,
 ) -> None:
-    with pytest.raises(ConfigurationError, match="Unknown model"):
+    with pytest.raises(ConfigurationError, match="not configured for profile"):
         chat("chat", messages=MESSAGES, model="does/not-exist")
+
+
+def test_model_override_cannot_escape_profile_chain(
+    or_settings: OpenRouterSettings, fallback_model: object
+) -> None:
+    with pytest.raises(ConfigurationError, match="not configured for profile"):
+        chat("chat", messages=MESSAGES, model="openai/gpt-4o-mini")
+
+
+@respx.mock
+def test_success_reconciles_reserved_cost_without_extra_log(
+    respx_mock: respx.MockRouter,
+    or_settings: OpenRouterSettings,
+    profile: UsageProfile,
+) -> None:
+    profile.budget_usd_per_day = Decimal("4.00")
+    profile.save()
+    respx_mock.post(CHAT_URL).mock(return_value=httpx.Response(200, json=completion_payload()))
+    result = chat("chat", messages=MESSAGES)
+    assert RequestLog.objects.count() == 1
+    log = RequestLog.objects.get()
+    assert log.status_code == 200
+    assert log.cost_usd == result.cost_usd
+    assert log.cost_usd < Decimal("3.00")
+
+
+@respx.mock
+def test_missing_usage_keeps_budget_reservation(
+    respx_mock: respx.MockRouter,
+    or_settings: OpenRouterSettings,
+    profile: UsageProfile,
+) -> None:
+    profile.budget_usd_per_day = Decimal("4.00")
+    profile.save()
+    response = completion_payload()
+    response.pop("usage")
+    respx_mock.post(CHAT_URL).mock(return_value=httpx.Response(200, json=response))
+    with pytest.raises(OpenRouterAPIError, match="omitted usage"):
+        chat("chat", messages=MESSAGES)
+    log = RequestLog.objects.get()
+    assert log.status_code == 0
+    assert log.cost_usd == Decimal("3.00")
+
+
+@respx.mock
+def test_failed_call_keeps_conservative_reservation(
+    respx_mock: respx.MockRouter,
+    or_settings: OpenRouterSettings,
+    profile: UsageProfile,
+) -> None:
+    profile.budget_usd_per_day = Decimal("4.00")
+    profile.save()
+    respx_mock.post(CHAT_URL).mock(return_value=httpx.Response(400, text="bad request"))
+    with pytest.raises(OpenRouterAPIError):
+        chat("chat", messages=MESSAGES)
+    log = RequestLog.objects.get()
+    assert log.status_code == 400
+    assert log.cost_usd == Decimal("3.00")
+
+
+@respx.mock
+@pytest.mark.django_db(transaction=True)
+def test_async_call_reconciles_budget_reservation(
+    respx_mock: respx.MockRouter,
+    or_settings: OpenRouterSettings,
+    profile: UsageProfile,
+) -> None:
+    profile.budget_usd_per_day = Decimal("4.00")
+    profile.save()
+    respx_mock.post(CHAT_URL).mock(return_value=httpx.Response(200, json=completion_payload()))
+    result = async_to_sync(achat)("chat", messages=MESSAGES)
+    log = RequestLog.objects.get()
+    assert log.status_code == 200
+    assert log.cost_usd == result.cost_usd
 
 
 @respx.mock
@@ -453,6 +527,35 @@ def test_stream_yields_deltas(
     assert log.status_code == 200
     assert log.prompt_tokens == 10
     assert log.completion_tokens == 5
+
+
+@respx.mock
+def test_stream_rejects_truncated_response(
+    respx_mock: respx.MockRouter, or_settings: OpenRouterSettings
+) -> None:
+    _enable_streaming(or_settings)
+    body = b'data: {"choices": [{"delta": {"content": "partial"}}]}\n\n'
+    respx_mock.post(CHAT_URL).mock(return_value=httpx.Response(200, content=body))
+    with pytest.raises(OpenRouterAPIError, match=r"before \[DONE\]"):
+        list(stream("chat", messages=MESSAGES))
+    assert RequestLog.objects.get().status_code == 502
+
+
+@respx.mock
+def test_async_stream_rejects_truncated_response(
+    respx_mock: respx.MockRouter, or_settings: OpenRouterSettings
+) -> None:
+    _enable_streaming(or_settings)
+    body = b'data: {"choices": [{"delta": {"content": "partial"}}]}\n\n'
+    respx_mock.post(CHAT_URL).mock(return_value=httpx.Response(200, content=body))
+
+    async def collect() -> None:
+        async for _ in astream("chat", messages=MESSAGES):
+            pass
+
+    with pytest.raises(OpenRouterAPIError, match=r"before \[DONE\]"):
+        async_to_sync(collect)()
+    assert RequestLog.objects.get().status_code == 502
 
 
 @respx.mock

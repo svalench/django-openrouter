@@ -340,7 +340,7 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
     messages=[{"role": "user", "content": "Hello"}],
     temperature=0.2,
     max_tokens=512,
-    model="openai/gpt-4o-mini",        # должен быть в каталоге
+    model="openai/gpt-4o-mini",        # должен быть в цепочке моделей этого профиля
     response_format={"type": "json_object"},  # любой параметр OpenRouter
 )`,
         },
@@ -357,7 +357,7 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
             ['`content`', '`str`', 'Текст ответа (склейка text-частей для multipart-контента)'],
             ['`prompt_tokens`', '`int`', 'Токены промпта из `usage`'],
             ['`completion_tokens`', '`int`', 'Токены ответа из `usage`'],
-            ['`cost_usd`', '`Decimal`', 'Стоимость: по ценам каталога, иначе `usage.cost` от API'],
+            ['`cost_usd`', '`Decimal`', 'Стоимость: `usage.cost` от API, если есть; иначе оценка по каталогу'],
             ['`catalog_cost_usd`', '`Decimal | None`', 'Стоимость по каталогу — для сверки с биллингом'],
             ['`model_used`', '`str`', 'Модель, реально вернувшая ответ'],
             ['`latency_ms`', '`int`', 'Латентность успешной попытки'],
@@ -431,13 +431,13 @@ python manage.py sync_models --api-key sk-or-...  # разовый ключ, н�
         },
         {
           type: 'p',
-          text: 'Проверка выполняется в транзакции: строка профиля блокируется `select_for_update`, агрегаты считаются под этой блокировкой — конкурентные запросы не пробьют лимит наперегонки.',
+          text: 'Перед каждой HTTP-попыткой транзакция резервирует один запрос и максимальную каталожную стоимость текстовой модели для всего окна контекста. Успешный вызов уточняет резерв по usage; ошибка или обрыв сохраняют его до сверки с биллингом. Для бюджета нужны известные цены и размер контекста. Консервативный резерв может отклонить запрос, который, вероятно, стоил бы гораздо меньше.',
         },
         {
           type: 'callout',
           kind: 'warning',
           title: 'Лимиты требуют DatabaseBackend',
-          text: 'Агрегаты считаются по таблице `RequestLog`, поэтому `DatabaseBackend` должен оставаться в `LOG_BACKENDS` (это дефолт). Если его убрать, `check_limits()` не увидит расход и лимиты перестанут работать.',
+          text: 'Агрегаты считаются по таблице `RequestLog`. Если у профиля есть лимиты, но `DatabaseBackend` убран из `LOG_BACKENDS`, вызов завершится `ConfigurationError`.',
         },
         {
           type: 'callout',
@@ -506,7 +506,7 @@ python manage.py sync_models --api-key sk-or-...  # разовый ключ, н�
         { type: 'h3', text: 'DatabaseBackend (по умолчанию)' },
         {
           type: 'p',
-          text: 'Пишет строки в модель `RequestLog`. Дневные/месячные лимиты и бюджеты агрегируются именно из этой таблицы — держите бэкенд включённым, если используете лимиты: без него `check_limits()` не увидит расход.',
+          text: 'Пишет строки в `RequestLog`, включая предварительные резервы. Для профилей с лимитами этот бэкенд обязателен; иначе возникает `ConfigurationError`.',
         },
         { type: 'h3', text: 'FileBackend' },
         {
@@ -851,7 +851,7 @@ stats.since          # начало периода (datetime)`,
         { type: 'h3', text: 'Лимиты не срабатывают' },
         {
           type: 'p',
-          text: 'Проверьте, что `django_openrouter.log_backends.DatabaseBackend` есть в `OPENROUTER["LOG_BACKENDS"]` (по умолчанию он включён): лимиты и бюджеты агрегируются из таблицы `RequestLog`, и без этого бэкенда расход невидим для проверок.',
+          text: 'Проверьте, что `django_openrouter.log_backends.DatabaseBackend` есть в `OPENROUTER["LOG_BACKENDS"]` (по умолчанию он включён). Без этого бэкенда профиль с лимитами выдаёт `ConfigurationError`.',
         },
         { type: 'h3', text: 'Как перевести админку на мой язык?' },
         {

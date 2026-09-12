@@ -169,6 +169,10 @@ result = await achat("chat", messages=[{"role": "user", "content": "Hello"}])
 
 If a profile’s limit or budget is exhausted, `chat()` raises `BudgetExceeded` or `RateLimitExceeded` and **does not** silently fall back. Fallback models are only used when OpenRouter returns `402`, `429` or `5xx`.
 
+`model=` can reorder only models already configured in that profile; it cannot introduce a model outside the profile chain.
+
+Profiles with limits atomically reserve a request slot before each HTTP attempt. For budgets, the reservation uses the model's full context window at the higher of its catalog prompt/completion token prices, plus any per-request price; on successful completion the row is reconciled to reported usage. This deliberately rejects calls when the remaining budget cannot cover that worst case, even if the likely response would be cheap. A budgeted model needs valid catalog prices and a context length, and currently must be text-to-text with no image charge. Failed or interrupted calls retain their reservation because their final charge may be unknown; inspect the request log and provider billing before manually correcting these rows. Provider-side limits remain advisable because catalog pricing or provider charges can change independently of this package.
+
 Streaming is off by default. Turn on **Streaming enabled** in OpenRouter settings, then iterate chunks:
 
 ```python
@@ -260,7 +264,7 @@ All configured backends receive every record. Logging is **best-effort**: a fail
 
 Backend-specific notes:
 
-- **DatabaseBackend** writes to the `RequestLog` model. Daily/monthly request limits and budgets are aggregated from that table, so keep this backend enabled if you use limits; without it `check_limits()` sees no usage.
+- **DatabaseBackend** writes to the `RequestLog` model. Daily/monthly request limits and budgets are aggregated from that table. Profiles with limits raise `ConfigurationError` if this backend is not configured.
 - **FileBackend** uses `logging.handlers.RotatingFileHandler`; the line format is one JSON object per request with `created_at`, `profile`, `model`, `status_code`, `error_message`, `prompt_tokens`, `completion_tokens`, `cost_usd`, `latency_ms`, `username`.
 - **ClickHouseBackend** inserts `FORMAT JSONEachRow` per request. Create a table like:
 
