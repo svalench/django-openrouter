@@ -108,6 +108,19 @@ def test_budget_rejects_unbounded_extra_pricing(
         reserve_request(profile, paid_model)
 
 
+@pytest.mark.parametrize("modality", ["", "text+image->text", "text->image"])
+def test_budget_rejects_non_text_or_unknown_modality(
+    profile: UsageProfile, paid_model: OpenRouterModel, modality: str
+) -> None:
+    profile.budget_usd_per_day = Decimal("10")
+    profile.save(update_fields=["budget_usd_per_day"])
+    paid_model.modality = modality
+    paid_model.save(update_fields=["modality"])
+    with pytest.raises(ConfigurationError, match="text-to-text"):
+        reserve_request(profile, paid_model)
+    assert RequestLog.objects.count() == 0
+
+
 def test_disabled_profile(profile: UsageProfile) -> None:
     profile.is_active = False
     profile.save()

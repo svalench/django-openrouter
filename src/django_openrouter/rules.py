@@ -40,7 +40,7 @@ def _maximum_model_cost(model: OpenRouterModel) -> Decimal:
     prices = (prompt, completion, request, image, *extra_prices)
     if any(not price.is_finite() or price < 0 for price in prices):
         raise ConfigurationError(_("Model pricing must be finite and non-negative."))
-    if image or any(extra_prices) or (model.modality and model.modality != "text->text"):
+    if image or any(extra_prices) or model.modality != "text->text":
         raise ConfigurationError(
             _("Budget reservations require text-to-text models without extra charges.")
         )
