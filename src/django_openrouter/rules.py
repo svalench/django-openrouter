@@ -118,9 +118,8 @@ def check_limits(profile: UsageProfile) -> None:
         )
 
     with transaction.atomic():
-        locked = (
-            UsageProfile.objects.select_for_update().select_related("model").get(pk=profile.pk)
-        )
+        # Lock only the profile: its nullable model join cannot be locked on PostgreSQL.
+        locked = UsageProfile.objects.select_for_update().get(pk=profile.pk)
         day = locked.get_usage("day")
         month = locked.get_usage("month")
 

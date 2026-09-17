@@ -95,3 +95,28 @@ jobs:
         run: ruff check src tests
       - name: Mypy
         run: mypy src/django_openrouter
+
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: openrouter
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install
+        run: pip install -e ".[dev]" "psycopg[binary]>=3.2,<4" "Django==6.0.*"
+      - name: PostgreSQL limit and client regression tests
+        run: pytest tests/test_rules.py tests/test_client.py --ds=tests.settings_postgres

@@ -3,7 +3,9 @@ from __future__ import annotations
 from decimal import Decimal
 
 import pytest
+from django.db import connection
 from django.test import override_settings
+from django.test.utils import CaptureQueriesContext
 
 from django_openrouter.exceptions import (
     BudgetExceeded,
@@ -153,3 +155,28 @@ def test_assert_inactive_model(profile: UsageProfile, paid_model: OpenRouterMode
     paid_model.save()
     with pytest.raises(ModelDisabled, match="disabled"):
         assert_model_allowed(profile, paid_model)
+
+
+@pytest.mark.parametrize("with_model", [False, True])
+@pytest.mark.parametrize("with_limits", [False, True])
+def test_limit_check_locks_profile_without_model_join(
+    profile: UsageProfile, with_model: bool, with_limits: bool
+) -> None:
+    if not with_model:
+        profile.model = None
+    if with_limits:
+        profile.max_requests_per_day = 2
+    profile.save()
+
+    with CaptureQueriesContext(connection) as queries:
+        check_limits(profile)
+
+    profile_reads = [
+        query["sql"] for query in queries
+        if query["sql"].startswith("SELECT")
+        and 'FROM "django_openrouter_usageprofile"' in query["sql"]
+    ]
+    assert profile_reads
+    assert all("JOIN" not in sql for sql in profile_reads)
+    if connection.features.has_select_for_update:
+        assert all("FOR UPDATE" in sql for sql in profile_reads)
