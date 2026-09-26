@@ -167,7 +167,11 @@ from django_openrouter import achat
 result = await achat("chat", messages=[{"role": "user", "content": "Hello"}])
 ```
 
-If a profile’s limit or budget is exhausted, `chat()` raises `BudgetExceeded` or `RateLimitExceeded` and **does not** silently fall back. Fallback models are only used when OpenRouter returns `402`, `429` or `5xx`.
+If a profile’s limit or budget is exhausted, `chat()` raises `BudgetExceeded` or `RateLimitExceeded` and **does not** silently fall back. Fallback models are only used when OpenRouter returns `402`, `408`, `429`, `5xx`, a transport error, or an `{"error": ...}` body inside a `200` response.
+
+Retries (`max_retries` in admin) apply to `408`, `425`, `429`, `5xx` and transport errors on the same model, honouring `Retry-After`, otherwise exponential backoff with jitter (`RETRY_BACKOFF`).
+
+`ChatResult` also exposes `finish_reason`, `tool_calls` (merged from stream deltas too) and `reasoning`. `cost_usd` is the amount OpenRouter actually billed (`usage.cost`); `catalog_cost_usd` is the catalog estimate for reconciliation.
 
 `model=` can reorder only models already configured in that profile; it cannot introduce a model outside the profile chain.
 
@@ -197,6 +201,12 @@ python manage.py sync_models --api-key sk-or-...
 
 Upserts the catalog, never deletes rows, and sets `is_active=False` on models that disappeared from OpenRouter.
 
+```bash
+python manage.py prune_request_logs --days 90 [--dry-run]
+```
+
+Deletes `RequestLog` rows older than N days (the current month is always kept, monthly limits need it).
+
 ## `settings.OPENROUTER`
 
 | Key | Default | Description |
@@ -208,6 +218,7 @@ Upserts the catalog, never deletes rows, and sets `is_active=False` on models th
 | `HTTP_REFERER` | unset | Sent as `HTTP-Referer` (OpenRouter app attribution) |
 | `X_TITLE` | unset | Sent as `X-Title` |
 | `LOG_BACKENDS` | DB only | Where request logs are written; see below |
+| `RETRY_BACKOFF` | `0.5` | Base seconds for exponential retry backoff (`0` = no sleep) |
 
 Also accepted, in this order, when the admin API key is empty:
 
@@ -297,9 +308,17 @@ with bound_username("worker"):
 
 You can also point `LOG_BACKENDS` at your own subclass of `django_openrouter.log_backends.LogBackend` (implement `write()`, optionally `awrite()`).
 
+Add `"BACKGROUND": True` to any backend entry except `DatabaseBackend` to write it from a background thread, so a slow ClickHouse or disk does not add latency to `chat()`.
+
+For metrics (Prometheus, OpenTelemetry) connect to `django_openrouter.signals.request_logged`; it is sent after every attempt with `record=LogRecord`.
+
+The API key is encrypted with a key derived from `SECRET_KEY`. When rotating it, keep the old value in `SECRET_KEY_FALLBACKS`: the key still decrypts and is re-encrypted with the new `SECRET_KEY` on the next save.
+
 ## Limits
 
 Usage is aggregated from `RequestLog` for the current calendar day and month (`UsageProfile.get_usage("day"|"month")`). Null limit fields mean “unlimited”.
+
+Streams closed by the consumer before the end are logged with status `499`; like other interrupted calls they keep their conservative reservation.
 
 ## Internationalization
 

@@ -72,8 +72,7 @@ def reserve_request(profile: UsageProfile, model: OpenRouterModel) -> RequestLog
     with transaction.atomic():
         locked = UsageProfile.objects.select_for_update().get(pk=profile.pk)
         check_limits(locked)
-        day = locked.get_usage("day")
-        month = locked.get_usage("month")
+        day, month = locked.usage_summary()
         if locked.budget_usd_per_day is not None and (
             day.total_cost + estimated_cost > locked.budget_usd_per_day
         ):
@@ -120,8 +119,7 @@ def check_limits(profile: UsageProfile) -> None:
     with transaction.atomic():
         # Lock only the profile: its nullable model join cannot be locked on PostgreSQL.
         locked = UsageProfile.objects.select_for_update().get(pk=profile.pk)
-        day = locked.get_usage("day")
-        month = locked.get_usage("month")
+        day, month = locked.usage_summary()
 
         if (
             locked.max_requests_per_day is not None

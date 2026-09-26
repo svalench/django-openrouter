@@ -11,7 +11,7 @@ from typing import Any, Literal
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models, transaction
-from django.db.models import Avg, Count, Sum, Value
+from django.db.models import Avg, Count, Q, Sum, Value
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -20,11 +20,20 @@ from django_openrouter.fields import EncryptedTextField
 
 Period = Literal["day", "month"]
 
+# Клиент закрыл стрим до конца ответа (nginx-конвенция).
+CLIENT_CLOSED_STATUS = 499
+
 
 def _decimal_from_pricing(value: object) -> Decimal:
     if value is None or value == "":
         return Decimal("0")
     return Decimal(str(value))
+
+
+def _as_decimal(value: object) -> Decimal:
+    if isinstance(value, Decimal):
+        return value
+    return Decimal(str(value or 0))
 
 
 @dataclass(frozen=True)
@@ -188,34 +197,48 @@ class UsageProfile(models.Model):
         """
         if period not in ("day", "month"):
             raise ValueError("period must be 'day' or 'month'")
-        since = _period_start(period)
         if transaction.get_connection().in_atomic_block:
-            return self._aggregate_usage(period, since)
-        with transaction.atomic():
-            return self._aggregate_usage(period, since)
+            type(self).objects.select_for_update().filter(pk=self.pk).get()
+            day, month = self.usage_summary()
+        else:
+            with transaction.atomic():
+                type(self).objects.select_for_update().filter(pk=self.pk).get()
+                day, month = self.usage_summary()
+        return day if period == "day" else month
 
-    def _aggregate_usage(self, period: Period, since: datetime) -> UsageStats:
-        # Сериализуем проверки лимитов по профилю.
-        type(self).objects.select_for_update().filter(pk=self.pk).get()
+    def usage_summary(self) -> tuple[UsageStats, UsageStats]:
+        """
+        Расход за день и месяц одним запросом, без блокировки.
+
+        Считаются все строки RequestLog, включая резервы попыток в полёте
+        (status_code=0) — иначе параллельные запросы проскочат лимит.
+        """
+        day_start = _period_start("day")
+        month_start = _period_start("month")
+        is_today = Q(created_at__gte=day_start)
+        decimal_field = models.DecimalField(max_digits=16, decimal_places=10)
+        zero = Value(Decimal("0"))
         aggregated = RequestLog.objects.filter(
-            profile_id=self.pk,
-            created_at__gte=since,
+            profile_id=self.pk, created_at__gte=month_start
         ).aggregate(
-            request_count=Count("id"),
-            total_cost=Coalesce(
-                Sum("cost_usd"),
-                Value(Decimal("0.00")),
-                output_field=models.DecimalField(max_digits=16, decimal_places=10),
-            ),
+            day_count=Count("id", filter=is_today),
+            month_count=Count("id"),
+            day_cost=Coalesce(Sum("cost_usd", filter=is_today), zero, output_field=decimal_field),
+            month_cost=Coalesce(Sum("cost_usd"), zero, output_field=decimal_field),
         )
-        total_cost = aggregated["total_cost"]
-        if not isinstance(total_cost, Decimal):
-            total_cost = Decimal(str(total_cost or 0))
-        return UsageStats(
-            request_count=int(aggregated["request_count"] or 0),
-            total_cost=total_cost,
-            period=period,
-            since=since,
+        return (
+            UsageStats(
+                request_count=int(aggregated["day_count"] or 0),
+                total_cost=_as_decimal(aggregated["day_cost"]),
+                period="day",
+                since=day_start,
+            ),
+            UsageStats(
+                request_count=int(aggregated["month_count"] or 0),
+                total_cost=_as_decimal(aggregated["month_cost"]),
+                period="month",
+                since=month_start,
+            ),
         )
 
     def ordered_models(self) -> list[OpenRouterModel]:
@@ -429,18 +452,12 @@ def usage_totals_by_profile(profile_ids: Sequence[int]) -> dict[int, ProfileUsag
         pk = row["profile_id"]
         if pk is None:
             continue
-        avg_cost = row["avg_cost_usd"]
-        total_cost = row["total_cost_usd"]
-        if not isinstance(avg_cost, Decimal):
-            avg_cost = Decimal(str(avg_cost or 0))
-        if not isinstance(total_cost, Decimal):
-            total_cost = Decimal(str(total_cost or 0))
         result[int(pk)] = ProfileUsageTotals(
             request_count=int(row["request_count"] or 0),
             avg_latency_ms=float(row["avg_latency_ms"] or 0),
             total_latency_ms=int(row["total_latency_ms"] or 0),
-            avg_cost_usd=avg_cost,
-            total_cost_usd=total_cost,
+            avg_cost_usd=_as_decimal(row["avg_cost_usd"]),
+            total_cost_usd=_as_decimal(row["total_cost_usd"]),
         )
     return result
 

@@ -1,9 +1,9 @@
-"""Инвалидация кэша runtime-конфига при изменениях в админке."""
+"""Инвалидация кэша runtime-конфига при изменениях в админке и публичные сигналы."""
 
 from __future__ import annotations
 
 from django.db.models.signals import post_delete, post_save
-from django.dispatch import receiver
+from django.dispatch import Signal, receiver
 
 from django_openrouter.config import invalidate_runtime_config
 from django_openrouter.models import (
@@ -12,6 +12,10 @@ from django_openrouter.models import (
     UsageProfile,
     UsageProfileFallback,
 )
+
+# Отправляется после каждой попытки HTTP-вызова: kwargs record=LogRecord.
+# Точка подключения метрик (Prometheus, OpenTelemetry) без своего LogBackend.
+request_logged = Signal()
 
 
 @receiver(post_save, sender=UsageProfile)

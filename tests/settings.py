@@ -57,4 +57,5 @@ OPENROUTER = {
     "CACHE_ALIAS": "default",
     "HTTP_REFERER": "https://example.com",
     "X_TITLE": "django-openrouter-tests",
+    "RETRY_BACKOFF": 0,
 }

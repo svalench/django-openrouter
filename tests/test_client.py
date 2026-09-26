@@ -263,7 +263,7 @@ def test_async_chat(
     assert RequestLog.objects.count() == 2
 
 
-def test_compute_cost_from_catalog() -> None:
+def test_compute_cost_prefers_usage_cost() -> None:
     cost, catalog = compute_cost(
         10,
         5,
@@ -272,6 +272,14 @@ def test_compute_cost_from_catalog() -> None:
     )
     assert catalog == Decimal("0.000003") * 10 + Decimal("0.000015") * 5
     assert cost == Decimal("9.99")
+
+
+def test_compute_cost_from_catalog_includes_request_price() -> None:
+    cost, catalog = compute_cost(
+        10, 5, {"prompt": "0.000003", "completion": "0.000015", "request": "0.01"}
+    )
+    assert catalog == Decimal("0.000003") * 10 + Decimal("0.000015") * 5 + Decimal("0.01")
+    assert cost == catalog
 
 
 def test_compute_cost_from_usage_when_no_pricing() -> None:

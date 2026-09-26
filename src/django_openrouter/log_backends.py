@@ -27,6 +27,10 @@
 Если LOG_BACKENDS не задан, пишется только в БД проекта (RequestLog).
 Запись в каждый бэкенд выполняется best-effort: ошибка бэкенда не роняет
 chat()-запрос, а логируется в logger 'django_openrouter'.
+
+"BACKGROUND": True у записи (кроме DatabaseBackend) переносит запись в
+фоновый поток: внешний ClickHouse/файл не добавляет задержку к chat().
+DatabaseBackend всегда пишет синхронно — по нему считаются лимиты.
 """
 
 from __future__ import annotations
@@ -35,6 +39,7 @@ import asyncio
 import json
 import logging
 import re
+from concurrent.futures import ThreadPoolExecutor
 from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import datetime
@@ -52,7 +57,9 @@ from django.utils.translation import gettext as _
 
 from django_openrouter.config import openrouter_setting
 from django_openrouter.current_user import current_username
+from django_openrouter.http_clients import get_async_client, get_sync_client
 from django_openrouter.models import RequestLog
+from django_openrouter.signals import request_logged
 
 if TYPE_CHECKING:
     from django_openrouter.models import OpenRouterModel, UsageProfile
@@ -118,8 +125,11 @@ def record_to_dict(record: LogRecord) -> dict[str, Any]:
 class LogBackend:
     """Базовый класс бэкенда. Потомки переопределяют write() и/или awrite()."""
 
+    supports_background = True
+
     def __init__(self, **config: Any) -> None:
         self.config = {str(key).upper(): value for key, value in config.items()}
+        self.background = bool(self.config.get("BACKGROUND")) and self.supports_background
 
     def write(self, record: LogRecord) -> None:
         raise NotImplementedError
@@ -134,6 +144,8 @@ class DatabaseBackend(LogBackend):
     Дневные/месячные лимиты и бюджеты (check_limits) считаются именно по ней:
     если убрать этот бэкенд из LOG_BACKENDS, контроль лимитов перестанет работать.
     """
+
+    supports_background = False
 
     def write(self, record: LogRecord) -> None:
         if record.reservation_id is not None:
@@ -267,24 +279,24 @@ class ClickHouseBackend(LogBackend):
         return f"INSERT INTO {self.database}.{self.table} FORMAT JSONEachRow"
 
     def write(self, record: LogRecord) -> None:
-        with httpx.Client(timeout=self.timeout) as client:
-            response = client.post(
-                f"{self.url}/",
-                params={"query": self._query},
-                content=json.dumps(record_to_dict(record), ensure_ascii=False),
-                **self._auth_kwargs,
-            )
-            response.raise_for_status()
+        response = get_sync_client().post(
+            f"{self.url}/",
+            params={"query": self._query},
+            content=json.dumps(record_to_dict(record), ensure_ascii=False),
+            timeout=self.timeout,
+            **self._auth_kwargs,
+        )
+        response.raise_for_status()
 
     async def awrite(self, record: LogRecord) -> None:
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            response = await client.post(
-                f"{self.url}/",
-                params={"query": self._query},
-                content=json.dumps(record_to_dict(record), ensure_ascii=False),
-                **self._auth_kwargs,
-            )
-            response.raise_for_status()
+        response = await get_async_client().post(
+            f"{self.url}/",
+            params={"query": self._query},
+            content=json.dumps(record_to_dict(record), ensure_ascii=False),
+            timeout=self.timeout,
+            **self._auth_kwargs,
+        )
+        response.raise_for_status()
 
 
 def _build_backend(spec: str | dict[str, Any]) -> LogBackend:
@@ -340,26 +352,57 @@ def _reset_on_setting_changed(*, setting: str, **kwargs: Any) -> None:
         invalidate_log_backends()
 
 
+_background_executor: ThreadPoolExecutor | None = None
+
+
+def _executor() -> ThreadPoolExecutor:
+    global _background_executor
+    if _background_executor is None:
+        _background_executor = ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix="django-openrouter-log"
+        )
+    return _background_executor
+
+
+def _safe_write(backend: LogBackend, record: LogRecord) -> None:
+    try:
+        backend.write(record)
+    except Exception:
+        logger.exception("OpenRouter log backend %s failed.", type(backend).__name__)
+
+
+def _send_signal(record: LogRecord) -> None:
+    try:
+        request_logged.send(sender=LogRecord, record=record)
+    except Exception:
+        logger.exception("request_logged receiver failed.")
+
+
 def dispatch_log(record: LogRecord) -> None:
     """Синхронно пишет запись во все настроенные бэкенды (best-effort)."""
     for backend in get_log_backends():
-        try:
-            backend.write(record)
-        except Exception:
-            logger.exception("OpenRouter log backend %s failed.", type(backend).__name__)
+        if backend.background:
+            _executor().submit(_safe_write, backend, record)
+        else:
+            _safe_write(backend, record)
     _active_reservation_id.set(None)
     _budget_reservation.set(False)
+    _send_signal(record)
 
 
 async def adispatch_log(record: LogRecord) -> None:
     """Асинхронный вариант dispatch_log."""
     for backend in get_log_backends():
+        if backend.background:
+            _executor().submit(_safe_write, backend, record)
+            continue
         try:
             await backend.awrite(record)
         except Exception:
             logger.exception("OpenRouter log backend %s failed.", type(backend).__name__)
     _active_reservation_id.set(None)
     _budget_reservation.set(False)
+    _send_signal(record)
 
 
 def make_record(

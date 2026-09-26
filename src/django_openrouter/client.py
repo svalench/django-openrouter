@@ -2,11 +2,22 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
+import logging
+import random
 import time
-from collections.abc import AsyncIterator, Iterator, Mapping, Sequence
+from collections.abc import (
+    AsyncGenerator,
+    AsyncIterator,
+    Generator,
+    Iterator,
+    Mapping,
+    Sequence,
+)
+from contextlib import aclosing, closing
 from dataclasses import dataclass, field
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
 import httpx
@@ -18,6 +29,7 @@ from django_openrouter.config import (
     ProfileSnapshot,
     RuntimeConfig,
     get_runtime_config,
+    openrouter_setting,
 )
 from django_openrouter.exceptions import (
     ConfigurationError,
@@ -25,20 +37,54 @@ from django_openrouter.exceptions import (
     OpenRouterAPIError,
     OpenRouterDisabled,
 )
+from django_openrouter.http_clients import get_async_client, get_sync_client
 from django_openrouter.log_backends import (
+    LogRecord,
     adispatch_log,
     dispatch_log,
     has_active_budget_reservation,
     make_record,
     set_active_reservation,
 )
-from django_openrouter.models import OpenRouterModel, UsageProfile
+from django_openrouter.models import CLIENT_CLOSED_STATUS, OpenRouterModel, UsageProfile
 from django_openrouter.rules import assert_model_allowed, check_limits, reserve_request
+
+logger = logging.getLogger("django_openrouter")
 
 ChatMessage = Mapping[str, Any]
 ChatMessages = Sequence[ChatMessage]
 
-_FALLBACK_STATUSES = frozenset({402, 429})
+# После исчерпания retry на модели — переходим к следующей в цепочке.
+_FALLBACK_STATUSES = frozenset({402, 408, 429})
+# Повторяем на той же модели (плюс любые 5xx и транспортные ошибки).
+_RETRY_STATUSES = frozenset({408, 425, 429})
+# Ключи уровня OpenRouter, а не модели: не сверяются с supported_parameters.
+_PASSTHROUGH_KEYS = frozenset(
+    {
+        "provider",
+        "transforms",
+        "models",
+        "route",
+        "usage",
+        "user",
+        "plugins",
+        "prediction",
+        "debug",
+        "session_id",
+        "metadata",
+        "modalities",
+    }
+)
+_MANAGED_KEYS = frozenset({"stream", "max_tokens", "temperature", "model", "stream_options"})
+# OpenRouter-ошибка в теле 200 без кода — считаем upstream-сбоем, чтобы сработал fallback.
+_BODY_ERROR_STATUS = 502
+_ERROR_TEXT_LIMIT = 2000
+_DEFAULT_RETRY_BACKOFF = 0.5
+_MAX_RETRY_DELAY = 30.0
+
+
+class _UsageMissing(OpenRouterAPIError):
+    """Ответ получен (и оплачен), но без usage: без retry/fallback, резерв не закрываем."""
 
 
 @dataclass(frozen=True)
@@ -53,6 +99,9 @@ class ChatResult:
     model_used: str
     latency_ms: int
     raw: dict[str, Any] = field(default_factory=dict)
+    finish_reason: str | None = None
+    tool_calls: list[dict[str, Any]] = field(default_factory=list)
+    reasoning: str | None = None
 
 
 @dataclass(frozen=True)
@@ -67,6 +116,15 @@ class ChatChunk:
     raw: dict[str, Any] = field(default_factory=dict)
 
 
+def _to_decimal(value: object) -> Decimal | None:
+    if value is None or value == "":
+        return None
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, ValueError):
+        return None
+
+
 def compute_cost(
     prompt_tokens: int,
     completion_tokens: int,
@@ -74,22 +132,26 @@ def compute_cost(
     usage_cost: object | None = None,
 ) -> tuple[Decimal, Decimal | None]:
     """
-    Считает стоимость по токенам usage и pricing каталога.
+    Возвращает (cost_usd для лога, catalog_cost для сверки).
 
-    Возвращает (фактическую стоимость для лога, каталожную оценку).
-    Если OpenRouter прислал usage.cost, это значение имеет приоритет.
+    usage.cost от OpenRouter — фактически списанная сумма (учитывает кэш,
+    reasoning-токены, скидки провайдера), поэтому он в приоритете.
+    Каталожная оценка (prompt + completion + request) — fallback и сверка.
     """
     catalog_cost: Decimal | None = None
     if pricing:
-        prompt_price = Decimal(str(pricing.get("prompt") or 0))
-        completion_price = Decimal(str(pricing.get("completion") or 0))
-        catalog_cost = prompt_price * prompt_tokens + completion_price * completion_tokens
-    api_cost = Decimal(str(usage_cost)) if usage_cost is not None else None
-    if api_cost is not None and (not api_cost.is_finite() or api_cost < 0):
+        prompt_price = _to_decimal(pricing.get("prompt")) or Decimal("0")
+        completion_price = _to_decimal(pricing.get("completion")) or Decimal("0")
+        request_price = _to_decimal(pricing.get("request")) or Decimal("0")
+        catalog_cost = (
+            prompt_price * prompt_tokens + completion_price * completion_tokens + request_price
+        )
+    if usage_cost is None:
+        return catalog_cost or Decimal("0"), catalog_cost
+    api_cost = _to_decimal(usage_cost)
+    if api_cost is None or not api_cost.is_finite() or api_cost < 0:
         raise OpenRouterAPIError(_("OpenRouter reported invalid usage cost."))
-    if api_cost is not None:
-        return api_cost, catalog_cost
-    return catalog_cost or Decimal("0"), catalog_cost
+    return api_cost, catalog_cost
 
 
 def _headers(cfg: RuntimeConfig) -> dict[str, str]:
@@ -104,15 +166,33 @@ def _headers(cfg: RuntimeConfig) -> dict[str, str]:
     return headers
 
 
+def _warn_unsupported(model: OpenRouterModel, overrides: Mapping[str, Any]) -> None:
+    supported = set(model.supported_parameters or [])
+    if not supported:
+        return
+    unknown = sorted(
+        key
+        for key in overrides
+        if key not in supported and key not in _PASSTHROUGH_KEYS and key not in _MANAGED_KEYS
+    )
+    if unknown:
+        logger.warning(
+            "Model %s does not declare support for parameters: %s",
+            model.model_id,
+            ", ".join(unknown),
+        )
+
+
 def _build_payload(
     profile: UsageProfile,
-    model_id: str,
+    model: OpenRouterModel,
     messages: ChatMessages,
     overrides: dict[str, Any],
     *,
     stream: bool = False,
 ) -> dict[str, Any]:
-    payload: dict[str, Any] = {"model": model_id, "messages": list(messages)}
+    _warn_unsupported(model, overrides)
+    payload: dict[str, Any] = {"model": model.model_id, "messages": list(messages)}
     max_tokens = overrides["max_tokens"] if "max_tokens" in overrides else profile.max_tokens
     temperature = overrides["temperature"] if "temperature" in overrides else profile.temperature
     if max_tokens is not None:
@@ -122,20 +202,17 @@ def _build_payload(
     if stream:
         payload["stream"] = True
         payload["stream_options"] = {"include_usage": True}
+    # Без usage.include OpenRouter может не вернуть фактический usage.cost.
+    payload["usage"] = {"include": True}
     for key, value in overrides.items():
-        if key in {"stream", "max_tokens", "temperature", "model", "stream_options"}:
+        if key in _MANAGED_KEYS:
             continue
         payload[key] = value
     return payload
 
 
-def _extract_content(payload: dict[str, Any]) -> str:
-    choices = payload.get("choices") or []
-    if not choices:
-        return ""
-    first = choices[0] if isinstance(choices[0], dict) else {}
-    message = first.get("message") or {}
-    content = message.get("content")
+def _join_content(content: object) -> str:
+    """content бывает строкой или списком частей [{type: text, text: ...}]."""
     if content is None:
         return ""
     if isinstance(content, str):
@@ -151,29 +228,11 @@ def _extract_content(payload: dict[str, Any]) -> str:
     return str(content)
 
 
-def _extract_delta(payload: dict[str, Any]) -> str:
-    """Текст из choices[0].delta.content SSE-чанка."""
+def _first_choice(payload: Mapping[str, Any]) -> dict[str, Any]:
     choices = payload.get("choices") or []
-    if not choices:
-        return ""
-    first = choices[0] if isinstance(choices[0], dict) else {}
-    delta = first.get("delta") or {}
-    if not isinstance(delta, dict):
-        return ""
-    content = delta.get("content")
-    if content is None:
-        return ""
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        parts: list[str] = []
-        for item in content:
-            if isinstance(item, str):
-                parts.append(item)
-            elif isinstance(item, dict) and item.get("type") == "text":
-                parts.append(str(item.get("text") or ""))
-        return "".join(parts)
-    return str(content)
+    if not choices or not isinstance(choices[0], dict):
+        return {}
+    return choices[0]
 
 
 def _decode_sse_line(line: str) -> dict[str, Any] | bool | None:
@@ -195,19 +254,30 @@ def _decode_sse_line(line: str) -> dict[str, Any] | bool | None:
     return None
 
 
-def _sse_error(event: dict[str, Any]) -> OpenRouterAPIError:
+def _error_from_body(event: Mapping[str, Any]) -> OpenRouterAPIError | None:
+    """OpenRouter может прислать {"error": ...} и в теле 200, и в SSE-событии."""
     err = event.get("error")
+    if not err:
+        return None
     if isinstance(err, dict):
         raw_code = err.get("code") if "code" in err else err.get("status")
         try:
-            status = int(raw_code) if raw_code is not None else 500
+            status = int(raw_code) if raw_code is not None else _BODY_ERROR_STATUS
         except (TypeError, ValueError):
-            status = 500
+            status = _BODY_ERROR_STATUS
         message = str(err.get("message") or err)
     else:
-        status = 500
+        status = _BODY_ERROR_STATUS
         message = str(err)
     return OpenRouterAPIError(message, status_code=status)
+
+
+def _http_error(status_code: int, text: str) -> OpenRouterAPIError:
+    return OpenRouterAPIError(
+        _("OpenRouter returned HTTP %(status)s: %(error)s")
+        % {"status": status_code, "error": text[:_ERROR_TEXT_LIMIT]},
+        status_code=status_code,
+    )
 
 
 def _resolve_profile(cfg: RuntimeConfig, profile_name: str | None) -> ProfileSnapshot:
@@ -258,84 +328,238 @@ def _allowed_models(profile: UsageProfile, chain: list[OpenRouterModel]) -> list
     return allowed
 
 
-def _should_fallback(status_code: int) -> bool:
-    return status_code in _FALLBACK_STATUSES or status_code >= 500
+def _should_fallback(status_code: int | None) -> bool:
+    return status_code is None or status_code in _FALLBACK_STATUSES or status_code >= 500
 
 
-def _write_log(
-    *,
+def _is_retryable(status_code: int | None) -> bool:
+    return status_code is None or status_code in _RETRY_STATUSES or status_code >= 500
+
+
+def _retry_delay(attempt: int, retry_after: str | None = None) -> float:
+    """Retry-After от сервера, иначе экспонента с jitter (OPENROUTER['RETRY_BACKOFF'])."""
+    if retry_after:
+        try:
+            return min(max(float(retry_after), 0.0), _MAX_RETRY_DELAY)
+        except ValueError:
+            pass
+    base = float(openrouter_setting("RETRY_BACKOFF", _DEFAULT_RETRY_BACKOFF) or 0)
+    if base <= 0:
+        return 0.0
+    return min(base * (2**attempt), _MAX_RETRY_DELAY) * random.uniform(0.5, 1.0)
+
+
+def _elapsed_ms(started: float) -> int:
+    return int((time.perf_counter() - started) * 1000)
+
+
+def _record(
     profile: UsageProfile,
-    model: OpenRouterModel | None,
-    status_code: int,
-    error_message: str | None,
-    prompt_tokens: int = 0,
-    completion_tokens: int = 0,
-    cost_usd: Decimal = Decimal("0"),
-    latency_ms: int = 0,
-) -> None:
-    dispatch_log(
-        make_record(
-            profile=profile,
-            model=model,
-            status_code=status_code,
-            error_message=error_message,
-            prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens,
-            cost_usd=cost_usd,
-            latency_ms=latency_ms,
-        )
-    )
-
-
-def _result_from_payload(
-    payload: dict[str, Any],
     model: OpenRouterModel,
-    latency_ms: int,
-) -> ChatResult:
-    usage = payload.get("usage") or {}
-    if has_active_budget_reservation() and not (
-        isinstance(usage, dict)
-        and ("cost" in usage or ("prompt_tokens" in usage and "completion_tokens" in usage))
-    ):
-        raise OpenRouterAPIError(
-            _("OpenRouter omitted usage for a budgeted request; reservation remains pending.")
-        )
-    prompt_tokens = int(usage.get("prompt_tokens") or 0)
-    completion_tokens = int(usage.get("completion_tokens") or 0)
-    usage_cost = usage.get("cost")
-    cost_usd, catalog_cost = compute_cost(
-        prompt_tokens,
-        completion_tokens,
-        model.pricing,
-        usage_cost,
-    )
-    return ChatResult(
-        content=_extract_content(payload),
-        prompt_tokens=prompt_tokens,
-        completion_tokens=completion_tokens,
-        cost_usd=cost_usd,
-        catalog_cost_usd=catalog_cost,
-        model_used=str(payload.get("model") or model.model_id),
-        latency_ms=latency_ms,
-        raw=payload,
+    started: float,
+    *,
+    status_code: int,
+    error_message: str | None = None,
+    result: ChatResult | None = None,
+) -> LogRecord:
+    return make_record(
+        profile=profile,
+        model=model,
+        status_code=status_code,
+        error_message=error_message,
+        prompt_tokens=result.prompt_tokens if result else 0,
+        completion_tokens=result.completion_tokens if result else 0,
+        cost_usd=result.cost_usd if result else Decimal("0"),
+        latency_ms=_elapsed_ms(started),
     )
 
 
-def _result_from_sse(
+def _build_result(
+    *,
     content: str,
     usage: Mapping[str, Any],
     model: OpenRouterModel,
     model_used: str,
     latency_ms: int,
-    last_event: dict[str, Any],
+    raw: dict[str, Any],
+    finish_reason: str | None = None,
+    tool_calls: list[dict[str, Any]] | None = None,
+    reasoning: str | None = None,
+    require_usage: bool = True,
 ) -> ChatResult:
-    payload = {
-        **last_event,
-        "model": model_used or model.model_id,
-        "choices": [{"message": {"role": "assistant", "content": content}}],
-        "usage": dict(usage),
-    }
-    return _result_from_payload(payload, model, latency_ms)
+    # Без usage резерв бюджета нельзя закрыть фактической суммой — оставляем его pending.
+    if (
+        require_usage
+        and has_active_budget_reservation()
+        and not ("cost" in usage or ("prompt_tokens" in usage and "completion_tokens" in usage))
+    ):
+        raise _UsageMissing(
+            _("OpenRouter omitted usage for a budgeted request; reservation remains pending.")
+        )
+    prompt_tokens = int(usage.get("prompt_tokens") or 0)
+    completion_tokens = int(usage.get("completion_tokens") or 0)
+    cost_usd, catalog_cost = compute_cost(
+        prompt_tokens, completion_tokens, model.pricing, usage.get("cost")
+    )
+    return ChatResult(
+        content=content,
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        cost_usd=cost_usd,
+        catalog_cost_usd=catalog_cost,
+        model_used=model_used or model.model_id,
+        latency_ms=latency_ms,
+        raw=raw,
+        finish_reason=finish_reason,
+        tool_calls=tool_calls or [],
+        reasoning=reasoning or None,
+    )
+
+
+def _parse_json_response(
+    response: httpx.Response, model: OpenRouterModel, started: float
+) -> ChatResult:
+    """Разбор 200-ответа. Ошибка в теле или битый JSON → OpenRouterAPIError."""
+    try:
+        payload = response.json()
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise OpenRouterAPIError(
+            _("OpenRouter returned invalid JSON: %(error)s") % {"error": exc},
+            status_code=_BODY_ERROR_STATUS,
+        ) from exc
+    if not isinstance(payload, dict):
+        raise OpenRouterAPIError(
+            _("OpenRouter returned unexpected payload."), status_code=_BODY_ERROR_STATUS
+        )
+    body_error = _error_from_body(payload)
+    if body_error is not None:
+        raise body_error
+    choice = _first_choice(payload)
+    message = choice.get("message") or {}
+    if not isinstance(message, dict):
+        message = {}
+    tool_calls = message.get("tool_calls")
+    return _build_result(
+        content=_join_content(message.get("content")),
+        usage=payload.get("usage") or {},
+        model=model,
+        model_used=str(payload.get("model") or ""),
+        latency_ms=_elapsed_ms(started),
+        raw=payload,
+        finish_reason=choice.get("finish_reason"),
+        tool_calls=tool_calls if isinstance(tool_calls, list) else None,
+        reasoning=message.get("reasoning"),
+    )
+
+
+def _done_chunk(result: ChatResult, raw: dict[str, Any]) -> ChatChunk:
+    return ChatChunk(
+        delta="",
+        content=result.content,
+        model_used=result.model_used,
+        done=True,
+        result=result,
+        raw=raw,
+    )
+
+
+class _SSEState:
+    """Накопитель SSE-потока: общий для sync/async, без ввода-вывода."""
+
+    def __init__(self, model: OpenRouterModel, started: float) -> None:
+        self.model = model
+        self.started = started
+        self.parts: list[str] = []
+        self.reasoning: list[str] = []
+        self.tool_calls: dict[int, dict[str, Any]] = {}
+        self.model_used = model.model_id
+        self.usage: dict[str, Any] = {}
+        self.last_event: dict[str, Any] = {}
+        self.finish_reason: str | None = None
+        self.finished = False
+
+    @property
+    def has_content(self) -> bool:
+        return bool(self.parts)
+
+    def feed(self, line: str) -> ChatChunk | None:
+        """Возвращает чанк с дельтой текста либо None. Ошибка в событии → исключение."""
+        decoded = _decode_sse_line(line)
+        if decoded is True:
+            self.finished = True
+            return None
+        if not isinstance(decoded, dict):
+            return None
+        body_error = _error_from_body(decoded)
+        if body_error is not None:
+            raise body_error
+        self.last_event = decoded
+        if decoded.get("model"):
+            self.model_used = str(decoded["model"])
+        event_usage = decoded.get("usage")
+        if isinstance(event_usage, dict):
+            self.usage = event_usage
+        choice = _first_choice(decoded)
+        if choice.get("finish_reason"):
+            self.finish_reason = str(choice["finish_reason"])
+        delta = choice.get("delta") or {}
+        if not isinstance(delta, dict):
+            return None
+        if delta.get("reasoning"):
+            self.reasoning.append(str(delta["reasoning"]))
+        self._merge_tool_calls(delta.get("tool_calls"))
+        text = _join_content(delta.get("content"))
+        if not text:
+            return None
+        self.parts.append(text)
+        return ChatChunk(
+            delta=text,
+            content="".join(self.parts),
+            model_used=self.model_used,
+            raw=decoded,
+        )
+
+    def _merge_tool_calls(self, deltas: object) -> None:
+        # Аргументы tool_calls в стриме приходят кусками по index.
+        if not isinstance(deltas, list):
+            return
+        for item in deltas:
+            if not isinstance(item, dict):
+                continue
+            index = int(item.get("index") or 0)
+            call = self.tool_calls.setdefault(
+                index, {"id": "", "type": "function", "function": {"name": "", "arguments": ""}}
+            )
+            if item.get("id"):
+                call["id"] = item["id"]
+            if item.get("type"):
+                call["type"] = item["type"]
+            function = item.get("function")
+            if isinstance(function, dict):
+                call["function"]["name"] += str(function.get("name") or "")
+                call["function"]["arguments"] += str(function.get("arguments") or "")
+
+    def result(self, *, partial: bool = False) -> ChatResult:
+        if not partial and not self.finished:
+            raise OpenRouterAPIError(
+                _("OpenRouter stream ended before [DONE]."), status_code=_BODY_ERROR_STATUS
+            )
+        usage = self.usage
+        cost = _to_decimal(usage.get("cost"))
+        if partial and (cost is None or not cost.is_finite() or cost < 0):
+            usage = {key: value for key, value in usage.items() if key != "cost"}
+        return _build_result(
+            require_usage=not partial,
+            content="".join(self.parts),
+            usage=usage,
+            model=self.model,
+            model_used=self.model_used,
+            latency_ms=_elapsed_ms(self.started),
+            raw=self.last_event,
+            finish_reason=self.finish_reason,
+            tool_calls=[self.tool_calls[key] for key in sorted(self.tool_calls)],
+            reasoning="".join(self.reasoning),
+        )
 
 
 def _want_sse(cfg: RuntimeConfig, overrides: Mapping[str, Any], *, force: bool = False) -> bool:
@@ -354,7 +578,8 @@ def _want_sse(cfg: RuntimeConfig, overrides: Mapping[str, Any], *, force: bool =
 def _prepare(
     profile_name: str | None,
     overrides: dict[str, Any],
-) -> tuple[RuntimeConfig, UsageProfile]:
+) -> tuple[RuntimeConfig, UsageProfile, list[OpenRouterModel]]:
+    """Конфиг, профиль и допустимая цепочка моделей. Резерв — на каждую попытку."""
     set_active_reservation(None)
     cfg = get_runtime_config()
     if not cfg.enabled:
@@ -364,27 +589,32 @@ def _prepare(
     snapshot = _resolve_profile(cfg, profile_name)
     profile = UsageProfile.objects.select_related("model").get(pk=snapshot.pk)
     check_limits(profile)
-    return cfg, profile
+    chain = _allowed_models(profile, _model_chain(profile, overrides))
+    return cfg, profile, chain
+
+
+def _activate_reservation(profile: UsageProfile, model: OpenRouterModel) -> None:
+    """Резерв лимита/бюджета под попытку; DatabaseBackend превратит его в лог попытки."""
+    reservation = reserve_request(profile, model)
+    set_active_reservation(
+        reservation.pk if reservation is not None else None,
+        budgeted=profile.budget_usd_per_day is not None
+        or profile.budget_usd_per_month is not None,
+    )
 
 
 def _collect_result(chunks: Iterator[ChatChunk]) -> ChatResult:
-    final: ChatResult | None = None
     for chunk in chunks:
         if chunk.done and chunk.result is not None:
-            final = chunk.result
-    if final is None:
-        raise OpenRouterAPIError(_("All models failed without a specific error."))
-    return final
+            return chunk.result
+    raise OpenRouterAPIError(_("All models failed without a specific error."))
 
 
 async def _acollect_result(chunks: AsyncIterator[ChatChunk]) -> ChatResult:
-    final: ChatResult | None = None
     async for chunk in chunks:
         if chunk.done and chunk.result is not None:
-            final = chunk.result
-    if final is None:
-        raise OpenRouterAPIError(_("All models failed without a specific error."))
-    return final
+            return chunk.result
+    raise OpenRouterAPIError(_("All models failed without a specific error."))
 
 
 class OpenRouterClient:
@@ -394,300 +624,141 @@ class OpenRouterClient:
         self.profile_name = profile_name
 
     def chat(self, messages: ChatMessages, **overrides: Any) -> ChatResult:
-        cfg, profile = _prepare(self.profile_name, overrides)
-        if _want_sse(cfg, overrides):
-            return _collect_result(_iter_chain_sync(cfg, profile, messages, overrides, emit=False))
-        return _collect_result(_iter_json_sync(cfg, profile, messages, overrides))
+        with closing(self._run(messages, overrides, emit=False)) as chunks:
+            return _collect_result(chunks)
 
-    def stream(self, messages: ChatMessages, **overrides: Any) -> Iterator[ChatChunk]:
-        cfg, profile = _prepare(self.profile_name, overrides)
-        _want_sse(cfg, overrides, force=True)
-        yield from _iter_chain_sync(cfg, profile, messages, overrides, emit=True)
+    def stream(self, messages: ChatMessages, **overrides: Any) -> Generator[ChatChunk, None, None]:
+        with closing(self._run(messages, overrides, emit=True)) as chunks:
+            yield from chunks
 
-
-def _iter_json_sync(
-    cfg: RuntimeConfig,
-    profile: UsageProfile,
-    messages: ChatMessages,
-    overrides: dict[str, Any],
-) -> Iterator[ChatChunk]:
-    chain = _allowed_models(profile, _model_chain(profile, overrides))
-    url = f"{cfg.base_url}/chat/completions"
-    last_error: Exception | None = None
-    with httpx.Client(timeout=cfg.request_timeout) as http:
-        for model in chain:
-            payload = _build_payload(profile, model.model_id, messages, overrides, stream=False)
-            result, last_error = _attempt_model_sync(http, url, cfg, profile, model, payload)
-            if result is not None:
-                yield ChatChunk(
-                    delta=result.content,
-                    content=result.content,
-                    model_used=result.model_used,
-                    done=True,
-                    result=result,
-                    raw=result.raw,
-                )
-                return
-    if last_error is not None:
-        raise last_error
-    raise OpenRouterAPIError(_("All models failed without a specific error."))
+    def _run(
+        self, messages: ChatMessages, overrides: dict[str, Any], *, emit: bool
+    ) -> Generator[ChatChunk, None, None]:
+        cfg, profile, chain = _prepare(self.profile_name, overrides)
+        sse = _want_sse(cfg, overrides, force=emit)
+        with closing(
+            _iter_chain_sync(cfg, profile, chain, messages, overrides, sse=sse, emit=emit)
+        ) as chunks:
+            yield from chunks
 
 
 def _iter_chain_sync(
     cfg: RuntimeConfig,
     profile: UsageProfile,
+    chain: list[OpenRouterModel],
     messages: ChatMessages,
     overrides: dict[str, Any],
     *,
+    sse: bool,
     emit: bool,
-) -> Iterator[ChatChunk]:
-    chain = _allowed_models(profile, _model_chain(profile, overrides))
-    url = f"{cfg.base_url}/chat/completions"
-    last_error: Exception | None = None
-    with httpx.Client(timeout=cfg.request_timeout) as http:
-        for model in chain:
-            payload = _build_payload(profile, model.model_id, messages, overrides, stream=True)
-            emitted = False
-            try:
-                for chunk in _attempt_stream_sync(http, url, cfg, profile, model, payload):
-                    if emit and not chunk.done:
-                        emitted = True
-                        yield chunk
-                    elif chunk.done:
+) -> Generator[ChatChunk, None, None]:
+    last_error: OpenRouterAPIError | None = None
+    for model in chain:
+        payload = _build_payload(profile, model, messages, overrides, stream=sse)
+        emitted = False
+        try:
+            with closing(_attempt_sync(cfg, profile, model, payload, sse=sse, emit=emit)) as it:
+                for chunk in it:
+                    if chunk.done:
                         yield chunk
                         return
-            except OpenRouterAPIError as exc:
-                last_error = exc
-                if emitted:
-                    raise
-                status = exc.status_code
-                if status is None or _should_fallback(status):
-                    continue
-                raise
-    if last_error is not None:
-        raise last_error
-    raise OpenRouterAPIError(_("All models failed without a specific error."))
-
-
-def _attempt_model_sync(
-    http: httpx.Client,
-    url: str,
-    cfg: RuntimeConfig,
-    profile: UsageProfile,
-    model: OpenRouterModel,
-    payload: dict[str, Any],
-) -> tuple[ChatResult | None, Exception | None]:
-    last_error: Exception | None = None
-    limiter = get_limiter()
-    for attempt in range(int(cfg.max_retries) + 1):
-        reservation = reserve_request(profile, model)
-        set_active_reservation(
-            reservation.pk if reservation is not None else None,
-            budgeted=profile.budget_usd_per_day is not None
-            or profile.budget_usd_per_month is not None,
-        )
-        started = time.perf_counter()
-        try:
-            with limiter.slot(cfg.max_parallel_requests):
-                response = http.post(url, json=payload, headers=_headers(cfg))
-        except httpx.RequestError as exc:
-            latency_ms = int((time.perf_counter() - started) * 1000)
-            _write_log(
-                profile=profile,
-                model=model,
-                status_code=0,
-                error_message=str(exc),
-                latency_ms=latency_ms,
-            )
-            last_error = OpenRouterAPIError(str(exc), status_code=None)
-            if attempt >= int(cfg.max_retries):
-                return None, last_error
-            continue
-        latency_ms = int((time.perf_counter() - started) * 1000)
-        if response.status_code == 200:
-            payload_json = response.json()
-            result = _result_from_payload(payload_json, model, latency_ms)
-            _write_log(
-                profile=profile,
-                model=model,
-                status_code=200,
-                error_message=None,
-                prompt_tokens=result.prompt_tokens,
-                completion_tokens=result.completion_tokens,
-                cost_usd=result.cost_usd,
-                latency_ms=latency_ms,
-            )
-            return result, None
-        error_text = response.text[:2000]
-        _write_log(
-            profile=profile,
-            model=model,
-            status_code=response.status_code,
-            error_message=error_text,
-            latency_ms=latency_ms,
-        )
-        last_error = OpenRouterAPIError(
-            _("OpenRouter returned HTTP %(status)s: %(error)s")
-            % {"status": response.status_code, "error": error_text},
-            status_code=response.status_code,
-        )
-        if response.status_code >= 500 and attempt < int(cfg.max_retries):
-            continue
-        if _should_fallback(response.status_code):
-            return None, last_error
-        raise last_error
-    return None, last_error
-
-
-def _attempt_stream_sync(
-    http: httpx.Client,
-    url: str,
-    cfg: RuntimeConfig,
-    profile: UsageProfile,
-    model: OpenRouterModel,
-    payload: dict[str, Any],
-) -> Iterator[ChatChunk]:
-    last_error: Exception | None = None
-    limiter = get_limiter()
-    emitted = False
-    for attempt in range(int(cfg.max_retries) + 1):
-        reservation = reserve_request(profile, model)
-        set_active_reservation(
-            reservation.pk if reservation is not None else None,
-            budgeted=profile.budget_usd_per_day is not None
-            or profile.budget_usd_per_month is not None,
-        )
-        started = time.perf_counter()
-        try:
-            with limiter.slot(cfg.max_parallel_requests):
-                with http.stream("POST", url, json=payload, headers=_headers(cfg)) as response:
-                    if response.status_code != 200:
-                        error_text = response.read().decode("utf-8", errors="replace")[:2000]
-                        latency_ms = int((time.perf_counter() - started) * 1000)
-                        _write_log(
-                            profile=profile,
-                            model=model,
-                            status_code=response.status_code,
-                            error_message=error_text,
-                            latency_ms=latency_ms,
-                        )
-                        last_error = OpenRouterAPIError(
-                            _("OpenRouter returned HTTP %(status)s: %(error)s")
-                            % {"status": response.status_code, "error": error_text},
-                            status_code=response.status_code,
-                        )
-                        if response.status_code >= 500 and attempt < int(cfg.max_retries):
-                            continue
-                        raise last_error
-                    for chunk in _consume_sse_sync(
-                        response.iter_lines(),
-                        profile=profile,
-                        model=model,
-                        started=started,
-                    ):
-                        if not chunk.done:
-                            emitted = True
+                    if emit:
+                        emitted = True
                         yield chunk
+        except OpenRouterAPIError as exc:
+            if emitted or isinstance(exc, _UsageMissing) or not _should_fallback(exc.status_code):
+                raise
+            last_error = exc
+    raise last_error or OpenRouterAPIError(_("All models failed without a specific error."))
+
+
+def _attempt_sync(
+    cfg: RuntimeConfig,
+    profile: UsageProfile,
+    model: OpenRouterModel,
+    payload: dict[str, Any],
+    *,
+    sse: bool,
+    emit: bool,
+) -> Generator[ChatChunk, None, None]:
+    """Одна модель с retry. Финальный чанк done=True, либо OpenRouterAPIError."""
+    http = get_sync_client()
+    url = f"{cfg.base_url}/chat/completions"
+    limiter = get_limiter()
+    retries = int(cfg.max_retries)
+    for attempt in range(retries + 1):
+        _activate_reservation(profile, model)
+        started = time.perf_counter()
+        retry_after: str | None = None
+        state = _SSEState(model, started)
+        try:
+            with limiter.slot(cfg.max_parallel_requests):
+                if not sse:
+                    response = http.post(
+                        url, json=payload, headers=_headers(cfg), timeout=cfg.request_timeout
+                    )
+                    if response.status_code == 200:
+                        result = _parse_json_response(response, model, started)
+                        dispatch_log(
+                            _record(profile, model, started, status_code=200, result=result)
+                        )
+                        yield _done_chunk(result, result.raw)
+                        return
+                    retry_after = response.headers.get("Retry-After")
+                    raise _http_error(response.status_code, response.text)
+                with http.stream(
+                    "POST", url, json=payload, headers=_headers(cfg), timeout=cfg.request_timeout
+                ) as response:
+                    if response.status_code != 200:
+                        retry_after = response.headers.get("Retry-After")
+                        text = response.read().decode("utf-8", errors="replace")
+                        raise _http_error(response.status_code, text)
+                    try:
+                        for line in response.iter_lines():
+                            chunk = state.feed(line)
+                            if chunk is not None:
+                                yield chunk
+                            if state.finished:
+                                break
+                    except GeneratorExit:
+                        partial = state.result(partial=True)
+                        dispatch_log(
+                            _record(
+                                profile,
+                                model,
+                                started,
+                                status_code=CLIENT_CLOSED_STATUS,
+                                error_message="stream closed by consumer",
+                                result=partial,
+                            )
+                        )
+                        raise
+                    result = state.result()
+                    dispatch_log(_record(profile, model, started, status_code=200, result=result))
+                    yield _done_chunk(result, state.last_event)
                     return
         except httpx.RequestError as exc:
-            latency_ms = int((time.perf_counter() - started) * 1000)
-            _write_log(
-                profile=profile,
-                model=model,
-                status_code=0,
-                error_message=str(exc),
-                latency_ms=latency_ms,
-            )
-            last_error = OpenRouterAPIError(str(exc), status_code=None)
-            if emitted or attempt >= int(cfg.max_retries):
-                raise last_error from exc
-            continue
-    if last_error is not None:
-        raise last_error
-    raise OpenRouterAPIError(_("All models failed without a specific error."))
-
-
-def _consume_sse_sync(
-    lines: Iterator[str],
-    *,
-    profile: UsageProfile,
-    model: OpenRouterModel,
-    started: float,
-) -> Iterator[ChatChunk]:
-    parts: list[str] = []
-    model_used = model.model_id
-    usage: dict[str, Any] = {}
-    last_event: dict[str, Any] = {}
-    completed = False
-    try:
-        for line in lines:
-            decoded = _decode_sse_line(line)
-            if decoded is True:
-                completed = True
-                break
-            if not isinstance(decoded, dict):
-                continue
-            event = decoded
-            if event.get("error"):
-                raise _sse_error(event)
-            last_event = event
-            if event.get("model"):
-                model_used = str(event["model"])
-            event_usage = event.get("usage")
-            if isinstance(event_usage, dict):
-                usage = event_usage
-            delta = _extract_delta(event)
-            if delta:
-                parts.append(delta)
-                yield ChatChunk(
-                    delta=delta,
-                    content="".join(parts),
-                    model_used=model_used,
-                    raw=event,
+            error = OpenRouterAPIError(str(exc), status_code=None)
+            dispatch_log(_record(profile, model, started, status_code=0, error_message=str(exc)))
+            if (emit and state.has_content) or attempt >= retries:
+                raise error from exc
+        except _UsageMissing:
+            raise
+        except OpenRouterAPIError as exc:
+            dispatch_log(
+                _record(
+                    profile, model, started, status_code=exc.status_code or 0,
+                    error_message=str(exc)[:_ERROR_TEXT_LIMIT],
                 )
-    except OpenRouterAPIError as exc:
-        latency_ms = int((time.perf_counter() - started) * 1000)
-        status = exc.status_code or 500
-        _write_log(
-            profile=profile,
-            model=model,
-            status_code=status,
-            error_message=str(exc),
-            latency_ms=latency_ms,
-        )
-        raise
-    if not completed:
-        incomplete_error = OpenRouterAPIError(
-            _("OpenRouter stream ended before [DONE]."), status_code=502
-        )
-        _write_log(
-            profile=profile,
-            model=model,
-            status_code=502,
-            error_message=str(incomplete_error),
-            latency_ms=int((time.perf_counter() - started) * 1000),
-        )
-        raise incomplete_error
-    latency_ms = int((time.perf_counter() - started) * 1000)
-    result = _result_from_sse("".join(parts), usage, model, model_used, latency_ms, last_event)
-    _write_log(
-        profile=profile,
-        model=model,
-        status_code=200,
-        error_message=None,
-        prompt_tokens=result.prompt_tokens,
-        completion_tokens=result.completion_tokens,
-        cost_usd=result.cost_usd,
-        latency_ms=latency_ms,
-    )
-    yield ChatChunk(
-        delta="",
-        content=result.content,
-        model_used=result.model_used,
-        done=True,
-        result=result,
-        raw=last_event,
-    )
+            )
+            if (emit and state.has_content) or attempt >= retries:
+                raise
+            if not _is_retryable(exc.status_code):
+                raise
+        delay = _retry_delay(attempt, retry_after)
+        if delay:
+            time.sleep(delay)
+    raise OpenRouterAPIError(_("All models failed without a specific error."))
 
 
 class AsyncOpenRouterClient:
@@ -697,135 +768,78 @@ class AsyncOpenRouterClient:
         self.profile_name = profile_name
 
     async def chat(self, messages: ChatMessages, **overrides: Any) -> ChatResult:
-        cfg, profile = await sync_to_async(_prepare, thread_sensitive=True)(
+        async with aclosing(self._run(messages, overrides, emit=False)) as chunks:
+            return await _acollect_result(chunks)
+
+    async def stream(
+        self, messages: ChatMessages, **overrides: Any
+    ) -> AsyncGenerator[ChatChunk, None]:
+        async with aclosing(self._run(messages, overrides, emit=True)) as chunks:
+            async for chunk in chunks:
+                yield chunk
+
+    async def _run(
+        self, messages: ChatMessages, overrides: dict[str, Any], *, emit: bool
+    ) -> AsyncGenerator[ChatChunk, None]:
+        set_active_reservation(None)
+        cfg, profile, chain = await sync_to_async(_prepare, thread_sensitive=True)(
             self.profile_name, overrides
         )
-        if _want_sse(cfg, overrides):
-            return await _acollect_result(
-                _aiter_chain(cfg, profile, messages, overrides, emit=False)
-            )
-        return await _acollect_result(_aiter_json(cfg, profile, messages, overrides))
-
-    async def stream(self, messages: ChatMessages, **overrides: Any) -> AsyncIterator[ChatChunk]:
-        cfg, profile = await sync_to_async(_prepare, thread_sensitive=True)(
-            self.profile_name, overrides
-        )
-        _want_sse(cfg, overrides, force=True)
-        async for chunk in _aiter_chain(cfg, profile, messages, overrides, emit=True):
-            yield chunk
-
-
-async def _awrite_log(
-    *,
-    profile: UsageProfile,
-    model: OpenRouterModel | None,
-    status_code: int,
-    error_message: str | None,
-    prompt_tokens: int = 0,
-    completion_tokens: int = 0,
-    cost_usd: Decimal = Decimal("0"),
-    latency_ms: int = 0,
-) -> None:
-    await adispatch_log(
-        make_record(
-            profile=profile,
-            model=model,
-            status_code=status_code,
-            error_message=error_message,
-            prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens,
-            cost_usd=cost_usd,
-            latency_ms=latency_ms,
-        )
-    )
-
-
-async def _aload_chain(
-    profile: UsageProfile, overrides: dict[str, Any]
-) -> list[OpenRouterModel]:
-    chain = await sync_to_async(_model_chain, thread_sensitive=True)(profile, overrides)
-    return await sync_to_async(_allowed_models, thread_sensitive=True)(profile, chain)
-
-
-async def _aiter_json(
-    cfg: RuntimeConfig,
-    profile: UsageProfile,
-    messages: ChatMessages,
-    overrides: dict[str, Any],
-) -> AsyncIterator[ChatChunk]:
-    chain = await _aload_chain(profile, overrides)
-    url = f"{cfg.base_url}/chat/completions"
-    last_error: Exception | None = None
-    async with httpx.AsyncClient(timeout=cfg.request_timeout) as http:
-        for model in chain:
-            payload = _build_payload(profile, model.model_id, messages, overrides, stream=False)
-            result, last_error = await _attempt_model_async(
-                http, url, cfg, profile, model, payload
-            )
-            if result is not None:
-                yield ChatChunk(
-                    delta=result.content,
-                    content=result.content,
-                    model_used=result.model_used,
-                    done=True,
-                    result=result,
-                    raw=result.raw,
-                )
-                return
-    if last_error is not None:
-        raise last_error
-    raise OpenRouterAPIError(_("All models failed without a specific error."))
+        sse = _want_sse(cfg, overrides, force=emit)
+        async with aclosing(
+            _aiter_chain(cfg, profile, chain, messages, overrides, sse=sse, emit=emit)
+        ) as chunks:
+            async for chunk in chunks:
+                yield chunk
 
 
 async def _aiter_chain(
     cfg: RuntimeConfig,
     profile: UsageProfile,
+    chain: list[OpenRouterModel],
     messages: ChatMessages,
     overrides: dict[str, Any],
     *,
+    sse: bool,
     emit: bool,
-) -> AsyncIterator[ChatChunk]:
-    chain = await _aload_chain(profile, overrides)
-    url = f"{cfg.base_url}/chat/completions"
-    last_error: Exception | None = None
-    async with httpx.AsyncClient(timeout=cfg.request_timeout) as http:
-        for model in chain:
-            payload = _build_payload(profile, model.model_id, messages, overrides, stream=True)
-            emitted = False
-            try:
-                async for chunk in _attempt_stream_async(
-                    http, url, cfg, profile, model, payload
-                ):
-                    if emit and not chunk.done:
-                        emitted = True
-                        yield chunk
-                    elif chunk.done:
+) -> AsyncGenerator[ChatChunk, None]:
+    last_error: OpenRouterAPIError | None = None
+    for model in chain:
+        payload = _build_payload(profile, model, messages, overrides, stream=sse)
+        emitted = False
+        try:
+            async with aclosing(
+                _attempt_async(cfg, profile, model, payload, sse=sse, emit=emit)
+            ) as it:
+                async for chunk in it:
+                    if chunk.done:
                         yield chunk
                         return
-            except OpenRouterAPIError as exc:
-                last_error = exc
-                if emitted:
-                    raise
-                status = exc.status_code
-                if status is None or _should_fallback(status):
-                    continue
+                    if emit:
+                        emitted = True
+                        yield chunk
+        except OpenRouterAPIError as exc:
+            if emitted or isinstance(exc, _UsageMissing) or not _should_fallback(exc.status_code):
                 raise
-    if last_error is not None:
-        raise last_error
-    raise OpenRouterAPIError(_("All models failed without a specific error."))
+            last_error = exc
+    raise last_error or OpenRouterAPIError(_("All models failed without a specific error."))
 
 
-async def _attempt_model_async(
-    http: httpx.AsyncClient,
-    url: str,
+async def _attempt_async(
     cfg: RuntimeConfig,
     profile: UsageProfile,
     model: OpenRouterModel,
     payload: dict[str, Any],
-) -> tuple[ChatResult | None, Exception | None]:
-    last_error: Exception | None = None
+    *,
+    sse: bool,
+    emit: bool,
+) -> AsyncGenerator[ChatChunk, None]:
+    """Асинхронное зеркало _attempt_sync."""
+    http = get_async_client()
+    url = f"{cfg.base_url}/chat/completions"
     limiter = get_limiter()
-    for attempt in range(int(cfg.max_retries) + 1):
+    retries = int(cfg.max_retries)
+    for attempt in range(retries + 1):
         reservation = await sync_to_async(reserve_request, thread_sensitive=True)(profile, model)
         set_active_reservation(
             reservation.pk if reservation is not None else None,
@@ -833,210 +847,82 @@ async def _attempt_model_async(
             or profile.budget_usd_per_month is not None,
         )
         started = time.perf_counter()
+        retry_after: str | None = None
+        state = _SSEState(model, started)
         try:
             async with limiter.aslot(cfg.max_parallel_requests):
-                response = await http.post(url, json=payload, headers=_headers(cfg))
-        except httpx.RequestError as exc:
-            latency_ms = int((time.perf_counter() - started) * 1000)
-            await _awrite_log(
-                profile=profile,
-                model=model,
-                status_code=0,
-                error_message=str(exc),
-                latency_ms=latency_ms,
-            )
-            last_error = OpenRouterAPIError(str(exc), status_code=None)
-            if attempt >= int(cfg.max_retries):
-                return None, last_error
-            continue
-        latency_ms = int((time.perf_counter() - started) * 1000)
-        if response.status_code == 200:
-            payload_json = response.json()
-            result = _result_from_payload(payload_json, model, latency_ms)
-            await _awrite_log(
-                profile=profile,
-                model=model,
-                status_code=200,
-                error_message=None,
-                prompt_tokens=result.prompt_tokens,
-                completion_tokens=result.completion_tokens,
-                cost_usd=result.cost_usd,
-                latency_ms=latency_ms,
-            )
-            return result, None
-        error_text = response.text[:2000]
-        await _awrite_log(
-            profile=profile,
-            model=model,
-            status_code=response.status_code,
-            error_message=error_text,
-            latency_ms=latency_ms,
-        )
-        last_error = OpenRouterAPIError(
-            _("OpenRouter returned HTTP %(status)s: %(error)s")
-            % {"status": response.status_code, "error": error_text},
-            status_code=response.status_code,
-        )
-        if response.status_code >= 500 and attempt < int(cfg.max_retries):
-            continue
-        if _should_fallback(response.status_code):
-            return None, last_error
-        raise last_error
-    return None, last_error
-
-
-async def _attempt_stream_async(
-    http: httpx.AsyncClient,
-    url: str,
-    cfg: RuntimeConfig,
-    profile: UsageProfile,
-    model: OpenRouterModel,
-    payload: dict[str, Any],
-) -> AsyncIterator[ChatChunk]:
-    last_error: Exception | None = None
-    limiter = get_limiter()
-    emitted = False
-    for attempt in range(int(cfg.max_retries) + 1):
-        reservation = await sync_to_async(reserve_request, thread_sensitive=True)(profile, model)
-        set_active_reservation(
-            reservation.pk if reservation is not None else None,
-            budgeted=profile.budget_usd_per_day is not None
-            or profile.budget_usd_per_month is not None,
-        )
-        started = time.perf_counter()
-        try:
-            async with limiter.aslot(cfg.max_parallel_requests):
+                if not sse:
+                    response = await http.post(
+                        url, json=payload, headers=_headers(cfg), timeout=cfg.request_timeout
+                    )
+                    if response.status_code == 200:
+                        result = _parse_json_response(response, model, started)
+                        await adispatch_log(
+                            _record(profile, model, started, status_code=200, result=result)
+                        )
+                        yield _done_chunk(result, result.raw)
+                        return
+                    retry_after = response.headers.get("Retry-After")
+                    raise _http_error(response.status_code, response.text)
                 async with http.stream(
-                    "POST", url, json=payload, headers=_headers(cfg)
+                    "POST", url, json=payload, headers=_headers(cfg), timeout=cfg.request_timeout
                 ) as response:
                     if response.status_code != 200:
+                        retry_after = response.headers.get("Retry-After")
                         raw = await response.aread()
-                        error_text = raw.decode("utf-8", errors="replace")[:2000]
-                        latency_ms = int((time.perf_counter() - started) * 1000)
-                        await _awrite_log(
-                            profile=profile,
-                            model=model,
-                            status_code=response.status_code,
-                            error_message=error_text,
-                            latency_ms=latency_ms,
+                        raise _http_error(
+                            response.status_code, raw.decode("utf-8", errors="replace")
                         )
-                        last_error = OpenRouterAPIError(
-                            _("OpenRouter returned HTTP %(status)s: %(error)s")
-                            % {"status": response.status_code, "error": error_text},
-                            status_code=response.status_code,
+                    try:
+                        async for line in response.aiter_lines():
+                            chunk = state.feed(line)
+                            if chunk is not None:
+                                yield chunk
+                            if state.finished:
+                                break
+                    except GeneratorExit:
+                        partial = state.result(partial=True)
+                        await adispatch_log(
+                            _record(
+                                profile,
+                                model,
+                                started,
+                                status_code=CLIENT_CLOSED_STATUS,
+                                error_message="stream closed by consumer",
+                                result=partial,
+                            )
                         )
-                        if response.status_code >= 500 and attempt < int(cfg.max_retries):
-                            continue
-                        raise last_error
-                    async for chunk in _consume_sse_async(
-                        response.aiter_lines(),
-                        profile=profile,
-                        model=model,
-                        started=started,
-                    ):
-                        if not chunk.done:
-                            emitted = True
-                        yield chunk
+                        raise
+                    result = state.result()
+                    await adispatch_log(
+                        _record(profile, model, started, status_code=200, result=result)
+                    )
+                    yield _done_chunk(result, state.last_event)
                     return
         except httpx.RequestError as exc:
-            latency_ms = int((time.perf_counter() - started) * 1000)
-            await _awrite_log(
-                profile=profile,
-                model=model,
-                status_code=0,
-                error_message=str(exc),
-                latency_ms=latency_ms,
+            error = OpenRouterAPIError(str(exc), status_code=None)
+            await adispatch_log(
+                _record(profile, model, started, status_code=0, error_message=str(exc))
             )
-            last_error = OpenRouterAPIError(str(exc), status_code=None)
-            if emitted or attempt >= int(cfg.max_retries):
-                raise last_error from exc
-            continue
-    if last_error is not None:
-        raise last_error
-    raise OpenRouterAPIError(_("All models failed without a specific error."))
-
-
-async def _consume_sse_async(
-    lines: AsyncIterator[str],
-    *,
-    profile: UsageProfile,
-    model: OpenRouterModel,
-    started: float,
-) -> AsyncIterator[ChatChunk]:
-    parts: list[str] = []
-    model_used = model.model_id
-    usage: dict[str, Any] = {}
-    last_event: dict[str, Any] = {}
-    completed = False
-    try:
-        async for line in lines:
-            decoded = _decode_sse_line(line)
-            if decoded is True:
-                completed = True
-                break
-            if not isinstance(decoded, dict):
-                continue
-            event = decoded
-            if event.get("error"):
-                raise _sse_error(event)
-            last_event = event
-            if event.get("model"):
-                model_used = str(event["model"])
-            event_usage = event.get("usage")
-            if isinstance(event_usage, dict):
-                usage = event_usage
-            delta = _extract_delta(event)
-            if delta:
-                parts.append(delta)
-                yield ChatChunk(
-                    delta=delta,
-                    content="".join(parts),
-                    model_used=model_used,
-                    raw=event,
+            if (emit and state.has_content) or attempt >= retries:
+                raise error from exc
+        except _UsageMissing:
+            raise
+        except OpenRouterAPIError as exc:
+            await adispatch_log(
+                _record(
+                    profile, model, started, status_code=exc.status_code or 0,
+                    error_message=str(exc)[:_ERROR_TEXT_LIMIT],
                 )
-    except OpenRouterAPIError as exc:
-        latency_ms = int((time.perf_counter() - started) * 1000)
-        status = exc.status_code or 500
-        await _awrite_log(
-            profile=profile,
-            model=model,
-            status_code=status,
-            error_message=str(exc),
-            latency_ms=latency_ms,
-        )
-        raise
-    if not completed:
-        incomplete_error = OpenRouterAPIError(
-            _("OpenRouter stream ended before [DONE]."), status_code=502
-        )
-        await _awrite_log(
-            profile=profile,
-            model=model,
-            status_code=502,
-            error_message=str(incomplete_error),
-            latency_ms=int((time.perf_counter() - started) * 1000),
-        )
-        raise incomplete_error
-    latency_ms = int((time.perf_counter() - started) * 1000)
-    result = _result_from_sse("".join(parts), usage, model, model_used, latency_ms, last_event)
-    await _awrite_log(
-        profile=profile,
-        model=model,
-        status_code=200,
-        error_message=None,
-        prompt_tokens=result.prompt_tokens,
-        completion_tokens=result.completion_tokens,
-        cost_usd=result.cost_usd,
-        latency_ms=latency_ms,
-    )
-    yield ChatChunk(
-        delta="",
-        content=result.content,
-        model_used=result.model_used,
-        done=True,
-        result=result,
-        raw=last_event,
-    )
+            )
+            if (emit and state.has_content) or attempt >= retries:
+                raise
+            if not _is_retryable(exc.status_code):
+                raise
+        delay = _retry_delay(attempt, retry_after)
+        if delay:
+            await asyncio.sleep(delay)
+    raise OpenRouterAPIError(_("All models failed without a specific error."))
 
 
 def chat(
@@ -1065,7 +951,7 @@ def stream(
     profile_name: str | None = None,
     messages: ChatMessages | None = None,
     **overrides: Any,
-) -> Iterator[ChatChunk]:
+) -> Generator[ChatChunk, None, None]:
     """Фасад SSE: for chunk in stream("chat", messages=[...])."""
     if messages is None:
         raise TypeError("stream() missing required argument: 'messages'")
@@ -1076,7 +962,7 @@ async def astream(
     profile_name: str | None = None,
     messages: ChatMessages | None = None,
     **overrides: Any,
-) -> AsyncIterator[ChatChunk]:
+) -> AsyncGenerator[ChatChunk, None]:
     """Асинхронный фасад SSE, зеркало stream()."""
     if messages is None:
         raise TypeError("astream() missing required argument: 'messages'")
