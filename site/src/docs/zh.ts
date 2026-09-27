@@ -4,7 +4,7 @@ export const zh: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: '面向 Django 的 OpenRouter — 通过管理后台管理模型、用量配置、预算和请求日志',
-    version: '0.1.2',
+    version: '0.3.0',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -130,7 +130,7 @@ MIDDLEWARE = [
         { type: 'code', lang: 'bash', title: 'terminal', code: `python manage.py migrate` },
         {
           type: 'p',
-          text: '`CurrentUserMiddleware` 必须放在 `AuthenticationMiddleware` **之后**，并把调用用户的用户名写入请求日志。没有它，每一行都会标记为 `anonymous`。',
+          text: '`CurrentUserMiddleware` 必须放在 `AuthenticationMiddleware` **之后**，并把调用用户的用户名写入请求日志。没有它，每一行都会标记为 `anonymous`。 对于 `StreamingHttpResponse`，在输出响应体期间用户名仍保持绑定，因此流式视图中的 `stream()` 会记录到正确的用户。',
         },
         { type: 'h3', text: '3. 在 Django 管理后台配置' },
         {
@@ -307,7 +307,7 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
         },
         {
           type: 'p',
-          text: '`chat(..., stream=True)` 使用相同的 SSE 传输并返回完整的 `ChatResult`。若设置中已启用流式输出，普通 `chat()` 也会走 SSE；`stream=False` 强制普通 JSON 响应。在流式关闭时调用会在任何 HTTP 请求之前抛出 `ConfigurationError`。',
+          text: '`chat(..., stream=True)` 使用相同的 SSE 传输并返回完整的 `ChatResult`。普通 `chat()` 即使启用了流式输出也始终使用普通 JSON 响应。流式输出关闭时调用会在任何 HTTP 请求前抛出 `ConfigurationError`。',
         },
         {
           type: 'table',
@@ -431,8 +431,13 @@ python manage.py sync_models --api-key sk-or-...  # one-off key, never stored` }
         },
         {
           type: 'p',
-          text: '检查在事务中运行：配置行用 `select_for_update` 锁定，聚合在该锁下计算 — 并发请求无法抢跑越过限额。',
+          text: '每次 HTTP 尝试前，事务会锁定配置行并预留一次请求和最坏情况费用：完整上下文窗口 × 最高的按 token 价格（`prompt`、`completion`、`input_cache_read`、`input_cache_write`、`internal_reasoning`），再加上 `request` / `web_search` 以及 `image` × `image_url` 部分的数量。成功的调用按实际 usage 结算预留；失败、中断或取消的调用（`499`）在核对账单前保留预留。设置预算的模型需要有效价格、context length 和文本输出（`text+image->text` 也可以）；`audio` 等其他非零价格会被拒绝。因 HTTP 错误失败的重试不计入请求限额。',
         },
+        {
+          type: 'p',
+          text: '被终止的 worker 遗留的预留通过 cron 释放（状态 `499`，费用 `0`）；没有 `usage` 的响应的预留会保留：',
+        },
+        { type: 'code', lang: 'bash', title: 'terminal', code: `python manage.py release_stale_reservations --minutes 60 [--dry-run]` },
         {
           type: 'callout',
           kind: 'warning',
@@ -454,7 +459,8 @@ python manage.py sync_models --api-key sk-or-...  # one-off key, never stored` }
           type: 'list',
           items: [
             '**传输错误和 5xx** — 在同一模型上最多重试 `max_retries` 次，然后回退。',
-            '**402 / 429** — 立即切到链中的下一个模型。',
+            '**429 / 408** — 在同一模型上重试（遵循 `Retry-After`），然后切到链中的下一个模型。',
+            '**402**（账户余额用尽）— 只继续尝试链中剩余的免费模型。',
             '**其他 4xx**（例如 400）— 立即抛出，不回退：该请求很可能对所有模型都无效。',
             '**每次尝试** — 包括失败的 — 都会写入日志。',
           ],
@@ -846,7 +852,7 @@ stats.since          # period start (datetime)`,
         { type: 'h3', text: '支持流式输出吗？' },
         {
           type: 'p',
-          text: '支持。在 **OpenRouter settings** 中启用 **Streaming enabled**，并使用 `stream()` / `astream()` 或 `chat(stream=True)`。启用流式后，普通 `chat()` 也会走 SSE；`stream=False` 强制 JSON 响应。',
+          text: '支持。在 **OpenRouter settings** 中启用 **Streaming enabled**，并使用 `stream()` / `astream()` 或 `chat(stream=True)`。不带 `stream=True` 的普通 `chat()` 始终返回普通 JSON 响应。',
         },
         { type: 'h3', text: '限额没有触发' },
         {

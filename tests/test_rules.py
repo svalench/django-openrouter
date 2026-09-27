@@ -104,23 +104,56 @@ def test_budget_rejects_unbounded_extra_pricing(
 ) -> None:
     profile.budget_usd_per_day = Decimal("10")
     profile.save()
-    paid_model.pricing = {**paid_model.pricing, "web_search": "0.01"}
+    paid_model.pricing = {**paid_model.pricing, "audio": "0.01"}
     paid_model.save(update_fields=["pricing"])
-    with pytest.raises(ConfigurationError, match="without extra charges"):
+    with pytest.raises(ConfigurationError, match="unbounded charges: audio"):
         reserve_request(profile, paid_model)
 
 
-@pytest.mark.parametrize("modality", ["", "text+image->text", "text->image"])
-def test_budget_rejects_non_text_or_unknown_modality(
+@pytest.mark.parametrize("modality", ["", "text->image", "text->text+image"])
+def test_budget_rejects_non_text_output(
     profile: UsageProfile, paid_model: OpenRouterModel, modality: str
 ) -> None:
     profile.budget_usd_per_day = Decimal("10")
     profile.save(update_fields=["budget_usd_per_day"])
     paid_model.modality = modality
     paid_model.save(update_fields=["modality"])
-    with pytest.raises(ConfigurationError, match="text-to-text"):
+    with pytest.raises(ConfigurationError, match="text output"):
         reserve_request(profile, paid_model)
     assert RequestLog.objects.count() == 0
+
+
+def test_budget_supports_multimodal_cache_and_web_search(
+    profile: UsageProfile, paid_model: OpenRouterModel
+) -> None:
+    profile.budget_usd_per_day = Decimal("100")
+    profile.save(update_fields=["budget_usd_per_day"])
+    paid_model.modality = "text+image->text"
+    paid_model.pricing = {
+        **paid_model.pricing,
+        "input_cache_write": "0.00002",
+        "input_cache_read": "0.0000003",
+        "web_search": "0.01",
+        "image": "0.5",
+        "discount": 0.1,
+    }
+    paid_model.save(update_fields=["modality", "pricing"])
+    reservation = reserve_request(profile, paid_model, image_count=2)
+    assert reservation is not None
+    # 0.00002 × 200000 + web_search 0.01 + 2 картинки × 0.5
+    assert reservation.cost_usd == Decimal("5.01")
+
+
+def test_failed_attempts_do_not_consume_request_limit(
+    profile: UsageProfile, paid_model: OpenRouterModel
+) -> None:
+    profile.max_requests_per_day = 1
+    profile.save()
+    for status in (429, 500, 502):
+        RequestLog.objects.create(profile=profile, model=paid_model, status_code=status)
+    assert reserve_request(profile, paid_model) is not None
+    with pytest.raises(RateLimitExceeded):
+        reserve_request(profile, paid_model)
 
 
 def test_disabled_profile(profile: UsageProfile) -> None:
@@ -172,7 +205,8 @@ def test_limit_check_locks_profile_without_model_join(
         check_limits(profile)
 
     profile_reads = [
-        query["sql"] for query in queries
+        query["sql"]
+        for query in queries
         if query["sql"].startswith("SELECT")
         and 'FROM "django_openrouter_usageprofile"' in query["sql"]
     ]

@@ -5,35 +5,59 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_openrouter', '0004_usageprofilefallback_limit_choices'),
+        ("django_openrouter", "0004_usageprofilefallback_limit_choices"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='openroutermodel',
-            name='completion_price',
-            field=models.DecimalField(blank=True, decimal_places=12, help_text='Completion price per token from the catalog, for admin sorting.', max_digits=20, null=True),
+            model_name="openroutermodel",
+            name="completion_price",
+            field=models.DecimalField(
+                blank=True,
+                decimal_places=12,
+                help_text="Completion price per token from the catalog, for admin sorting.",
+                max_digits=20,
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='openroutermodel',
-            name='latency_ms',
-            field=models.FloatField(blank=True, help_text='p50 TTFT for the best endpoint, in milliseconds.', null=True),
+            model_name="openroutermodel",
+            name="latency_ms",
+            field=models.FloatField(
+                blank=True, help_text="p50 TTFT for the best endpoint, in milliseconds.", null=True
+            ),
         ),
         migrations.AlterField(
-            model_name='openroutermodel',
-            name='prompt_price',
-            field=models.DecimalField(blank=True, decimal_places=12, help_text='Prompt price per token from the catalog, for admin sorting.', max_digits=20, null=True),
+            model_name="openroutermodel",
+            name="prompt_price",
+            field=models.DecimalField(
+                blank=True,
+                decimal_places=12,
+                help_text="Prompt price per token from the catalog, for admin sorting.",
+                max_digits=20,
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='openroutermodel',
-            name='throughput',
-            field=models.FloatField(blank=True, help_text='p50 throughput (tok/s) for the best endpoint — load.', null=True),
+            model_name="openroutermodel",
+            name="throughput",
+            field=models.FloatField(
+                blank=True,
+                help_text="p50 throughput (tok/s) for the best endpoint — load.",
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='usageprofile',
-            name='model',
-            field=models.ForeignKey(blank=True, help_text='First model in the chain (synced from the list).', null=True, on_delete=django.db.models.deletion.PROTECT, related_name='profiles', to='django_openrouter.openroutermodel'),
+            model_name="usageprofile",
+            name="model",
+            field=models.ForeignKey(
+                blank=True,
+                help_text="First model in the chain (synced from the list).",
+                null=True,
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="profiles",
+                to="django_openrouter.openroutermodel",
+            ),
         ),
     ]

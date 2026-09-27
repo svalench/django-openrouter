@@ -4,7 +4,7 @@ export const ja: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: 'OpenRouter for Django — モデル・プロファイル・予算・ログを管理画面から運用',
-    version: '0.1.2',
+    version: '0.3.0',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -130,7 +130,7 @@ MIDDLEWARE = [
         { type: 'code', lang: 'bash', title: 'terminal', code: `python manage.py migrate` },
         {
           type: 'p',
-          text: '`CurrentUserMiddleware` は `AuthenticationMiddleware` の**後**に置き、呼び出したユーザーの username をリクエストログに記録します。これがないと、すべての行が `anonymous` になります。',
+          text: '`CurrentUserMiddleware` は `AuthenticationMiddleware` の**後**に置き、呼び出したユーザーの username をリクエストログに記録します。これがないと、すべての行が `anonymous` になります。 `StreamingHttpResponse` ではボディ送信中も username が保持されるため、ストリーミングビュー内の `stream()` も正しいユーザーで記録されます。',
         },
         { type: 'h3', text: '3. Django admin での設定' },
         {
@@ -307,7 +307,7 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
         },
         {
           type: 'p',
-          text: '`chat(..., stream=True)` は同じ SSE トランスポートを使い、完全な `ChatResult` を返します。設定でストリーミングが有効な場合、通常の `chat()` も SSE 経由になります。`stream=False` で通常の JSON レスポンスを強制できます。ストリーミング無効時の呼び出しは、HTTP リクエスト前に `ConfigurationError` を送出します。',
+          text: '`chat(..., stream=True)` は同じ SSE トランスポートを使い、完全な `ChatResult` を返します。通常の `chat()` はストリーミングが有効でも常に通常の JSON レスポンスを使います。ストリーミング無効時の呼び出しは、HTTP リクエスト前に `ConfigurationError` を送出します。',
         },
         {
           type: 'table',
@@ -431,8 +431,13 @@ python manage.py sync_models --api-key sk-or-...  # 使い捨てキー。保存�
         },
         {
           type: 'p',
-          text: 'チェックはトランザクション内で実行されます。プロファイル行が `select_for_update` でロックされ、そのロック下で集計が計算されるため、同時リクエストが競合して上限を突破することはありません。',
+          text: '各 HTTP 試行の前に、トランザクションがプロファイル行をロックし、1 リクエストと最悪ケースのコストを予約します。最悪ケースは、コンテキスト全体 × 最も高いトークン単価（`prompt`、`completion`、`input_cache_read`、`input_cache_write`、`internal_reasoning`）に、`request` / `web_search` と `image` × `image_url` パーツ数を加えたものです。成功した呼び出しは実際の usage で精算され、失敗・中断・キャンセルされた呼び出し（`499`）は課金確認まで予約を保持します。予算付きモデルには有効な価格、context length、テキスト出力（`text+image->text` も可）が必要で、`audio` など他の非ゼロ価格は拒否されます。HTTP エラーで失敗したリトライはリクエスト上限に数えられません。',
         },
+        {
+          type: 'p',
+          text: '停止したワーカーが残した予約は cron で解放されます（ステータス `499`、コスト `0`）。`usage` なしのレスポンスの予約は残ります：',
+        },
+        { type: 'code', lang: 'bash', title: 'terminal', code: `python manage.py release_stale_reservations --minutes 60 [--dry-run]` },
         {
           type: 'callout',
           kind: 'warning',
@@ -454,7 +459,8 @@ python manage.py sync_models --api-key sk-or-...  # 使い捨てキー。保存�
           type: 'list',
           items: [
             '**トランスポートエラーと 5xx** — 同じモデルで `max_retries` 回までリトライし、その後フォールバック。',
-            '**402 / 429** — 即座にチェーンの次のモデルへ。',
+            '**429 / 408** — 同じモデルでリトライ（`Retry-After` を尊重）し、その後チェーンの次のモデルへ。',
+            '**402**（アカウントのクレジット切れ）— チェーン内の残りの無料モデルのみを試行。',
             '**その他の 4xx**（例：400）— フォールバックなしで即座に送出。リクエスト自体が全モデルで無効な可能性が高いため。',
             '**すべての試行** — 失敗も含め — がログに書き込まれます。',
           ],
@@ -846,7 +852,7 @@ stats.since          # 期間の開始（datetime）`,
         { type: 'h3', text: 'ストリーミングはサポートされている？' },
         {
           type: 'p',
-          text: 'はい。**OpenRouter settings** で **Streaming enabled** を有効にし、`stream()` / `astream()` または `chat(stream=True)` を使います。ストリーミング有効時は通常の `chat()` も SSE 経由になり、`stream=False` で JSON レスポンスを強制できます。',
+          text: 'はい。**OpenRouter settings** で **Streaming enabled** を有効にし、`stream()` / `astream()` または `chat(stream=True)` を使います。`stream=True` なしの通常の `chat()` は常に JSON レスポンスを返します。',
         },
         { type: 'h3', text: '上限が発動しない' },
         {

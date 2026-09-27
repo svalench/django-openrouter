@@ -4,7 +4,7 @@ export const ru: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: 'OpenRouter для Django — модели, профили, бюджеты и логи через админку',
-    version: '0.1.2',
+    version: '0.3.0',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -130,7 +130,7 @@ MIDDLEWARE = [
         { type: 'code', lang: 'bash', title: 'terminal', code: `python manage.py migrate` },
         {
           type: 'p',
-          text: '`CurrentUserMiddleware` ставится **после** `AuthenticationMiddleware` и записывает username вызвавшего пользователя в журнал запросов. Без него все строки будут помечены как `anonymous`.',
+          text: '`CurrentUserMiddleware` ставится **после** `AuthenticationMiddleware` и записывает username вызвавшего пользователя в журнал запросов. Без него все строки будут помечены как `anonymous`. Для `StreamingHttpResponse` username держится и во время отдачи тела, поэтому `stream()` внутри потоковой вьюхи логируется под нужным пользователем.',
         },
         { type: 'h3', text: '3. Настройка в Django admin' },
         {
@@ -307,7 +307,7 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
         },
         {
           type: 'p',
-          text: '`chat(..., stream=True)` использует тот же SSE-транспорт и возвращает полный `ChatResult`. Если стриминг включён в настройках, обычный `chat()` без аргументов тоже идёт по SSE; `stream=False` принудительно запрашивает обычный JSON-ответ. Вызов при выключенном стриминге падает с `ConfigurationError` ещё до HTTP-запроса.',
+          text: '`chat(..., stream=True)` использует тот же SSE-транспорт и возвращает полный `ChatResult`. Обычный `chat()` всегда идёт обычным JSON-запросом, даже при включённом стриминге. Вызов при выключенном стриминге бросает `ConfigurationError` ещё до HTTP-запроса.',
         },
         {
           type: 'table',
@@ -431,8 +431,13 @@ python manage.py sync_models --api-key sk-or-...  # разовый ключ, н�
         },
         {
           type: 'p',
-          text: 'Перед каждой HTTP-попыткой транзакция резервирует один запрос и максимальную каталожную стоимость текстовой модели для всего окна контекста. Успешный вызов уточняет резерв по usage; ошибка или обрыв сохраняют его до сверки с биллингом. Для бюджета нужны известные цены и размер контекста. Консервативный резерв может отклонить запрос, который, вероятно, стоил бы гораздо меньше.',
+          text: 'Перед каждой HTTP-попыткой транзакция блокирует строку профиля и резервирует один запрос и стоимость худшего случая: полный контекст модели по максимальной потокенной цене (`prompt`, `completion`, `input_cache_read`, `input_cache_write`, `internal_reasoning`), плюс `request` / `web_search` и `image` × число частей `image_url`. Успешный вызов сверяет резерв с фактическим usage; неудачные, прерванные и отменённые вызовы (статус `499`) сохраняют резерв до сверки с биллингом. Для бюджета модели нужны корректные цены, context length и текстовый выход (`text+image->text` подходит); прочие ненулевые цены, например `audio`, отклоняются. Повторы, упавшие с HTTP-ошибкой, не расходуют лимит запросов.',
         },
+        {
+          type: 'p',
+          text: 'Резервы, оставшиеся после убитого воркера, освобождаются из cron (статус `499`, стоимость `0`); резервы ответов без `usage` не трогаются:',
+        },
+        { type: 'code', lang: 'bash', title: 'terminal', code: `python manage.py release_stale_reservations --minutes 60 [--dry-run]` },
         {
           type: 'callout',
           kind: 'warning',
@@ -454,7 +459,8 @@ python manage.py sync_models --api-key sk-or-...  # разовый ключ, н�
           type: 'list',
           items: [
             '**Транспортные ошибки и 5xx** — ретраятся до `max_retries` раз на той же модели, затем fallback.',
-            '**402 / 429** — сразу переход к следующей модели цепочки.',
+            '**429 / 408** — повтор на той же модели (с учётом `Retry-After`), затем следующая модель цепочки.',
+            '**402** (закончились кредиты аккаунта) — дальше пробуются только бесплатные модели цепочки.',
             '**Прочие 4xx** (например, 400) — ошибка пробрасывается сразу, без fallback: запрос, скорее всего, невалиден для всех моделей.',
             '**Каждая попытка** — включая неуспешные — пишется в журнал.',
           ],
@@ -846,7 +852,7 @@ stats.since          # начало периода (datetime)`,
         { type: 'h3', text: 'Поддерживается ли стриминг?' },
         {
           type: 'p',
-          text: 'Да. Включите **Streaming enabled** в **OpenRouter settings** и используйте `stream()` / `astream()` либо `chat(stream=True)`. При включённом стриминге обычный `chat()` тоже идёт по SSE; `stream=False` принудительно запрашивает JSON-ответ.',
+          text: 'Да. Включите **Streaming enabled** в **OpenRouter settings** и используйте `stream()` / `astream()` или `chat(stream=True)`. Обычный `chat()` без `stream=True` всегда возвращает обычный JSON-ответ.',
         },
         { type: 'h3', text: 'Лимиты не срабатывают' },
         {

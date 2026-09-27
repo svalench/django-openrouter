@@ -22,6 +22,8 @@ from django_openrouter.fields import EncryptedTextField
 from django_openrouter.log_backends import LogBackend, LogRecord, dispatch_log, make_record
 from django_openrouter.models import (
     CLIENT_CLOSED_STATUS,
+    RESERVATION_PENDING_MESSAGE,
+    RESERVATION_USAGE_MISSING_MESSAGE,
     OpenRouterModel,
     OpenRouterSettings,
     RequestLog,
@@ -363,3 +365,101 @@ def test_prune_request_logs(profile: UsageProfile, paid_model: OpenRouterModel) 
     assert RequestLog.objects.count() == 2
     call_command("prune_request_logs", "--days", "90")
     assert list(RequestLog.objects.values_list("pk", flat=True)) == [fresh.pk]
+
+
+# --- зависшие резервы -------------------------------------------------------
+
+
+@respx.mock
+@pytest.mark.django_db(transaction=True)
+def test_cancelled_async_attempt_closes_reservation(
+    respx_mock: respx.MockRouter, or_settings: OpenRouterSettings, profile: UsageProfile
+) -> None:
+    profile.budget_usd_per_day = Decimal("4.00")
+    profile.save()
+
+    def cancel(_request: httpx.Request) -> httpx.Response:
+        raise asyncio.CancelledError
+
+    respx_mock.post(CHAT_URL).mock(side_effect=cancel)
+    with pytest.raises(asyncio.CancelledError):
+        async_to_sync(achat)("chat", messages=MESSAGES)
+    log = RequestLog.objects.get()
+    assert log.status_code == CLIENT_CLOSED_STATUS
+    assert log.error_message == "attempt aborted: CancelledError"
+
+
+@respx.mock
+def test_unexpected_error_closes_reservation(
+    respx_mock: respx.MockRouter,
+    or_settings: OpenRouterSettings,
+    profile: UsageProfile,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    profile.max_requests_per_day = 5
+    profile.save()
+    respx_mock.post(CHAT_URL).mock(return_value=httpx.Response(200, json=completion_payload()))
+
+    def boom(*_args: object) -> None:
+        raise RuntimeError("parser bug")
+
+    monkeypatch.setattr(client_module, "_parse_json_response", boom)
+    with pytest.raises(RuntimeError):
+        chat("chat", messages=MESSAGES)
+    assert RequestLog.objects.get().status_code == CLIENT_CLOSED_STATUS
+
+
+@respx.mock
+def test_missing_usage_marks_reservation(
+    respx_mock: respx.MockRouter, or_settings: OpenRouterSettings, profile: UsageProfile
+) -> None:
+    profile.budget_usd_per_day = Decimal("4.00")
+    profile.save()
+    payload = completion_payload()
+    payload.pop("usage")
+    respx_mock.post(CHAT_URL).mock(return_value=httpx.Response(200, json=payload))
+    with pytest.raises(OpenRouterAPIError):
+        chat("chat", messages=MESSAGES)
+    log = RequestLog.objects.get()
+    assert (log.status_code, log.error_message) == (0, RESERVATION_USAGE_MISSING_MESSAGE)
+
+
+def test_release_stale_reservations(profile: UsageProfile, paid_model: OpenRouterModel) -> None:
+    def pending(message: str, age: timedelta) -> RequestLog:
+        row = RequestLog.objects.create(
+            profile=profile,
+            model=paid_model,
+            status_code=0,
+            error_message=message,
+            cost_usd=Decimal("3"),
+        )
+        RequestLog.objects.filter(pk=row.pk).update(created_at=timezone.now() - age)
+        return row
+
+    stale = pending(RESERVATION_PENDING_MESSAGE, timedelta(hours=2))
+    fresh = pending(RESERVATION_PENDING_MESSAGE, timedelta(minutes=5))
+    no_usage = pending(RESERVATION_USAGE_MISSING_MESSAGE, timedelta(hours=2))
+
+    call_command("release_stale_reservations", "--dry-run")
+    assert RequestLog.objects.filter(status_code=0).count() == 3
+    call_command("release_stale_reservations", "--minutes", "60")
+
+    stale.refresh_from_db()
+    assert (stale.status_code, stale.cost_usd) == (CLIENT_CLOSED_STATUS, Decimal("0"))
+    assert RequestLog.objects.get(pk=fresh.pk).status_code == 0
+    assert RequestLog.objects.get(pk=no_usage.pk).cost_usd == Decimal("3")
+
+
+# --- SSE по умолчанию -------------------------------------------------------
+
+
+@respx.mock
+def test_chat_uses_json_even_when_streaming_enabled(
+    respx_mock: respx.MockRouter, or_settings: OpenRouterSettings
+) -> None:
+    _enable_streaming(or_settings)
+    route = respx_mock.post(CHAT_URL).mock(
+        return_value=httpx.Response(200, json=completion_payload(content="plain"))
+    )
+    assert chat("chat", messages=MESSAGES).content == "plain"
+    assert "stream" not in json.loads(route.calls.last.request.content)

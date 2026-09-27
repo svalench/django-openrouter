@@ -4,20 +4,28 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_openrouter', '0007_requestlog_username'),
+        ("django_openrouter", "0007_requestlog_username"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='openroutermodel',
-            name='parameter_count',
-            field=models.PositiveBigIntegerField(blank=True, help_text='Approximate parameter count (70B → 70000000000), for sorting.', null=True),
+            model_name="openroutermodel",
+            name="parameter_count",
+            field=models.PositiveBigIntegerField(
+                blank=True,
+                help_text="Approximate parameter count (70B → 70000000000), for sorting.",
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='openroutermodel',
-            name='parameter_label',
-            field=models.CharField(blank=True, default='', help_text='Display size with unit, e.g. 70B, 340M, 8x7B.', max_length=32),
+            model_name="openroutermodel",
+            name="parameter_label",
+            field=models.CharField(
+                blank=True,
+                default="",
+                help_text="Display size with unit, e.g. 70B, 340M, 8x7B.",
+                max_length=32,
+            ),
         ),
     ]

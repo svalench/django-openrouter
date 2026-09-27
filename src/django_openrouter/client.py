@@ -40,13 +40,21 @@ from django_openrouter.exceptions import (
 from django_openrouter.http_clients import get_async_client, get_sync_client
 from django_openrouter.log_backends import (
     LogRecord,
+    active_reservation_id,
     adispatch_log,
+    amark_usage_missing,
     dispatch_log,
     has_active_budget_reservation,
     make_record,
+    mark_usage_missing,
     set_active_reservation,
 )
-from django_openrouter.models import CLIENT_CLOSED_STATUS, OpenRouterModel, UsageProfile
+from django_openrouter.models import (
+    CLIENT_CLOSED_STATUS,
+    OpenRouterModel,
+    RequestLog,
+    UsageProfile,
+)
 from django_openrouter.rules import assert_model_allowed, check_limits, reserve_request
 
 logger = logging.getLogger("django_openrouter")
@@ -56,6 +64,8 @@ ChatMessages = Sequence[ChatMessage]
 
 # После исчерпания retry на модели — переходим к следующей в цепочке.
 _FALLBACK_STATUSES = frozenset({402, 408, 429})
+# Кончились кредиты аккаунта: дальше по цепочке имеют смысл только бесплатные модели.
+_CREDITS_EXHAUSTED_STATUS = 402
 # Повторяем на той же модели (плюс любые 5xx и транспортные ошибки).
 _RETRY_STATUSES = frozenset({408, 425, 429})
 # Ключи уровня OpenRouter, а не модели: не сверяются с supported_parameters.
@@ -563,13 +573,8 @@ class _SSEState:
 
 
 def _want_sse(cfg: RuntimeConfig, overrides: Mapping[str, Any], *, force: bool = False) -> bool:
-    """Нужен ли SSE: явный stream= / дефолт из настроек / метод stream()."""
-    if force:
-        wanted = True
-    elif "stream" in overrides:
-        wanted = bool(overrides["stream"])
-    else:
-        wanted = bool(cfg.streaming_enabled)
+    """Нужен ли SSE: метод stream() или явный chat(stream=True)."""
+    wanted = force or bool(overrides.get("stream", False))
     if wanted and not cfg.streaming_enabled:
         raise ConfigurationError(_("Streaming is disabled in admin settings."))
     return wanted
@@ -593,13 +598,41 @@ def _prepare(
     return cfg, profile, chain
 
 
-def _activate_reservation(profile: UsageProfile, model: OpenRouterModel) -> None:
-    """Резерв лимита/бюджета под попытку; DatabaseBackend превратит его в лог попытки."""
-    reservation = reserve_request(profile, model)
+def _activate_reservation(profile: UsageProfile, reservation: RequestLog | None) -> None:
+    """Делает резерв активным; DatabaseBackend превратит его в лог попытки."""
     set_active_reservation(
         reservation.pk if reservation is not None else None,
         budgeted=profile.budget_usd_per_day is not None
         or profile.budget_usd_per_month is not None,
+    )
+
+
+def _count_images(messages: object) -> int:
+    """Картинки во входе: у image-цены нет верхней границы, кроме их числа."""
+    if not isinstance(messages, list):
+        return 0
+    count = 0
+    for message in messages:
+        content = message.get("content") if isinstance(message, Mapping) else None
+        if isinstance(content, list):
+            count += sum(
+                1 for part in content if isinstance(part, dict) and part.get("type") == "image_url"
+            )
+    return count
+
+
+def _abort_record(
+    profile: UsageProfile, model: OpenRouterModel, started: float, exc: BaseException
+) -> LogRecord | None:
+    """Лог для попытки, прерванной отменой/сбоем: без него резерв висит до конца месяца."""
+    if active_reservation_id() is None:
+        return None
+    return _record(
+        profile,
+        model,
+        started,
+        status_code=CLIENT_CLOSED_STATUS,
+        error_message=f"attempt aborted: {type(exc).__name__}",
     )
 
 
@@ -653,7 +686,10 @@ def _iter_chain_sync(
     emit: bool,
 ) -> Generator[ChatChunk, None, None]:
     last_error: OpenRouterAPIError | None = None
+    credits_exhausted = False
     for model in chain:
+        if credits_exhausted and not model.is_free:
+            continue
         payload = _build_payload(profile, model, messages, overrides, stream=sse)
         emitted = False
         try:
@@ -669,6 +705,7 @@ def _iter_chain_sync(
             if emitted or isinstance(exc, _UsageMissing) or not _should_fallback(exc.status_code):
                 raise
             last_error = exc
+            credits_exhausted |= exc.status_code == _CREDITS_EXHAUSTED_STATUS
     raise last_error or OpenRouterAPIError(_("All models failed without a specific error."))
 
 
@@ -686,8 +723,9 @@ def _attempt_sync(
     url = f"{cfg.base_url}/chat/completions"
     limiter = get_limiter()
     retries = int(cfg.max_retries)
+    image_count = _count_images(payload.get("messages"))
     for attempt in range(retries + 1):
-        _activate_reservation(profile, model)
+        _activate_reservation(profile, reserve_request(profile, model, image_count=image_count))
         started = time.perf_counter()
         retry_after: str | None = None
         state = _SSEState(model, started)
@@ -743,11 +781,15 @@ def _attempt_sync(
             if (emit and state.has_content) or attempt >= retries:
                 raise error from exc
         except _UsageMissing:
+            mark_usage_missing()
             raise
         except OpenRouterAPIError as exc:
             dispatch_log(
                 _record(
-                    profile, model, started, status_code=exc.status_code or 0,
+                    profile,
+                    model,
+                    started,
+                    status_code=exc.status_code or 0,
                     error_message=str(exc)[:_ERROR_TEXT_LIMIT],
                 )
             )
@@ -755,6 +797,11 @@ def _attempt_sync(
                 raise
             if not _is_retryable(exc.status_code):
                 raise
+        except BaseException as exc:
+            record = _abort_record(profile, model, started, exc)
+            if record is not None:
+                dispatch_log(record)
+            raise
         delay = _retry_delay(attempt, retry_after)
         if delay:
             time.sleep(delay)
@@ -804,7 +851,10 @@ async def _aiter_chain(
     emit: bool,
 ) -> AsyncGenerator[ChatChunk, None]:
     last_error: OpenRouterAPIError | None = None
+    credits_exhausted = False
     for model in chain:
+        if credits_exhausted and not model.is_free:
+            continue
         payload = _build_payload(profile, model, messages, overrides, stream=sse)
         emitted = False
         try:
@@ -822,6 +872,7 @@ async def _aiter_chain(
             if emitted or isinstance(exc, _UsageMissing) or not _should_fallback(exc.status_code):
                 raise
             last_error = exc
+            credits_exhausted |= exc.status_code == _CREDITS_EXHAUSTED_STATUS
     raise last_error or OpenRouterAPIError(_("All models failed without a specific error."))
 
 
@@ -839,13 +890,12 @@ async def _attempt_async(
     url = f"{cfg.base_url}/chat/completions"
     limiter = get_limiter()
     retries = int(cfg.max_retries)
+    image_count = _count_images(payload.get("messages"))
     for attempt in range(retries + 1):
-        reservation = await sync_to_async(reserve_request, thread_sensitive=True)(profile, model)
-        set_active_reservation(
-            reservation.pk if reservation is not None else None,
-            budgeted=profile.budget_usd_per_day is not None
-            or profile.budget_usd_per_month is not None,
+        reservation = await sync_to_async(reserve_request, thread_sensitive=True)(
+            profile, model, image_count=image_count
         )
+        _activate_reservation(profile, reservation)
         started = time.perf_counter()
         retry_after: str | None = None
         state = _SSEState(model, started)
@@ -907,11 +957,15 @@ async def _attempt_async(
             if (emit and state.has_content) or attempt >= retries:
                 raise error from exc
         except _UsageMissing:
+            await amark_usage_missing()
             raise
         except OpenRouterAPIError as exc:
             await adispatch_log(
                 _record(
-                    profile, model, started, status_code=exc.status_code or 0,
+                    profile,
+                    model,
+                    started,
+                    status_code=exc.status_code or 0,
                     error_message=str(exc)[:_ERROR_TEXT_LIMIT],
                 )
             )
@@ -919,6 +973,11 @@ async def _attempt_async(
                 raise
             if not _is_retryable(exc.status_code):
                 raise
+        except BaseException as exc:
+            record = _abort_record(profile, model, started, exc)
+            if record is not None:
+                await adispatch_log(record)
+            raise
         delay = _retry_delay(attempt, retry_after)
         if delay:
             await asyncio.sleep(delay)

@@ -4,7 +4,7 @@ export const pl: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: 'OpenRouter dla Django — modele, profile, budżety i logi żądań zarządzane z panelu admina',
-    version: '0.1.2',
+    version: '0.3.0',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -130,7 +130,7 @@ MIDDLEWARE = [
         { type: 'code', lang: 'bash', title: 'terminal', code: `python manage.py migrate` },
         {
           type: 'p',
-          text: '`CurrentUserMiddleware` idzie **po** `AuthenticationMiddleware` i zapisuje nazwę użytkownika w logu żądań. Bez niego każdy wiersz jest oznaczany jako `anonymous`.',
+          text: '`CurrentUserMiddleware` idzie **po** `AuthenticationMiddleware` i zapisuje nazwę użytkownika w logu żądań. Bez niego każdy wiersz jest oznaczany jako `anonymous`. Dla `StreamingHttpResponse` nazwa użytkownika pozostaje powiązana także podczas wysyłania treści, więc `stream()` w widoku strumieniowym jest logowane pod właściwym użytkownikiem.',
         },
         { type: 'h3', text: '3. Konfiguracja w Django admin' },
         {
@@ -307,7 +307,7 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
         },
         {
           type: 'p',
-          text: '`chat(..., stream=True)` używa tego samego transportu SSE i zwraca pełny `ChatResult`. Jeśli streaming jest włączony w ustawieniach, zwykłe `chat()` też idzie przez SSE; `stream=False` wymusza zwykłą odpowiedź JSON. Wywołanie przy wyłączonym streamingu rzuca `ConfigurationError` przed jakimkolwiek żądaniem HTTP.',
+          text: '`chat(..., stream=True)` używa tego samego transportu SSE i zwraca pełny `ChatResult`. Zwykłe `chat()` zawsze używa zwykłej odpowiedzi JSON, nawet przy włączonym streamingu. Wywołanie przy wyłączonym streamingu rzuca `ConfigurationError` jeszcze przed żądaniem HTTP.',
         },
         {
           type: 'table',
@@ -431,8 +431,13 @@ python manage.py sync_models --api-key sk-or-...  # one-off key, never stored` }
         },
         {
           type: 'p',
-          text: 'Sprawdzenie działa w transakcji: wiersz profilu jest blokowany `select_for_update`, a agregaty liczone pod tym lockiem — równoległe żądania nie mogą wyścignąć limitu.',
+          text: 'Przed każdą próbą HTTP transakcja blokuje wiersz profilu i rezerwuje jedno żądanie oraz koszt najgorszego przypadku: pełne okno kontekstu po najwyższej cenie za token (`prompt`, `completion`, `input_cache_read`, `input_cache_write`, `internal_reasoning`), plus `request` / `web_search` i `image` × liczba części `image_url`. Udane wywołania rozliczają rezerwację według faktycznego usage; nieudane, przerwane lub anulowane (`499`) zachowują ją do sprawdzenia rozliczeń. Model z budżetem wymaga poprawnych cen, context length i wyjścia tekstowego (`text+image->text` jest dozwolone); inne niezerowe ceny, np. `audio`, są odrzucane. Ponowienia zakończone błędem HTTP nie zużywają limitu żądań.',
         },
+        {
+          type: 'p',
+          text: 'Rezerwacje pozostawione przez zabity worker są zwalniane z crona (status `499`, koszt `0`); rezerwacje odpowiedzi bez `usage` pozostają:',
+        },
+        { type: 'code', lang: 'bash', title: 'terminal', code: `python manage.py release_stale_reservations --minutes 60 [--dry-run]` },
         {
           type: 'callout',
           kind: 'warning',
@@ -454,7 +459,8 @@ python manage.py sync_models --api-key sk-or-...  # one-off key, never stored` }
           type: 'list',
           items: [
             '**Błędy transportu i 5xx** — ponawiane do `max_retries` razy na tym samym modelu, potem fallback.',
-            '**402 / 429** — natychmiast przejście do następnego modelu w łańcuchu.',
+            '**429 / 408** — ponowienie na tym samym modelu (z `Retry-After`), potem następny model w łańcuchu.',
+            '**402** (wyczerpane środki konta) — próbowane są już tylko darmowe modele z łańcucha.',
             '**Inne 4xx** (np. 400) — rzucane od razu, bez fallbacku: żądanie jest prawdopodobnie niepoprawne dla wszystkich modeli.',
             '**Każda próba** — w tym nieudane — trafia do logu.',
           ],
@@ -846,7 +852,7 @@ stats.since          # period start (datetime)`,
         { type: 'h3', text: 'Czy streaming jest wspierany?' },
         {
           type: 'p',
-          text: 'Tak. Włącz **Streaming enabled** w **OpenRouter settings** i używaj `stream()` / `astream()` albo `chat(stream=True)`. Przy włączonym streamingu zwykłe `chat()` też idzie przez SSE; `stream=False` wymusza odpowiedź JSON.',
+          text: 'Tak. Włącz **Streaming enabled** w **OpenRouter settings** i używaj `stream()` / `astream()` lub `chat(stream=True)`. Zwykłe `chat()` bez `stream=True` zawsze zwraca zwykłą odpowiedź JSON.',
         },
         { type: 'h3', text: 'Limity się nie uruchamiają' },
         {

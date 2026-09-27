@@ -167,7 +167,7 @@ from django_openrouter import achat
 result = await achat("chat", messages=[{"role": "user", "content": "Hello"}])
 ```
 
-If a profile’s limit or budget is exhausted, `chat()` raises `BudgetExceeded` or `RateLimitExceeded` and **does not** silently fall back. Fallback models are only used when OpenRouter returns `402`, `408`, `429`, `5xx`, a transport error, or an `{"error": ...}` body inside a `200` response.
+If a profile’s limit or budget is exhausted, `chat()` raises `BudgetExceeded` or `RateLimitExceeded` and **does not** silently fall back. Fallback models are only used when OpenRouter returns `402`, `408`, `429`, `5xx`, a transport error, or an `{"error": ...}` body inside a `200` response. After a `402` (account credits exhausted) only free models of the chain are tried.
 
 Retries (`max_retries` in admin) apply to `408`, `425`, `429`, `5xx` and transport errors on the same model, honouring `Retry-After`, otherwise exponential backoff with jitter (`RETRY_BACKOFF`).
 
@@ -175,7 +175,7 @@ Retries (`max_retries` in admin) apply to `408`, `425`, `429`, `5xx` and transpo
 
 `model=` can reorder only models already configured in that profile; it cannot introduce a model outside the profile chain.
 
-Profiles with limits atomically reserve a request slot before each HTTP attempt. For budgets, the reservation uses the model's full context window at the higher of its catalog prompt/completion token prices, plus any per-request price; on successful completion the row is reconciled to reported usage. This deliberately rejects calls when the remaining budget cannot cover that worst case, even if the likely response would be cheap. A budgeted model needs valid catalog prices and a context length, and currently must be text-to-text with no image charge. Failed or interrupted calls retain their reservation because their final charge may be unknown; inspect the request log and provider billing before manually correcting these rows. Provider-side limits remain advisable because catalog pricing or provider charges can change independently of this package.
+Profiles with limits atomically reserve a request slot before each HTTP attempt. Request limits count successful, in-flight and interrupted (`499`) attempts; retries that failed with an HTTP error do not consume the limit. For budgets, the reservation uses the model's full context window at the highest of its per-token catalog prices (`prompt`, `completion`, `input_cache_read`, `input_cache_write`, `internal_reasoning`), plus per-request prices (`request`, `web_search`) and `image` × the number of `image_url` parts in the messages; on successful completion the row is reconciled to reported usage. This deliberately rejects calls when the remaining budget cannot cover that worst case, even if the likely response would be cheap. A budgeted model needs valid catalog prices, a context length and text output (`text+image->text` is fine); other non-zero price keys (e.g. `audio`) are rejected as unbounded. Failed or interrupted calls (including cancelled async tasks, logged as `499`) retain their reservation because their final charge may be unknown; inspect the request log and provider billing before manually correcting these rows. Provider-side limits remain advisable because catalog pricing or provider charges can change independently of this package.
 
 Streaming is off by default. Turn on **Streaming enabled** in OpenRouter settings, then iterate chunks:
 
@@ -186,7 +186,9 @@ for chunk in stream("chat", messages=[{"role": "user", "content": "Hello"}]):
     print(chunk.delta, end="", flush=True)
 ```
 
-`chat(..., stream=True)` uses the same SSE transport and returns a complete `ChatResult`. With streaming enabled, `chat()` (without `stream=False`) also talks SSE. `stream=False` forces a regular JSON response.
+`chat(..., stream=True)` uses the same SSE transport and returns a complete `ChatResult`. Plain `chat()` always uses a regular JSON response, even with streaming enabled.
+
+`CurrentUserMiddleware` keeps the username bound while a `StreamingHttpResponse` body is iterated, so `stream()` inside a streaming view is logged under the right user.
 
 Async: `astream("chat", messages=...)` / `AsyncOpenRouterClient("chat").stream(...)`.
 
@@ -206,6 +208,12 @@ python manage.py prune_request_logs --days 90 [--dry-run]
 ```
 
 Deletes `RequestLog` rows older than N days (the current month is always kept, monthly limits need it).
+
+```bash
+python manage.py release_stale_reservations --minutes 60 [--dry-run]
+```
+
+Releases budget reservations still pending after N minutes (left by a killed worker): sets status `499` and cost `0`. Reservations for responses that came back without `usage` are kept. Run it from cron; keep N well above `request_timeout × (max_retries + 1)`.
 
 ## `settings.OPENROUTER`
 
@@ -346,7 +354,7 @@ LANGUAGES = [
 MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",  # after SessionMiddleware
-    ...
+    ...,
 ]
 ```
 

@@ -4,15 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_openrouter', '0006_openroutersettings_streaming_parallel'),
+        ("django_openrouter", "0006_openroutersettings_streaming_parallel"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='requestlog',
-            name='username',
-            field=models.CharField(db_index=True, default='anonymous', help_text="Authenticated user's username, or 'anonymous'.", max_length=150),
+            model_name="requestlog",
+            name="username",
+            field=models.CharField(
+                db_index=True,
+                default="anonymous",
+                help_text="Authenticated user's username, or 'anonymous'.",
+                max_length=150,
+            ),
         ),
     ]

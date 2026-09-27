@@ -22,6 +22,11 @@ Period = Literal["day", "month"]
 
 # Клиент закрыл стрим до конца ответа (nginx-конвенция).
 CLIENT_CLOSED_STATUS = 499
+# Резерв создан, попытка ещё в полёте.
+RESERVATION_PENDING_MESSAGE = "Reservation pending completion"
+# Ответ получен без usage: резерв оставляем, чистка зависших его не трогает.
+RESERVATION_USAGE_MISSING_MESSAGE = "Usage missing; reservation kept"
+RESERVATION_RELEASED_MESSAGE = "Stale reservation released"
 
 
 def _decimal_from_pricing(value: object) -> Decimal:
@@ -210,19 +215,22 @@ class UsageProfile(models.Model):
         """
         Расход за день и месяц одним запросом, без блокировки.
 
-        Считаются все строки RequestLog, включая резервы попыток в полёте
-        (status_code=0) — иначе параллельные запросы проскочат лимит.
+        Стоимость — по всем строкам RequestLog, включая резервы в полёте
+        (status_code=0), иначе параллельные запросы проскочат лимит.
+        В счётчик запросов не входят попытки с HTTP-ошибкой (retry 429/5xx
+        не должен съедать лимит), кроме 499 — оборванный стрим оплачен.
         """
         day_start = _period_start("day")
         month_start = _period_start("month")
         is_today = Q(created_at__gte=day_start)
+        is_counted = ~Q(status_code__gte=400) | Q(status_code=CLIENT_CLOSED_STATUS)
         decimal_field = models.DecimalField(max_digits=16, decimal_places=10)
         zero = Value(Decimal("0"))
         aggregated = RequestLog.objects.filter(
             profile_id=self.pk, created_at__gte=month_start
         ).aggregate(
-            day_count=Count("id", filter=is_today),
-            month_count=Count("id"),
+            day_count=Count("id", filter=is_today & is_counted),
+            month_count=Count("id", filter=is_counted),
             day_cost=Coalesce(Sum("cost_usd", filter=is_today), zero, output_field=decimal_field),
             month_cost=Coalesce(Sum("cost_usd"), zero, output_field=decimal_field),
         )
@@ -344,9 +352,7 @@ class OpenRouterSettings(models.Model):
     )
     max_parallel_requests = models.PositiveIntegerField(
         default=10,
-        help_text=_(
-            "Max concurrent HTTP requests to OpenRouter in this process. 0 = unlimited."
-        ),
+        help_text=_("Max concurrent HTTP requests to OpenRouter in this process. 0 = unlimited."),
     )
     enabled = models.BooleanField(
         default=True,

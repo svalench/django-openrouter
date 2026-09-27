@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import AsyncIterator, Iterator
+
 import httpx
 import pytest
 import respx
 from django.contrib.auth.models import AnonymousUser, User
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, StreamingHttpResponse
 from django.test import RequestFactory
 
 from django_openrouter.client import chat
@@ -99,3 +101,35 @@ def test_middleware_logs_anonymous(
     request.user = AnonymousUser()
     CurrentUserMiddleware(view)(request)
     assert RequestLog.objects.get().username == ANONYMOUS_USERNAME
+
+
+def test_middleware_keeps_username_while_streaming(rf: RequestFactory) -> None:
+    user = User.objects.create_user("carol", password="x")
+
+    def body() -> Iterator[bytes]:
+        yield current_username().encode()
+        yield current_username().encode()
+
+    request = rf.get("/")
+    request.user = user
+    response = CurrentUserMiddleware(lambda _request: StreamingHttpResponse(body()))(request)
+    assert current_username() == ANONYMOUS_USERNAME
+    assert b"".join(response.streaming_content) == b"carolcarol"
+    assert current_username() == ANONYMOUS_USERNAME
+
+
+async def test_async_middleware_keeps_username_while_streaming(rf: RequestFactory) -> None:
+    user = User(username="dave")
+
+    async def body() -> AsyncIterator[bytes]:
+        yield current_username().encode()
+
+    async def view(_request: HttpRequest) -> StreamingHttpResponse:
+        return StreamingHttpResponse(body())
+
+    request = rf.get("/")
+    request.user = user
+    response = await CurrentUserMiddleware(view)(request)
+    chunks = [chunk async for chunk in response.streaming_content]
+    assert chunks == [b"dave"]
+    assert current_username() == ANONYMOUS_USERNAME

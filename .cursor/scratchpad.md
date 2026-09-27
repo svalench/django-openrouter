@@ -18,3 +18,21 @@
 - [x] pytest (90% cov) / ruff / mypy / makemigrations --check / README
 
 DONE
+
+## 2026-09-27 — проверка библиотеки
+- pytest: все тесты зелёные, покрытие 90%
+- ruff check / mypy / makemigrations --check: ок
+- ruff format применён к 11 файлам
+DONE
+
+## 2026-09-27 — ревью логики
+- найдено: зависшие резервы (CancelledError/BaseException), username теряется в StreamingHttpResponse, бюджет недоступен для multimodal/cache-pricing моделей, провальные попытки списывают worst-case
+- ожидается решение пользователя по исправлениям
+
+## 2026-09-27 — исправления по ревью
+- резервы закрываются при CancelledError/любом сбое (499), команда release_stale_reservations
+- username сохраняется в StreamingHttpResponse
+- бюджет для multimodal/cache/web_search, учёт картинок
+- 402 → только бесплатные модели; неудачные HTTP-попытки не съедают лимит запросов; chat() без stream=True всегда JSON
+- pytest 215 ok, ruff, mypy, makemigrations ok; README обновлён
+DONE

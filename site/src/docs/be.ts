@@ -4,7 +4,7 @@ export const be: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: 'OpenRouter для Django — мадэлі, профілі, бюджэты і логі запытаў праз адмінку',
-    version: '0.1.2',
+    version: '0.3.0',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -130,7 +130,7 @@ MIDDLEWARE = [
         { type: 'code', lang: 'bash', title: 'terminal', code: `python manage.py migrate` },
         {
           type: 'p',
-          text: '`CurrentUserMiddleware` ставіцца **пасля** `AuthenticationMiddleware` і запісвае імя карыстальніка ў лог запытаў. Без яго кожны радок пазначаецца як `anonymous`.',
+          text: '`CurrentUserMiddleware` ставіцца **пасля** `AuthenticationMiddleware` і запісвае імя карыстальніка ў лог запытаў. Без яго кожны радок пазначаецца як `anonymous`. Для `StreamingHttpResponse` username захоўваецца і падчас аддачы цела, таму `stream()` у струменевай view лагуецца пад патрэбным карыстальнікам.',
         },
         { type: 'h3', text: '3. Наладка ў Django admin' },
         {
@@ -307,7 +307,7 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
         },
         {
           type: 'p',
-          text: '`chat(..., stream=True)` выкарыстоўвае той жа SSE-транспарт і вяртае поўны `ChatResult`. Калі стрымінг уключаны ў наладах, звычайны `chat()` таксама ідзе праз SSE; `stream=False` прымусова дае звычайны JSON-адказ. Выклік пры выключаным стрымінгу кідае `ConfigurationError` да любога HTTP-запыту.',
+          text: '`chat(..., stream=True)` выкарыстоўвае той жа SSE-транспарт і вяртае поўны `ChatResult`. Звычайны `chat()` заўсёды ідзе звычайным JSON-запытам, нават пры ўключаным стрымінгу. Выклік пры выключаным стрымінгу кідае `ConfigurationError` яшчэ да HTTP-запыту.',
         },
         {
           type: 'table',
@@ -431,8 +431,13 @@ python manage.py sync_models --api-key sk-or-...  # one-off key, never stored` }
         },
         {
           type: 'p',
-          text: 'Праверка ідзе ў транзакцыі: радок профілю блакуецца `select_for_update`, агрэгаты лічацца пад гэтым локам — паралельныя запыты не могуць праскочыць ліміт.',
+          text: 'Перад кожнай HTTP-спробай транзакцыя блакуе радок профілю і рэзервуе адзін запыт і кошт горшага выпадку: увесь кантэкст мадэлі па максімальнай цане за токен (`prompt`, `completion`, `input_cache_read`, `input_cache_write`, `internal_reasoning`), плюс `request` / `web_search` і `image` × колькасць частак `image_url`. Паспяховы выклік звярае рэзерв з фактычным usage; няўдалыя, перапыненыя і адмененыя выклікі (статус `499`) захоўваюць рэзерв да звяркі з білінгам. Для бюджэту мадэлі патрэбныя карэктныя цэны, context length і тэкставы выхад (`text+image->text` падыходзіць); іншыя ненулявыя цэны, напрыклад `audio`, адхіляюцца. Паўторы з HTTP-памылкай не расходуюць ліміт запытаў.',
         },
+        {
+          type: 'p',
+          text: 'Рэзервы, што засталіся пасля забітага воркера, вызваляюцца з cron (статус `499`, кошт `0`); рэзервы адказаў без `usage` не чапаюцца:',
+        },
+        { type: 'code', lang: 'bash', title: 'terminal', code: `python manage.py release_stale_reservations --minutes 60 [--dry-run]` },
         {
           type: 'callout',
           kind: 'warning',
@@ -454,7 +459,8 @@ python manage.py sync_models --api-key sk-or-...  # one-off key, never stored` }
           type: 'list',
           items: [
             '**Памылкі транспарту і 5xx** — паўтараюцца да `max_retries` разоў на той жа мадэлі, потым fallback.',
-            '**402 / 429** — адразу пераход да наступнай мадэлі ў ланцугу.',
+            '**429 / 408** — паўтор на той жа мадэлі (з улікам `Retry-After`), потым наступная мадэль ланцуга.',
+            '**402** (скончыліся крэдыты акаўнта) — далей спрабуюцца толькі бясплатныя мадэлі ланцуга.',
             '**Іншыя 4xx** (напрыклад 400) — кідаюцца адразу, без fallback: запыт, хутчэй за ўсё, няправільны для ўсіх мадэляў.',
             '**Кожная спроба** — у тым ліку няўдалая — пішацца ў лог.',
           ],
@@ -846,7 +852,7 @@ stats.since          # period start (datetime)`,
         { type: 'h3', text: 'Ці падтрымліваецца стрымінг?' },
         {
           type: 'p',
-          text: 'Так. Уключыце **Streaming enabled** у **OpenRouter settings** і карыстайцеся `stream()` / `astream()` або `chat(stream=True)`. Пры ўключаным стрымінгу звычайны `chat()` таксама ідзе праз SSE; `stream=False` прымусова дае JSON-адказ.',
+          text: 'Так. Уключыце **Streaming enabled** у **OpenRouter settings** і карыстайцеся `stream()` / `astream()` або `chat(stream=True)`. Звычайны `chat()` без `stream=True` заўсёды вяртае звычайны JSON-адказ.',
         },
         { type: 'h3', text: 'Ліміты не спрацоўваюць' },
         {

@@ -58,7 +58,7 @@ from django.utils.translation import gettext as _
 from django_openrouter.config import openrouter_setting
 from django_openrouter.current_user import current_username
 from django_openrouter.http_clients import get_async_client, get_sync_client
-from django_openrouter.models import RequestLog
+from django_openrouter.models import RESERVATION_USAGE_MISSING_MESSAGE, RequestLog
 from django_openrouter.signals import request_logged
 
 if TYPE_CHECKING:
@@ -78,6 +78,29 @@ def set_active_reservation(reservation_id: int | None, *, budgeted: bool = False
 
 def has_active_budget_reservation() -> bool:
     return _active_reservation_id.get() is not None and _budget_reservation.get()
+
+
+def active_reservation_id() -> int | None:
+    return _active_reservation_id.get()
+
+
+def mark_usage_missing() -> None:
+    """Помечает резерв «ответ без usage»: он остаётся, но не считается зависшим."""
+    reservation_id = _active_reservation_id.get()
+    if reservation_id is not None:
+        RequestLog.objects.filter(pk=reservation_id, status_code=0).update(
+            error_message=RESERVATION_USAGE_MISSING_MESSAGE
+        )
+    set_active_reservation(None)
+
+
+async def amark_usage_missing() -> None:
+    reservation_id = _active_reservation_id.get()
+    if reservation_id is not None:
+        await RequestLog.objects.filter(pk=reservation_id, status_code=0).aupdate(
+            error_message=RESERVATION_USAGE_MISSING_MESSAGE
+        )
+    set_active_reservation(None)
 
 
 _DEFAULT_FILE_PATH = "openrouter-requests.jsonl"

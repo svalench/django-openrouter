@@ -149,9 +149,7 @@ def test_model_admin_sync_action(
         return_value=httpx.Response(
             200,
             json={
-                "data": [
-                    _catalog_item("openai/gpt-4", "GPT-4", prompt="0.03", completion="0.06")
-                ]
+                "data": [_catalog_item("openai/gpt-4", "GPT-4", prompt="0.03", completion="0.06")]
             },
         )
     )
@@ -437,9 +435,7 @@ def test_model_changelist_fetches_and_caches(
         return_value=httpx.Response(
             200,
             json={
-                "data": [
-                    _catalog_item("openai/gpt-4", "GPT-4", prompt="0.03", completion="0.06")
-                ]
+                "data": [_catalog_item("openai/gpt-4", "GPT-4", prompt="0.03", completion="0.06")]
             },
         )
     )
@@ -512,9 +508,7 @@ def test_model_changelist_api_error_keeps_page(
     assert b"Kept Local" in response.content
 
 
-def test_model_changelist_shows_parameter_size(
-    admin_client, paid_model: OpenRouterModel
-) -> None:
+def test_model_changelist_shows_parameter_size(admin_client, paid_model: OpenRouterModel) -> None:
     from django_openrouter.config import mark_catalog_fresh
 
     paid_model.model_id = "meta-llama/llama-3.1-70b-instruct"
@@ -665,7 +659,6 @@ def test_profile_form_includes_filter_media(admin_client, profile: UsageProfile)
     assert b"model_choice_filters.css" in response.content
 
 
-
 def _assign_action(
     admin_client,
     pks: list[str],
@@ -690,9 +683,7 @@ def test_assign_action_shows_intermediate_page(
     from django_openrouter.config import mark_catalog_fresh
 
     mark_catalog_fresh()
-    response = _assign_action(
-        admin_client, [str(paid_model.pk), str(fallback_model.pk)]
-    )
+    response = _assign_action(admin_client, [str(paid_model.pk), str(fallback_model.pk)])
     assert response.status_code == 200
     content = response.content.decode()
     assert "Usage profile" in content  # поле выбора профиля
@@ -766,9 +757,7 @@ def test_assign_action_skips_inactive_and_not_free(
     from django_openrouter.config import mark_catalog_fresh
 
     mark_catalog_fresh()
-    inactive = OpenRouterModel.objects.create(
-        model_id="vendor/off", name="Off", is_active=False
-    )
+    inactive = OpenRouterModel.objects.create(model_id="vendor/off", name="Off", is_active=False)
     free_profile = UsageProfile.objects.create(
         name="freep", model=free_model, only_free_models=True
     )

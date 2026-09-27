@@ -87,9 +87,7 @@ def test_chat_logs_to_database_and_file(
     profile: UsageProfile,
 ) -> None:
     log_file = tmp_path / "openrouter.jsonl"
-    respx_mock.post(CHAT_URL).mock(
-        return_value=httpx.Response(200, json=completion_payload())
-    )
+    respx_mock.post(CHAT_URL).mock(return_value=httpx.Response(200, json=completion_payload()))
     with override_settings(
         OPENROUTER={
             "LOG_BACKENDS": [

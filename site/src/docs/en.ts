@@ -4,7 +4,7 @@ export const en: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: 'OpenRouter for Django — models, profiles, budgets and request logs managed via the admin',
-    version: '0.1.2',
+    version: '0.3.0',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -130,7 +130,7 @@ MIDDLEWARE = [
         { type: 'code', lang: 'bash', title: 'terminal', code: `python manage.py migrate` },
         {
           type: 'p',
-          text: '`CurrentUserMiddleware` goes **after** `AuthenticationMiddleware` and records the calling user’s username in the request log. Without it every row is stamped `anonymous`.',
+          text: '`CurrentUserMiddleware` goes **after** `AuthenticationMiddleware` and records the calling user’s username in the request log. Without it every row is stamped `anonymous`. For a `StreamingHttpResponse` the username stays bound while the body is iterated, so `stream()` inside a streaming view is logged under the right user.',
         },
         { type: 'h3', text: '3. Configure in Django admin' },
         {
@@ -307,7 +307,7 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
         },
         {
           type: 'p',
-          text: '`chat(..., stream=True)` uses the same SSE transport and returns the full `ChatResult`. If streaming is enabled in the settings, a plain `chat()` call also goes over SSE; `stream=False` forces a regular JSON response. Calling with streaming disabled raises `ConfigurationError` before any HTTP request.',
+          text: '`chat(..., stream=True)` uses the same SSE transport and returns the full `ChatResult`. A plain `chat()` always uses a regular JSON response, even with streaming enabled. Calling with streaming disabled raises `ConfigurationError` before any HTTP request.',
         },
         {
           type: 'table',
@@ -431,8 +431,13 @@ python manage.py sync_models --api-key sk-or-...  # one-off key, never stored` }
         },
         {
           type: 'p',
-          text: 'Before each HTTP attempt, a transaction reserves one request and the maximum text-to-text catalog cost for the model’s full context window. Successful calls reconcile the reservation to reported usage; failed or interrupted calls keep it until billing is checked. A budgeted model needs valid catalog pricing and context length. Conservative reservations may reject a request whose likely cost is much lower.',
+          text: 'Before each HTTP attempt, a transaction locks the profile row and reserves one request plus the worst-case cost: the model’s full context window at its highest per-token price (`prompt`, `completion`, `input_cache_read`, `input_cache_write`, `internal_reasoning`), plus `request` / `web_search` and `image` × the number of `image_url` parts. Successful calls reconcile the reservation to reported usage; failed, interrupted or cancelled calls (logged as `499`) keep it until billing is checked. A budgeted model needs valid pricing, a context length and text output (`text+image->text` is fine); other non-zero prices such as `audio` are rejected. Retries that failed with an HTTP error do not count towards request limits.',
         },
+        {
+          type: 'p',
+          text: 'Reservations left pending by a killed worker are released from cron (status `499`, cost `0`); reservations for responses without `usage` are kept:',
+        },
+        { type: 'code', lang: 'bash', title: 'terminal', code: `python manage.py release_stale_reservations --minutes 60 [--dry-run]` },
         {
           type: 'callout',
           kind: 'warning',
@@ -454,7 +459,8 @@ python manage.py sync_models --api-key sk-or-...  # one-off key, never stored` }
           type: 'list',
           items: [
             '**Transport errors and 5xx** — retried up to `max_retries` times on the same model, then fallback.',
-            '**402 / 429** — immediately move to the next model in the chain.',
+            '**429 / 408** — retried on the same model (honouring `Retry-After`), then the next model in the chain.',
+            '**402** (account credits exhausted) — only the remaining free models of the chain are tried.',
             '**Other 4xx** (e.g. 400) — raised immediately, no fallback: the request is likely invalid for all models.',
             '**Every attempt** — including failed ones — is written to the log.',
           ],
@@ -846,7 +852,7 @@ stats.since          # period start (datetime)`,
         { type: 'h3', text: 'Is streaming supported?' },
         {
           type: 'p',
-          text: 'Yes. Enable **Streaming enabled** in **OpenRouter settings** and use `stream()` / `astream()` or `chat(stream=True)`. With streaming enabled, a plain `chat()` also goes over SSE; `stream=False` forces a JSON response.',
+          text: 'Yes. Enable **Streaming enabled** in **OpenRouter settings** and use `stream()` / `astream()` or `chat(stream=True)`. A plain `chat()` without `stream=True` always returns a regular JSON response.',
         },
         { type: 'h3', text: 'Limits don’t trigger' },
         {

@@ -138,8 +138,8 @@ def test_fallback_on_402_and_500(
     UsageProfileFallback.objects.create(profile=profile, model=free_model, order=1)
     respx_mock.post(CHAT_URL).mock(
         side_effect=[
-            httpx.Response(402, json={"error": "credits"}),
             httpx.Response(500, json={"error": "boom"}),
+            httpx.Response(402, json={"error": "credits"}),
             httpx.Response(
                 200,
                 json=completion_payload(
@@ -152,6 +152,28 @@ def test_fallback_on_402_and_500(
     result = chat("chat", messages=MESSAGES)
     assert result.content == "third"
     assert RequestLog.objects.count() == 3
+
+
+@respx.mock
+def test_402_skips_paid_fallbacks(
+    respx_mock: respx.MockRouter,
+    or_settings: OpenRouterSettings,
+    profile: UsageProfile,
+    paid_model,
+    fallback_model,
+    free_model,
+) -> None:
+    UsageProfileFallback.objects.create(profile=profile, model=fallback_model, order=1)
+    UsageProfileFallback.objects.create(profile=profile, model=free_model, order=2)
+    route = respx_mock.post(CHAT_URL).mock(
+        side_effect=[
+            httpx.Response(402, json={"error": "credits"}),
+            httpx.Response(200, json=completion_payload(model=free_model.model_id)),
+        ]
+    )
+    chat("chat", messages=MESSAGES)
+    sent = [json.loads(call.request.content)["model"] for call in route.calls]
+    assert sent == [paid_model.model_id, free_model.model_id]
 
 
 @respx.mock
@@ -578,13 +600,13 @@ def test_chat_stream_true_collects(
 
 
 @respx.mock
-def test_chat_uses_sse_when_setting_on(
+def test_chat_uses_sse_when_requested(
     respx_mock: respx.MockRouter,
     or_settings: OpenRouterSettings,
 ) -> None:
     _enable_streaming(or_settings)
     route = respx_mock.post(CHAT_URL).mock(return_value=_sse_response("streamed"))
-    result = chat("chat", messages=MESSAGES)
+    result = chat("chat", messages=MESSAGES, stream=True)
     assert result.content == "streamed"
     body = json.loads(route.calls.last.request.content)
     assert body["stream"] is True
@@ -633,17 +655,8 @@ def test_stream_skips_comments_and_list_delta(
     or_settings: OpenRouterSettings,
 ) -> None:
     _enable_streaming(or_settings)
-    payload = {
-        "choices": [
-            {"delta": {"content": [{"type": "text", "text": "A"}]}}
-        ]
-    }
-    body = (
-        ": ping\n\n"
-        f"data: {json.dumps(payload)}\n\n"
-        "data: not-json\n\n"
-        "data: [DONE]\n\n"
-    )
+    payload = {"choices": [{"delta": {"content": [{"type": "text", "text": "A"}]}}]}
+    body = f": ping\n\ndata: {json.dumps(payload)}\n\ndata: not-json\n\ndata: [DONE]\n\n"
     respx_mock.post(CHAT_URL).mock(
         return_value=httpx.Response(
             200,
@@ -715,4 +728,3 @@ def test_stream_messages_required(or_settings: OpenRouterSettings) -> None:
     _enable_streaming(or_settings)
     with pytest.raises(TypeError):
         list(stream("chat"))
-
