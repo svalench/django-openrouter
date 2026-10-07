@@ -332,6 +332,17 @@ class UsageProfileForm(ModelForm):
             "is_active",
         )
 
+    def clean(self) -> dict[str, object]:
+        cleaned = super().clean() or {}
+        # The primary FK is derived from the submitted inline chain. Validating
+        # its old value would prevent replacing an inactive/paid primary and
+        # attach errors to a field excluded from this form. The inline forms
+        # enforce model eligibility; save_related() then rebuilds the FK.
+        # Leave it cleared through save so ensure_primary_in_chain cannot
+        # reinsert a removed model and an empty chain clears the primary.
+        self.instance.model = None
+        return cleaned
+
 
 class AssignToProfileForm(forms.Form):
     """Промежуточная форма экшена «присвоить выбранные модели профилю»."""

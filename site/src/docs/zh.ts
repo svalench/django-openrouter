@@ -4,7 +4,7 @@ export const zh: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: '面向 Django 的 OpenRouter — 通过管理后台管理模型、用量配置、预算和请求日志',
-    version: '0.3.0',
+    version: '0.3.1',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },

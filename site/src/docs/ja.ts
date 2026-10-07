@@ -4,7 +4,7 @@ export const ja: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: 'OpenRouter for Django — モデル・プロファイル・予算・ログを管理画面から運用',
-    version: '0.3.0',
+    version: '0.3.1',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
