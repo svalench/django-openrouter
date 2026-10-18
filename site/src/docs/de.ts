@@ -370,30 +370,108 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
       id: 'transcription',
       group: 'Anleitungen',
       title: 'Sprache zu Text',
-      lead: 'transcribe() / atranscribe() schicken Audio an OpenRouter POST /api/v1/audio/transcriptions. Profile, Budgets und das Request-Log sind dieselben wie beim Chat.',
+      lead: 'transcribe() / atranscribe() schicken Audio aus dem Browser oder vom Server an OpenRouter POST /api/v1/audio/transcriptions. Profile, Budgets und das Request-Log sind dieselbe Maschinerie wie beim Chat.',
       blocks: [
         {
           type: 'p',
-          text: 'Transkriptionsmodelle stehen nicht im Chat-Katalog. `sync_models` holt zusätzlich `GET /api/v1/models?output_modalities=transcription` und speichert sie mit Modality `audio->transcription`. Lege ein Nutzungsprofil mit Typ `transcription` an, wähle nur diese Modelle und optional Sprache, maximale Größe und `max_audio_seconds` (nötig, um bei sekundenbasierten Modellen wie Whisper ein Budget zu reservieren). Das Standardprofil liegt in den OpenRouter-Einstellungen, nicht in einem eigenen Singleton.',
+          text: 'Transkriptionsmodelle stehen nicht im normalen Chat-Katalog. `sync_models` fragt zusätzlich `GET /api/v1/models?output_modalities=transcription` ab und speichert sie mit der Modality `audio->transcription` und `output_modalities: ["transcription"]`. Der Chat-Sync bleibt sonst unverändert: Ein Modell, das aus beiden Katalogen verschwindet, wird deaktiviert, und ein reines Transkriptionsmodell wird nicht deaktiviert, nur weil es in der Chat-Liste fehlt.',
         },
+        { type: 'h3', text: 'Ein Transkriptionsprofil einrichten' },
         {
           type: 'p',
-          text: 'Die Bibliothek braucht kein ffmpeg. Sende webm, ogg, mp3, wav, m4a, flac oder aac (ein MediaRecorder-Blob reicht). Zum Umcodieren setzt du `OPENROUTER["AUDIO_PREPARE"]` auf `(data, *, filename, content_type) -> (bytes, filename, content_type)`. `UnsupportedAudioFormat` und `AudioTooLarge` (Standard 25 MiB) kommen vor dem HTTP-Aufruf. Kill-Switch und fehlender Schlüssel bleiben `OpenRouterDisabled` und `ConfigurationError`.',
+          text: 'Setzen Sie bei **Nutzungsprofilen** **Kind** auf **Transcription**, wählen Sie nur Transkriptionsmodelle (die Autovervollständigung filtert nach dem Kind-Feld) und optional Sprache, Upload-Größe und eine Dauerobergrenze. Wählen Sie in **OpenRouter settings** dieses Profil als **Default transcription profile**, wenn `transcribe()` ohne Slug funktionieren soll. API-Key, Base-URL und Kill-Switch bleiben in derselben Einstellungszeile. Es gibt kein separates STT-Singleton: Budgets und Logs leben bereits auf Profilen, und eine App kann Diktat und Meeting-Transkription getrennt halten.',
         },
+        {
+          type: 'table',
+          head: ['Profilfeld', 'Rolle'],
+          rows: [
+            ['`kind`', '`chat` (Standard) oder `transcription`'],
+            ['`language`', 'ISO-639-1-Hinweis (`en`, `ru`). Leer = automatische Erkennung. Beim Chat ignoriert'],
+            ['`max_audio_bytes`', 'Upload-Limit. Leer = 25 MiB'],
+            ['`max_audio_seconds`', 'Sekunden im Worst Case, die für sekundenbasierte Modelle reserviert werden (Whisper: Kontextlänge 0, der `prompt`-Preis gilt pro Sekunde)'],
+            ['`max_requests_*` / `budget_usd_*`', 'Dieselben Tages- und Monatslimits wie beim Chat. Die Reservierung wird auf `usage.cost` abgeglichen'],
+          ],
+        },
+        {
+          type: 'callout',
+          kind: 'warning',
+          title: 'Duration-Budgets brauchen max_audio_seconds',
+          text: 'Ein Transkriptionsprofil mit USD-Budget und einem sekundenbasierten Modell wirft `ConfigurationError`, bis `max_audio_seconds` gesetzt ist. Tokenbasierte STT-Modelle (Kontextlänge ungleich null) reservieren `context_length ×` den höchsten Preis pro Token — dieselbe Idee wie beim Chat.',
+        },
+        { type: 'h3', text: 'transcribe() aufrufen' },
         {
           type: 'code',
           lang: 'python',
           title: 'views.py',
-          code: `from django_openrouter import transcribe
+          code: `from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 
-result = transcribe(
-    request.FILES["audio"],
-    filename=request.FILES["audio"].name,
-    content_type=request.FILES["audio"].content_type,
-    profile="dictation",
-    language="de",
+from django_openrouter import transcribe
+from django_openrouter.exceptions import (
+    AudioTooLarge,
+    BudgetExceeded,
+    ConfigurationError,
+    OpenRouterDisabled,
+    UnsupportedAudioFormat,
 )
-print(result.text, result.cost_usd, result.duration_seconds)`,
+
+@require_POST
+def dictate(request):
+    blob = request.FILES["audio"]
+    try:
+        result = transcribe(
+            blob,
+            filename=blob.name,
+            content_type=blob.content_type,
+            profile="dictation",  # oder None → Standard-Transkriptionsprofil
+            language="ru",
+        )
+    except OpenRouterDisabled:
+        return JsonResponse({"error": "disabled"}, status=503)
+    except (UnsupportedAudioFormat, AudioTooLarge, ConfigurationError) as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+    except BudgetExceeded:
+        return JsonResponse({"error": "budget"}, status=429)
+    return JsonResponse(
+        {
+            "text": result.text,
+            "model": result.model_used,
+            "cost_usd": str(result.cost_usd),
+            "seconds": None if result.duration_seconds is None else str(result.duration_seconds),
+        }
+    )`,
+        },
+        {
+          type: 'p',
+          text: 'Die Bibliothek hängt nicht von ffmpeg ab. Senden Sie einen Container, den OpenRouter akzeptiert: webm, ogg, mp3, wav, m4a, flac oder aac. Ein `MediaRecorder`-Blob aus dem Browser (`audio/webm;codecs=opus`) reicht. Zum vorherigen Umcodieren setzen Sie `OPENROUTER["AUDIO_PREPARE"]` auf einen dotted path. Das Callable erhält `(data, *, filename, content_type)` und muss `(bytes, filename, content_type)` zurückgeben.',
+        },
+        {
+          type: 'code',
+          lang: 'javascript',
+          title: 'browser',
+          code: `const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+const chunks = [];
+recorder.ondataavailable = (event) => {
+  if (event.data.size) chunks.push(event.data);
+};
+recorder.onstop = async () => {
+  const blob = new Blob(chunks, { type: recorder.mimeType });
+  const body = new FormData();
+  body.append("audio", blob, "dictation.webm");
+  const response = await fetch("/dictate/", {
+    method: "POST",
+    body,
+    headers: { "X-CSRFToken": csrfToken },
+  });
+  const payload = await response.json();
+  console.log(payload.text);
+};
+recorder.start();`,
+        },
+        {
+          type: 'p',
+          text: '`atranscribe()` und `OpenRouterClient.transcribe` / `AsyncOpenRouterClient.transcribe` sind derselbe Aufruf. `model=` darf nur ein Modell umsortieren, das bereits im Profil steht. `prompt=` wird im JSON-Body mitgeschickt; OpenRouter ignoriert derzeit einen Prompt auf oberster Ebene der Multipart-API, behandeln Sie ihn daher als optionalen Hinweis und nicht als garantierte Wortschatzverschiebung. `TranscriptionResult` enthält `text`, Tokenzahlen, `duration_seconds`, `cost_usd`, `catalog_cost_usd`, `model_used`, `latency_ms` und `raw`.',
         },
       ],
     },
@@ -408,7 +486,7 @@ print(result.text, result.cost_usd, result.duration_seconds)`,
 python manage.py sync_models --api-key sk-or-...  # Einmal-Schlüssel, wird nicht gespeichert` },
         {
           type: 'p',
-          text: 'Der Befehl macht einen Upsert des Katalogs (`GET /api/v1/models`) und reichert ihn mit `/endpoints`-Metriken an — p50-Latenz und Throughput. Er löscht nichts: Modelle, die aus OpenRouter verschwinden, bekommen `is_active=False`. Profile, die auf so ein Modell verweisen, brechen nicht — Aufrufe schlagen einfach mit `ModelDisabled` fehl, bis Sie das Profil umstellen.',
+          text: 'Der Befehl macht einen Upsert des Chat-Katalogs (`GET /api/v1/models`) und des Transkriptionskatalogs (`GET /api/v1/models?output_modalities=transcription`) und reichert beide mit `/endpoints`-Metriken an — p50-Latenz und Throughput. Er löscht nichts: Modelle, die aus beiden Listen verschwinden, bekommen `is_active=False`. Profile, die auf so ein Modell verweisen, brechen nicht — Aufrufe schlagen einfach mit `ModelDisabled` fehl, bis Sie das Profil umstellen.',
         },
         { type: 'h3', text: 'Modellfelder' },
         {
@@ -425,7 +503,8 @@ python manage.py sync_models --api-key sk-or-...  # Einmal-Schlüssel, wird nich
             ['`parameter_count`', 'Ungefähre Gewichtszahl (70B → 70000000000), zum Sortieren'],
             ['`parameter_label`', 'Anzeigegröße mit Einheit: `70B`, `340M`, `8x7B`'],
             ['`supported_parameters`', 'Liste unterstützter Parameter'],
-            ['`modality`', 'Modalität, z. B. `text->text`'],
+            ['`modality`', 'Modalität, z. B. `text->text` oder `audio->transcription`'],
+            ['`output_modalities`', 'Liste aus dem Katalog, z. B. `["text"]` oder `["transcription"]`'],
             ['`is_active`', 'Ob das Modell in Profilen gewählt werden kann'],
             ['`last_synced_at`', 'Wann der Sync das Modell zuletzt gesehen hat'],
             ['`is_free` (Property)', '`True`, wenn die Preise `prompt`/`completion`/`request` null sind'],
@@ -764,7 +843,29 @@ async def astream(
     profile_name: str | None = None,
     messages: Sequence[Mapping[str, Any]] | None = None,
     **overrides: Any,
-) -> AsyncIterator[ChatChunk]: ...`,
+) -> AsyncIterator[ChatChunk]: ...
+
+def transcribe(
+    audio: bytes | BinaryIO,
+    *,
+    filename: str | None = None,
+    content_type: str | None = None,
+    profile: str | None = None,
+    model: str | None = None,
+    language: str | None = None,
+    prompt: str | None = None,
+) -> TranscriptionResult: ...
+
+async def atranscribe(
+    audio: bytes | BinaryIO,
+    *,
+    filename: str | None = None,
+    content_type: str | None = None,
+    profile: str | None = None,
+    model: str | None = None,
+    language: str | None = None,
+    prompt: str | None = None,
+) -> TranscriptionResult: ...`,
         },
         {
           type: 'p',
@@ -824,6 +925,8 @@ class ChatChunk:
             ['`RateLimitExceeded`', 'Tägliches/monatliches Request-Limit erschöpft'],
             ['`BudgetExceeded`', 'Tägliches/monatliches Budget erschöpft'],
             ['`OpenRouterAPIError`', 'API-Fehler nach Retries und Fallback; trägt `status_code`'],
+            ['`UnsupportedAudioFormat`', 'Transkriptionsaudio ist nicht webm/ogg/mp3/wav/m4a/flac/aac'],
+            ['`AudioTooLarge`', 'Transkriptionsaudio überschreitet das Profillimit (Standard 25 MiB)'],
           ],
         },
         {
