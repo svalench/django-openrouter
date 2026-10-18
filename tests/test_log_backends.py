@@ -273,3 +273,37 @@ def test_override_settings_reloads_backends(tmp_path: Path) -> None:
         OPENROUTER={"LOG_BACKENDS": [{"BACKEND": FILE_BACKEND, "PATH": str(second)}]}
     ):
         assert get_log_backends()[0].config["PATH"] == str(second)
+
+
+@pytest.mark.parametrize("use_async", [False, True])
+def test_file_backends_keep_destinations_separate(tmp_path: Path, use_async: bool) -> None:
+    from django_openrouter.log_backends import make_record
+
+    first = FileBackend(PATH=str(tmp_path / "first.jsonl"))
+    second = FileBackend(PATH=str(tmp_path / "second.jsonl"))
+    record = make_record(profile=None, model=None, status_code=200, error_message=None)
+    if use_async:
+        async_to_sync(second.awrite)(record)
+    else:
+        second.write(record)
+    assert read_jsonl(tmp_path / "first.jsonl") == []
+    assert len(read_jsonl(tmp_path / "second.jsonl")) == 1
+    first.write(record)
+    assert len(read_jsonl(tmp_path / "first.jsonl")) == 1
+    assert len(read_jsonl(tmp_path / "second.jsonl")) == 1
+
+
+@respx.mock
+def test_two_configured_files_receive_one_record_each(
+    respx_mock: respx.MockRouter,
+    tmp_path: Path,
+    or_settings: OpenRouterSettings,
+    profile: UsageProfile,
+) -> None:
+    paths = [tmp_path / "first.jsonl", tmp_path / "second.jsonl"]
+    respx_mock.post(CHAT_URL).mock(return_value=httpx.Response(200, json=completion_payload()))
+    with override_settings(
+        OPENROUTER={"LOG_BACKENDS": [{"BACKEND": FILE_BACKEND, "PATH": str(p)} for p in paths]}
+    ):
+        chat("chat", messages=MESSAGES)
+    assert [len(read_jsonl(path)) for path in paths] == [1, 1]

@@ -835,3 +835,70 @@ def test_profile_changelist_unused_only_emdash(admin_client, profile: UsageProfi
     assert profile.name in content
     assert "—" in content
     assert "200 ms" not in content
+
+
+@pytest.mark.parametrize("permission", [None, "view_openroutermodel"])
+def test_catalog_permissions_prevent_refresh(client, monkeypatch, permission) -> None:
+    from unittest.mock import Mock
+
+    refresh = Mock()
+    monkeypatch.setattr("django_openrouter.admin.ensure_catalog_fresh", refresh)
+    user = User.objects.create_user("catalog-viewer", is_staff=True)
+    if permission:
+        user.user_permissions.add(Permission.objects.get(codename=permission))
+    client.force_login(user)
+    response = client.get(reverse("admin:django_openrouter_openroutermodel_changelist"))
+    assert response.status_code == (200 if permission else 403)
+    refresh.assert_not_called()
+
+
+@pytest.mark.parametrize("permission", [None, "view_openroutermodel", "change_openroutermodel"])
+def test_catalog_assignment_requires_profile_permission(
+    client, profile: UsageProfile, free_model: OpenRouterModel, permission
+) -> None:
+    user = User.objects.create_user("catalog-editor", is_staff=True)
+    if permission:
+        user.user_permissions.add(Permission.objects.get(codename=permission))
+    client.force_login(user)
+    response = client.post(
+        reverse("admin:django_openrouter_openroutermodel_changelist"),
+        {
+            "action": "assign_to_profile",
+            "_selected_action": [free_model.pk],
+            "apply": "1",
+            "profile": profile.pk,
+        },
+    )
+    assert response.status_code in {200, 302, 403}
+    assert not profile.fallback_links.filter(model=free_model).exists()
+
+
+def test_catalog_assignment_with_explicit_permissions(
+    client, profile: UsageProfile, free_model: OpenRouterModel
+) -> None:
+    user = User.objects.create_user("profile-editor", is_staff=True)
+    user.user_permissions.add(
+        *Permission.objects.filter(codename__in=["change_openroutermodel", "change_usageprofile"])
+    )
+    client.force_login(user)
+    response = client.post(
+        reverse("admin:django_openrouter_openroutermodel_changelist"),
+        {
+            "action": "assign_to_profile",
+            "_selected_action": [free_model.pk],
+            "apply": "1",
+            "profile": profile.pk,
+        },
+    )
+    assert response.status_code == 302
+    assert profile.fallback_links.filter(model=free_model).exists()
+
+
+def test_settings_creation_requires_permission(client) -> None:
+    user = User.objects.create_user("settings-viewer", is_staff=True)
+    client.force_login(user)
+    response = client.get(reverse("admin:django_openrouter_openroutersettings_add"))
+    assert response.status_code == 403
+    response = client.get(reverse("admin:django_openrouter_openroutersettings_changelist"))
+    assert response.status_code == 403
+    assert not OpenRouterSettings.objects.exists()

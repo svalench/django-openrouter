@@ -189,3 +189,51 @@ def test_ensure_catalog_fresh_uses_cache(
     second = ensure_catalog_fresh()
     assert second is None
     assert models_route.call_count == 1
+
+
+@pytest.mark.parametrize(
+    "details",
+    [
+        "https://external.example/endpoints",
+        "http://openrouter.ai/api/v1/models/a/b/endpoints",
+        "https://openrouter.ai:8443/endpoints",
+        "https://user:password@openrouter.ai/endpoints",
+        "//external.example/endpoints",
+    ],
+)
+@respx.mock
+def test_catalog_links_cannot_redirect_authorization(
+    respx_mock: respx.MockRouter, details: str
+) -> None:
+    item = _item("a/b", "Synthetic")
+    item["links"] = {"details": details}
+    respx_mock.get(MODELS_URL).mock(return_value=httpx.Response(200, json=_payload(item)))
+    canonical = respx_mock.get("https://openrouter.ai/api/v1/models/a/b/endpoints").mock(
+        return_value=httpx.Response(200, json={"data": {"endpoints": []}})
+    )
+    other = respx_mock.route().mock(return_value=httpx.Response(200, json={}))
+    sync_openrouter_models(api_key="synthetic-audit-key", enrich_stats=True)
+    assert canonical.called
+    assert not other.called
+
+
+@pytest.mark.parametrize(
+    "details",
+    [
+        "https://openrouter.ai/api/v1/models/a/b/endpoints",
+        "/api/v1/models/a/b/endpoints",
+    ],
+)
+def test_same_origin_catalog_links_are_supported(details: str) -> None:
+    from django_openrouter.sync import _endpoints_url
+
+    assert _endpoints_url(
+        "https://openrouter.ai/api/v1", {"links": {"details": details}}, "a/b"
+    ) == ("https://openrouter.ai/api/v1/models/a/b/endpoints")
+
+
+def test_canonical_endpoint_encodes_untrusted_model_id() -> None:
+    from django_openrouter.sync import _endpoints_url
+
+    result = _endpoints_url("https://openrouter.ai/api/v1", {}, "../a?x=#part")
+    assert result == "https://openrouter.ai/api/v1/models/%2E%2E/a%3Fx%3D%23part/endpoints"

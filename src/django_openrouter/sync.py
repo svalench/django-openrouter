@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 from django.db import transaction
@@ -27,7 +28,6 @@ from django_openrouter.parameter_size import parse_parameter_size
 _ENDPOINTS_CONCURRENCY = 16
 _ENDPOINTS_BUDGET_SEC = 15.0
 _ENDPOINTS_REQUEST_TIMEOUT = 5.0
-_API_V1_SUFFIX = "/api/v1"
 
 
 @dataclass(frozen=True)
@@ -133,16 +133,29 @@ def _parse_endpoints(payload: object) -> list[dict[str, Any]]:
 
 def _endpoints_url(base_url: str, item: dict[str, Any], model_id: str) -> str:
     """URL статистики провайдеров: links.details или /models/{id}/endpoints."""
+    # Preserve the model namespace separator, but never allow path traversal/query injection.
+    encoded_id = "/".join(
+        "%2E" * len(part) if part in {".", ".."} else quote(part, safe="")
+        for part in model_id.split("/")
+    )
+    canonical = f"{base_url}/models/{encoded_id}/endpoints"
     links = item.get("links") if isinstance(item.get("links"), dict) else {}
     details = links.get("details") if isinstance(links, dict) else None
-    if isinstance(details, str) and details.startswith("http"):
-        return details
-    if isinstance(details, str) and details.startswith("/"):
-        origin = base_url
-        if origin.endswith(_API_V1_SUFFIX):
-            origin = origin[: -len(_API_V1_SUFFIX)]
-        return origin.rstrip("/") + details
-    return f"{base_url}/models/{model_id}/endpoints"
+    if not isinstance(details, str) or not details.startswith(("http", "/")):
+        return canonical
+    try:
+        base = httpx.URL(base_url)
+        candidate = base.join(details)
+    except httpx.InvalidURL:
+        return canonical
+    # Catalog metadata must not send the configured API bearer to another origin.
+    if candidate.userinfo or (candidate.scheme, candidate.host, candidate.port) != (
+        base.scheme,
+        base.host,
+        base.port,
+    ):
+        return canonical
+    return str(candidate)
 
 
 def _fetch_endpoint_stats(

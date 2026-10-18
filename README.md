@@ -14,6 +14,11 @@ Your product code (translation, chat, summarization, …) talks to OpenRouter th
 Requires Python 3.11+ and Django 4.2+ (subject to Django's Python compatibility).
 This is a third-party integration, not an official OpenRouter SDK.
 
+For production, use Django 5.2.18+ or the latest patched release in a
+[currently supported Django series](https://www.djangoproject.com/download/#supported-versions).
+Compatibility tests for Django 4.2, 5.0 and 5.1 do not imply security support;
+those series are end-of-life and may remain affected by upstream advisories.
+
 ## Why not `settings.py`?
 
 Hardcoding `OPENROUTER_MODEL = "anthropic/claude-3.5-sonnet"` means a deploy to change models, budgets or a kill switch. `django-openrouter` stores that runtime policy in the database, caches it, and enforces limits before every request.
@@ -173,7 +178,7 @@ Retries (`max_retries` in admin) apply to `408`, `425`, `429`, `5xx` and transpo
 
 `ChatResult` also exposes `finish_reason`, `tool_calls` (merged from stream deltas too) and `reasoning`. `cost_usd` is the amount OpenRouter actually billed (`usage.cost`); `catalog_cost_usd` is the catalog estimate for reconciliation.
 
-`model=` can reorder only models already configured in that profile; it cannot introduce a model outside the profile chain.
+`model=` can reorder only models already configured in that profile; it cannot introduce a model outside the profile chain. The upstream `models=` override is rejected: configure fallback models in the usage profile so each attempt is checked and budgeted locally.
 
 Profiles with limits atomically reserve a request slot before each HTTP attempt. Request limits count successful, in-flight and interrupted (`499`) attempts; retries that failed with an HTTP error do not consume the limit. For budgets, the reservation uses the model's full context window at the highest of its per-token catalog prices (`prompt`, `completion`, `input_cache_read`, `input_cache_write`, `internal_reasoning`), plus per-request prices (`request`, `web_search`) and `image` × the number of `image_url` parts in the messages; on successful completion the row is reconciled to reported usage. This deliberately rejects calls when the remaining budget cannot cover that worst case, even if the likely response would be cheap. A budgeted model needs valid catalog prices, a context length and text output (`text+image->text` is fine); other non-zero price keys (e.g. `audio`) are rejected as unbounded. Failed or interrupted calls (including cancelled async tasks, logged as `499`) retain their reservation because their final charge may be unknown; inspect the request log and provider billing before manually correcting these rows. Provider-side limits remain advisable because catalog pricing or provider charges can change independently of this package.
 
