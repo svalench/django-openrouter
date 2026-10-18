@@ -1,0 +1,10 @@
+---
+description: Django lookups and numeric helpers that fail on this project's SQLite test suite
+globs: src/**/*.py,tests/**/*.py
+alwaysApply: false
+---
+
+# SQLite и числовые хелперы
+
+- `JSONField.__contains` на SQLite поднимает `NotSupportedError`. Для фильтров каталога используй строковое поле `modality` (`modality__contains="transcription"`), а не `output_modalities__contains`.
+- `max(iterable, default)` — только через `default=`. Вызов `max(generator, Decimal("0"))` сравнивает Decimal с генератором и падает.

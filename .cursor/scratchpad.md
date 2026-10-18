@@ -36,3 +36,11 @@ DONE
 - 402 → только бесплатные модели; неудачные HTTP-попытки не съедают лимит запросов; chat() без stream=True всегда JSON
 - pytest 215 ok, ruff, mypy, makemigrations ok; README обновлён
 DONE
+
+## 2026-10-18 — speech-to-text 0.4.0
+- профили kind=transcription + default_transcription_profile, без отдельного singleton
+- sync каталога transcription, transcribe/atranscribe, миграция 0009
+- pytest 265 ok, coverage 87.34%, ruff, mypy
+- python -m build + twine check --strict: django_openrouter-0.4.0 sdist и wheel PASSED
+- PostgreSQL-джоба локально не запускалась: pg_isready нет
+DONE

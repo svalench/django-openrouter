@@ -48,9 +48,34 @@ def _optional_price(value: object) -> Decimal | None:
         return None
 
 
+def _output_modalities(item: dict[str, Any]) -> list[str]:
+    """output_modalities из architecture или с корня объекта каталога."""
+    architecture = item.get("architecture") or {}
+    raw = architecture.get("output_modalities")
+    if raw is None:
+        raw = item.get("output_modalities") or []
+    if isinstance(raw, str):
+        return [raw] if raw else []
+    if isinstance(raw, list):
+        return [str(part) for part in raw if part]
+    return []
+
+
+def _item_is_transcription(item: dict[str, Any]) -> bool:
+    """Модель из каталога речи-в-текст, а не обычный chat-item."""
+    if any(part == "transcription" for part in _output_modalities(item)):
+        return True
+    architecture = item.get("architecture") or {}
+    modality = str(architecture.get("modality") or item.get("modality") or "")
+    return "transcription" in modality
+
+
 def _defaults_from_remote(item: dict[str, Any]) -> dict[str, Any]:
     architecture = item.get("architecture") or {}
-    modality = architecture.get("modality") or item.get("modality") or ""
+    modality = str(architecture.get("modality") or item.get("modality") or "")
+    # Админка фильтрует по строке modality (JSON contains на SQLite недоступен).
+    if _item_is_transcription(item) and "transcription" not in modality:
+        modality = f"{modality}+transcription" if modality else "audio->transcription"
     pricing = item.get("pricing") or {}
     pricing_dict = pricing if isinstance(pricing, dict) else {}
     size = parse_parameter_size(item.get("id"), item.get("name"), item.get("description"))
@@ -62,6 +87,7 @@ def _defaults_from_remote(item: dict[str, Any]) -> dict[str, Any]:
         "completion_price": _optional_price(pricing_dict.get("completion")),
         "supported_parameters": item.get("supported_parameters") or [],
         "modality": str(modality),
+        "output_modalities": _output_modalities(item),
         "parameter_count": size.count if size is not None else None,
         "parameter_label": size.label if size is not None else "",
         "last_synced_at": timezone.now(),
@@ -222,6 +248,45 @@ def _enrich_endpoint_stats(
         )
 
 
+def _fetch_model_list(
+    http: httpx.Client,
+    url: str,
+    headers: dict[str, str],
+    params: dict[str, str] | None = None,
+) -> list[dict[str, Any]]:
+    """GET /models. Неожиданная форма ответа — ConfigurationError до записи в БД."""
+    response = http.get(url, headers=headers, params=params)
+    response.raise_for_status()
+    payload = response.json()
+    remote = payload.get("data") if isinstance(payload, dict) else payload
+    if not isinstance(remote, list):
+        raise ConfigurationError(_("Unexpected OpenRouter /models response."))
+    return [item for item in remote if isinstance(item, dict)]
+
+
+def _merge_catalogs(
+    chat_items: list[dict[str, Any]],
+    transcription_items: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """
+    Чат-каталог как раньше. STT-модели добавляются вторым ответом и не вытесняют
+    chat-запись, если второй ответ случайно повторил обычную модель.
+    """
+    merged: dict[str, dict[str, Any]] = {}
+    for item in chat_items:
+        model_id = str(item.get("id") or "")
+        if model_id:
+            merged[model_id] = item
+    for item in transcription_items:
+        model_id = str(item.get("id") or "")
+        if not model_id:
+            continue
+        if model_id in merged and not _item_is_transcription(item):
+            continue
+        merged[model_id] = item
+    return list(merged.values())
+
+
 def _resolve_sync_key(api_key: str | None, stored: str) -> str:
     key = api_key or resolve_api_key(stored)
     if not key:
@@ -241,6 +306,10 @@ def sync_openrouter_models(
     Upsert каталога. Существующие строки не удаляются.
     Исчезнувшие модели помечаются is_active=False.
     is_active у присутствующих в API не перезаписывается (решение админа).
+
+    Чат-каталог — GET /models без фильтра (как раньше). Модели речи-в-текст
+    добавляются из GET /models?output_modalities=transcription и не деактивируют
+    chat-модели. Ошибка второго запроса откатывает синк целиком.
     """
     settings_obj = OpenRouterSettings.load()
     key = _resolve_sync_key(api_key, settings_obj.api_key)
@@ -250,13 +319,12 @@ def sync_openrouter_models(
     url = f"{base_url}/models"
     headers = {"Authorization": f"Bearer {key}"}
     with httpx.Client(timeout=request_timeout) as http:
-        response = http.get(url, headers=headers)
-        response.raise_for_status()
-        payload = response.json()
-
-        remote = payload.get("data") if isinstance(payload, dict) else payload
-        if not isinstance(remote, list):
-            raise ConfigurationError(_("Unexpected OpenRouter /models response."))
+        # Оба каталога читаем до транзакции: ошибка STT не должна деактивировать чат.
+        chat_items = _fetch_model_list(http, url, headers)
+        transcription_items = _fetch_model_list(
+            http, url, headers, params={"output_modalities": "transcription"}
+        )
+        remote = _merge_catalogs(chat_items, transcription_items)
 
         created = 0
         updated = 0
@@ -264,7 +332,7 @@ def sync_openrouter_models(
         catalog_items: list[dict[str, Any]] = []
         with transaction.atomic():
             for item in remote:
-                if not isinstance(item, dict) or not item.get("id"):
+                if not item.get("id"):
                     continue
                 model_id = str(item["id"])
                 seen_ids.add(model_id)

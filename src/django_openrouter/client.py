@@ -18,7 +18,7 @@ from collections.abc import (
 from contextlib import aclosing, closing
 from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
-from typing import Any
+from typing import TYPE_CHECKING, Any, BinaryIO
 
 import httpx
 from asgiref.sync import sync_to_async
@@ -52,10 +52,16 @@ from django_openrouter.log_backends import (
 from django_openrouter.models import (
     CLIENT_CLOSED_STATUS,
     OpenRouterModel,
+    ProfileKind,
     RequestLog,
     UsageProfile,
 )
 from django_openrouter.rules import assert_model_allowed, check_limits, reserve_request
+
+if TYPE_CHECKING:
+    from django.core.files.base import File
+
+    from django_openrouter.transcription import TranscriptionResult
 
 logger = logging.getLogger("django_openrouter")
 
@@ -597,6 +603,11 @@ def _prepare(
         )
     snapshot = _resolve_profile(cfg, profile_name)
     profile = UsageProfile.objects.select_related("model").get(pk=snapshot.pk)
+    if profile.kind != ProfileKind.CHAT:
+        raise ConfigurationError(
+            _("Profile %(name)r is a %(kind)s profile; use transcribe() for speech-to-text.")
+            % {"name": profile.name, "kind": profile.kind}
+        )
     check_limits(profile)
     chain = _allowed_models(profile, _model_chain(profile, overrides))
     return cfg, profile, chain
@@ -667,6 +678,30 @@ class OpenRouterClient:
     def stream(self, messages: ChatMessages, **overrides: Any) -> Generator[ChatChunk, None, None]:
         with closing(self._run(messages, overrides, emit=True)) as chunks:
             yield from chunks
+
+    def transcribe(
+        self,
+        audio: bytes | bytearray | File | BinaryIO,
+        *,
+        filename: str | None = None,
+        content_type: str | None = None,
+        model: str | None = None,
+        language: str | None = None,
+        prompt: str | None = None,
+    ) -> TranscriptionResult:
+        """Транскрипция аудио профилем этого клиента."""
+        from django_openrouter.transcription import transcribe
+
+        result = transcribe(
+            audio,
+            filename=filename,
+            content_type=content_type,
+            profile=self.profile_name,
+            model=model,
+            language=language,
+            prompt=prompt,
+        )
+        return result
 
     def _run(
         self, messages: ChatMessages, overrides: dict[str, Any], *, emit: bool
@@ -828,6 +863,30 @@ class AsyncOpenRouterClient:
         async with aclosing(self._run(messages, overrides, emit=True)) as chunks:
             async for chunk in chunks:
                 yield chunk
+
+    async def transcribe(
+        self,
+        audio: bytes | bytearray | File | BinaryIO,
+        *,
+        filename: str | None = None,
+        content_type: str | None = None,
+        model: str | None = None,
+        language: str | None = None,
+        prompt: str | None = None,
+    ) -> TranscriptionResult:
+        """Асинхронная транскрипция аудио профилем этого клиента."""
+        from django_openrouter.transcription import atranscribe
+
+        result = await atranscribe(
+            audio,
+            filename=filename,
+            content_type=content_type,
+            profile=self.profile_name,
+            model=model,
+            language=language,
+            prompt=prompt,
+        )
+        return result
 
     async def _run(
         self, messages: ChatMessages, overrides: dict[str, Any], *, emit: bool

@@ -17,6 +17,7 @@ from django_openrouter.log_backends import DatabaseBackend, get_log_backends
 from django_openrouter.models import (
     RESERVATION_PENDING_MESSAGE,
     OpenRouterModel,
+    ProfileKind,
     RequestLog,
     UsageProfile,
 )
@@ -78,8 +79,71 @@ def _maximum_model_cost(model: OpenRouterModel, image_count: int = 0) -> Decimal
     )
 
 
+def maximum_transcription_cost(
+    model: OpenRouterModel, *, max_audio_seconds: int | None
+) -> Decimal:
+    """Верхняя граница стоимости STT: окно контекста или секунды × цена каталога."""
+    prices = _catalog_prices(model)
+    known = _PER_TOKEN_PRICES | _PER_REQUEST_PRICES | {_PER_IMAGE_PRICE}
+    unbounded = sorted(key for key, price in prices.items() if price and key not in known)
+    if unbounded:
+        raise ConfigurationError(
+            _(
+                "Budget reservations require bounded transcription pricing; "
+                "%(model_id)r has unbounded charges: %(keys)s."
+            )
+            % {"model_id": model.model_id, "keys": ", ".join(unbounded)}
+        )
+    per_request = sum(
+        (price for key, price in prices.items() if key in _PER_REQUEST_PRICES), Decimal("0")
+    )
+    token_prices = [price for key, price in prices.items() if key in _PER_TOKEN_PRICES]
+    token_price = max(token_prices) if token_prices else Decimal("0")
+    if model.context_length:
+        return (token_price * model.context_length + per_request).quantize(
+            _COST_QUANTUM, rounding=ROUND_UP
+        )
+    if not max_audio_seconds:
+        raise ConfigurationError(
+            _(
+                "Duration-priced model %(model_id)r needs max_audio_seconds on the "
+                "transcription profile to reserve a budget."
+            )
+            % {"model_id": model.model_id}
+        )
+    return (token_price * max_audio_seconds + per_request).quantize(
+        _COST_QUANTUM, rounding=ROUND_UP
+    )
+
+
+def _catalog_prices(model: OpenRouterModel) -> dict[str, Decimal]:
+    """Цены каталога. Те же ошибки, что у резерва чата, если pricing битый."""
+    pricing = model.pricing or {}
+    invalid = ConfigurationError(
+        _("Model %(model_id)r needs valid catalog pricing for budget reservations.")
+        % {"model_id": model.model_id}
+    )
+    try:
+        prices = {
+            str(key): Decimal(str(value or 0))
+            for key, value in pricing.items()
+            if key not in _NON_PRICE_KEYS
+        }
+    except (TypeError, ValueError, InvalidOperation) as exc:
+        raise invalid from exc
+    if "prompt" not in prices or "completion" not in prices:
+        raise invalid
+    if any(not price.is_finite() or price < 0 for price in prices.values()):
+        raise ConfigurationError(_("Model pricing must be finite and non-negative."))
+    return prices
+
+
 def reserve_request(
-    profile: UsageProfile, model: OpenRouterModel, *, image_count: int = 0
+    profile: UsageProfile,
+    model: OpenRouterModel,
+    *,
+    image_count: int = 0,
+    estimated_cost: Decimal | None = None,
 ) -> RequestLog | None:
     """Atomically reserve one request and its worst-case catalog cost."""
     has_limits = any(
@@ -94,17 +158,24 @@ def reserve_request(
     if not has_limits:
         return None
     has_budget = profile.budget_usd_per_day is not None or profile.budget_usd_per_month is not None
-    estimated_cost = _maximum_model_cost(model, image_count) if has_budget else Decimal("0")
+    if has_budget:
+        cost = (
+            estimated_cost
+            if estimated_cost is not None
+            else _maximum_model_cost(model, image_count)
+        )
+    else:
+        cost = Decimal("0")
     with transaction.atomic():
         locked = UsageProfile.objects.select_for_update().get(pk=profile.pk)
         check_limits(locked)
         day, month = locked.usage_summary()
         if locked.budget_usd_per_day is not None and (
-            day.total_cost + estimated_cost > locked.budget_usd_per_day
+            day.total_cost + cost > locked.budget_usd_per_day
         ):
             raise BudgetExceeded(_("Insufficient daily budget for a conservative reservation."))
         if locked.budget_usd_per_month is not None and (
-            month.total_cost + estimated_cost > locked.budget_usd_per_month
+            month.total_cost + cost > locked.budget_usd_per_month
         ):
             raise BudgetExceeded(_("Insufficient monthly budget for a conservative reservation."))
         return RequestLog.objects.create(
@@ -112,7 +183,7 @@ def reserve_request(
             model=model,
             status_code=0,
             error_message=RESERVATION_PENDING_MESSAGE,
-            cost_usd=estimated_cost,
+            cost_usd=cost,
         )
 
 
@@ -186,5 +257,15 @@ def assert_model_allowed(profile: UsageProfile, model: OpenRouterModel) -> None:
     if profile.only_free_models and not model.is_free:
         raise ModelDisabled(
             _("Profile %(name)r allows only free models; %(model_id)r is not free.")
+            % {"name": profile.name, "model_id": model.model_id}
+        )
+    if profile.kind == ProfileKind.TRANSCRIPTION and not model.is_transcription:
+        raise ModelDisabled(
+            _("Profile %(name)r only allows transcription models; %(model_id)r is not one.")
+            % {"name": profile.name, "model_id": model.model_id}
+        )
+    if profile.kind == ProfileKind.CHAT and model.is_transcription:
+        raise ModelDisabled(
+            _("Profile %(name)r is a chat profile; %(model_id)r is a transcription model.")
             % {"name": profile.name, "model_id": model.model_id}
         )

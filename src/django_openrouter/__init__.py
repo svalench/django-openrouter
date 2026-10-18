@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-__version__ = "0.3.2"
+__version__ = "0.4.0"
 default_app_config = "django_openrouter.apps.DjangoOpenRouterConfig"
 
 if TYPE_CHECKING:
@@ -32,17 +32,29 @@ if TYPE_CHECKING:
     from django_openrouter.client import (
         stream as stream,
     )
+    from django_openrouter.transcription import (
+        TranscriptionResult as TranscriptionResult,
+    )
+    from django_openrouter.transcription import (
+        atranscribe as atranscribe,
+    )
+    from django_openrouter.transcription import (
+        transcribe as transcribe,
+    )
 
 __all__ = [
     "AsyncOpenRouterClient",
     "ChatChunk",
     "ChatResult",
     "OpenRouterClient",
+    "TranscriptionResult",
     "__version__",
     "achat",
     "astream",
+    "atranscribe",
     "chat",
     "stream",
+    "transcribe",
 ]
 
 _EXPORTS = frozenset(__all__) - {"__version__"}
@@ -63,5 +75,14 @@ def __getattr__(name: str) -> Any:
             "chat": client_module.chat,
             "stream": client_module.stream,
         }
-        return mapping[name]
+        if name in mapping:
+            return mapping[name]
+        from django_openrouter import transcription as transcription_module
+
+        transcription_mapping = {
+            "TranscriptionResult": transcription_module.TranscriptionResult,
+            "atranscribe": transcription_module.atranscribe,
+            "transcribe": transcription_module.transcribe,
+        }
+        return transcription_mapping[name]
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

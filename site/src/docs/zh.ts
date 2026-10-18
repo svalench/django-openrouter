@@ -4,7 +4,7 @@ export const zh: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: '面向 Django 的 OpenRouter — 通过管理后台管理模型、用量配置、预算和请求日志',
-    version: '0.3.1',
+    version: '0.4.0',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -363,6 +363,37 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
             ['`latency_ms`', '`int`', '成功尝试的延迟'],
             ['`raw`', '`dict`', 'OpenRouter 的原始 JSON 响应'],
           ],
+        },
+      ],
+    },
+    {
+      id: 'transcription',
+      group: '指南',
+      title: '语音转文字',
+      lead: 'transcribe() / atranscribe() 把音频发到 OpenRouter POST /api/v1/audio/transcriptions。配置档、预算和请求日志与聊天相同。',
+      blocks: [
+        {
+          type: 'p',
+          text: '转写模型不在默认聊天目录里。`sync_models` 还会请求 `GET /api/v1/models?output_modalities=transcription`，并以 modality `audio->transcription` 保存。创建一个 `kind` 为 `transcription` 的使用配置档，只选择这些模型，并按需设置语言、大小上限和 `max_audio_seconds`（按时长计价的模型如 Whisper 必须设置，才能预留预算）。默认配置档在 OpenRouter 设置里，而不是单独的单例。',
+        },
+        {
+          type: 'p',
+          text: '库不依赖 ffmpeg。请发送 webm、ogg、mp3、wav、m4a、flac 或 aac（浏览器 MediaRecorder 的 blob 即可）。若要先转码，把 `OPENROUTER["AUDIO_PREPARE"]` 指到 `(data, *, filename, content_type) -> (bytes, filename, content_type)`。`UnsupportedAudioFormat` 和 `AudioTooLarge`（默认 25 MiB）在 HTTP 之前抛出。总开关和缺少密钥仍然是 `OpenRouterDisabled` 与 `ConfigurationError`。',
+        },
+        {
+          type: 'code',
+          lang: 'python',
+          title: 'views.py',
+          code: `from django_openrouter import transcribe
+
+result = transcribe(
+    request.FILES["audio"],
+    filename=request.FILES["audio"].name,
+    content_type=request.FILES["audio"].content_type,
+    profile="dictation",
+    language="zh",
+)
+print(result.text, result.cost_usd, result.duration_seconds)`,
         },
       ],
     },
