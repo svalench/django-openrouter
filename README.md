@@ -14,6 +14,11 @@ Your product code (translation, chat, summarization, …) talks to OpenRouter th
 Requires Python 3.11+ and Django 4.2+ (subject to Django's Python compatibility).
 This is a third-party integration, not an official OpenRouter SDK.
 
+For production, use Django 5.2.18+ or the latest patched release in a
+[currently supported Django series](https://www.djangoproject.com/download/#supported-versions).
+Compatibility tests for Django 4.2, 5.0 and 5.1 do not imply security support;
+those series are end-of-life and may remain affected by upstream advisories.
+
 ## Why not `settings.py`?
 
 Hardcoding `OPENROUTER_MODEL = "anthropic/claude-3.5-sonnet"` means a deploy to change models, budgets or a kill switch. `django-openrouter` stores that runtime policy in the database, caches it, and enforces limits before every request.

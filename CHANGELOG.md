@@ -3,7 +3,9 @@
 ## 0.3.2 — 2026-10-18
 
 Security and reliability update. Users should upgrade, especially installations
-that grant Django admin access to non-superuser staff.
+that grant Django admin access to non-superuser staff. Use Django 5.2.18+ or
+the latest patched release of a supported Django series in production; legacy
+Django compatibility tests are not a security support guarantee.
 
 - Enforce Django permissions for settings creation, catalog actions and usage
   profile assignments. Read-only catalog access no longer refreshes remote data.
