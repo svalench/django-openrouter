@@ -370,30 +370,108 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
       id: 'transcription',
       group: '指南',
       title: '语音转文字',
-      lead: 'transcribe() / atranscribe() 把音频发到 OpenRouter POST /api/v1/audio/transcriptions。配置档、预算和请求日志与聊天相同。',
+      lead: 'transcribe() / atranscribe() 把浏览器或服务器上的音频发到 OpenRouter POST /api/v1/audio/transcriptions。配置档、预算和请求日志与聊天是同一套机制。',
       blocks: [
         {
           type: 'p',
-          text: '转写模型不在默认聊天目录里。`sync_models` 还会请求 `GET /api/v1/models?output_modalities=transcription`，并以 modality `audio->transcription` 保存。创建一个 `kind` 为 `transcription` 的使用配置档，只选择这些模型，并按需设置语言、大小上限和 `max_audio_seconds`（按时长计价的模型如 Whisper 必须设置，才能预留预算）。默认配置档在 OpenRouter 设置里，而不是单独的单例。',
+          text: '转写模型不在默认的聊天目录里。`sync_models` 还会请求 `GET /api/v1/models?output_modalities=transcription`，并以 modality `audio->transcription` 和 `output_modalities: ["transcription"]` 保存。聊天同步除此之外不变：从两份目录里都消失的模型会被停用，只做转写的模型不会仅仅因为不在聊天列表里就被停用。',
         },
+        { type: 'h3', text: '配置转写配置档' },
         {
           type: 'p',
-          text: '库不依赖 ffmpeg。请发送 webm、ogg、mp3、wav、m4a、flac 或 aac（浏览器 MediaRecorder 的 blob 即可）。若要先转码，把 `OPENROUTER["AUDIO_PREPARE"]` 指到 `(data, *, filename, content_type) -> (bytes, filename, content_type)`。`UnsupportedAudioFormat` 和 `AudioTooLarge`（默认 25 MiB）在 HTTP 之前抛出。总开关和缺少密钥仍然是 `OpenRouterDisabled` 与 `ConfigurationError`。',
+          text: '在**使用配置档**里把 **Kind** 设为 **Transcription**，只选择转写模型（自动完成会按类型字段过滤），并按需设置语言、上传大小和时长上限。如果希望 `transcribe()` 不传 slug 也能工作，在 **OpenRouter settings** 里把该配置档选为 **Default transcription profile**。API 密钥、base URL 和总开关仍在同一行设置上。没有单独的 STT 单例：预算和日志本来就在配置档上，应用可以把听写和会议转写分开。',
         },
+        {
+          type: 'table',
+          head: ['配置档字段', '作用'],
+          rows: [
+            ['`kind`', '`chat`（默认）或 `transcription`'],
+            ['`language`', 'ISO-639-1 提示（`en`、`ru`）。留空表示自动检测。聊天时忽略'],
+            ['`max_audio_bytes`', '上传上限。留空为 25 MiB'],
+            ['`max_audio_seconds`', '按时长计价的模型预留的最坏秒数（Whisper 的 context length 为 0，`prompt` 价格按秒计）'],
+            ['`max_requests_*` / `budget_usd_*`', '与聊天相同的按日、按月限额。预留会按 `usage.cost` 结算'],
+          ],
+        },
+        {
+          type: 'callout',
+          kind: 'warning',
+          title: '按时长计费的预算需要 max_audio_seconds',
+          text: '带美元预算的转写配置档如果使用按时长计价的模型，在设置 `max_audio_seconds` 之前会抛出 `ConfigurationError`。按 token 计价的 STT 模型（context length 不为 0）会预留 `context_length ×` 最高的单 token 价格，思路与聊天相同。',
+        },
+        { type: 'h3', text: '调用 transcribe()' },
         {
           type: 'code',
           lang: 'python',
           title: 'views.py',
-          code: `from django_openrouter import transcribe
+          code: `from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 
-result = transcribe(
-    request.FILES["audio"],
-    filename=request.FILES["audio"].name,
-    content_type=request.FILES["audio"].content_type,
-    profile="dictation",
-    language="zh",
+from django_openrouter import transcribe
+from django_openrouter.exceptions import (
+    AudioTooLarge,
+    BudgetExceeded,
+    ConfigurationError,
+    OpenRouterDisabled,
+    UnsupportedAudioFormat,
 )
-print(result.text, result.cost_usd, result.duration_seconds)`,
+
+@require_POST
+def dictate(request):
+    blob = request.FILES["audio"]
+    try:
+        result = transcribe(
+            blob,
+            filename=blob.name,
+            content_type=blob.content_type,
+            profile="dictation",  # 或 None → 默认转写配置档
+            language="ru",
+        )
+    except OpenRouterDisabled:
+        return JsonResponse({"error": "disabled"}, status=503)
+    except (UnsupportedAudioFormat, AudioTooLarge, ConfigurationError) as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+    except BudgetExceeded:
+        return JsonResponse({"error": "budget"}, status=429)
+    return JsonResponse(
+        {
+            "text": result.text,
+            "model": result.model_used,
+            "cost_usd": str(result.cost_usd),
+            "seconds": None if result.duration_seconds is None else str(result.duration_seconds),
+        }
+    )`,
+        },
+        {
+          type: 'p',
+          text: '本库不依赖 ffmpeg。请发送 OpenRouter 接受的容器：webm、ogg、mp3、wav、m4a、flac 或 aac。浏览器 `MediaRecorder` 的 blob（`audio/webm;codecs=opus`）即可。若要先转码，把 `OPENROUTER["AUDIO_PREPARE"]` 设为 dotted path。该可调用对象接收 `(data, *, filename, content_type)`，必须返回 `(bytes, filename, content_type)`。',
+        },
+        {
+          type: 'code',
+          lang: 'javascript',
+          title: 'browser',
+          code: `const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+const chunks = [];
+recorder.ondataavailable = (event) => {
+  if (event.data.size) chunks.push(event.data);
+};
+recorder.onstop = async () => {
+  const blob = new Blob(chunks, { type: recorder.mimeType });
+  const body = new FormData();
+  body.append("audio", blob, "dictation.webm");
+  const response = await fetch("/dictate/", {
+    method: "POST",
+    body,
+    headers: { "X-CSRFToken": csrfToken },
+  });
+  const payload = await response.json();
+  console.log(payload.text);
+};
+recorder.start();`,
+        },
+        {
+          type: 'p',
+          text: '`atranscribe()` 以及 `OpenRouterClient.transcribe` / `AsyncOpenRouterClient.transcribe` 是同一次调用。`model=` 只能重排该配置档里已有的模型。`prompt=` 会放进 JSON 正文；OpenRouter 目前会忽略 multipart API 顶层的 prompt，因此把它当作可选提示，而不是保证生效的词表偏向。`TranscriptionResult` 包含 `text`、token 计数、`duration_seconds`、`cost_usd`、`catalog_cost_usd`、`model_used`、`latency_ms` 和 `raw`。',
         },
       ],
     },
@@ -408,7 +486,7 @@ print(result.text, result.cost_usd, result.duration_seconds)`,
 python manage.py sync_models --api-key sk-or-...  # one-off key, never stored` },
         {
           type: 'p',
-          text: '该命令 upsert 目录（`GET /api/v1/models`），并用 `/endpoints` 指标丰富它 — p50 延迟和吞吐量。它从不删除任何东西：从 OpenRouter 消失的模型会设为 `is_active=False`。引用该模型的配置不会损坏 — 调用会开始以 `ModelDisabled` 失败，直到你切换配置。',
+          text: '该命令会 upsert 聊天目录（`GET /api/v1/models`）和转写目录（`GET /api/v1/models?output_modalities=transcription`），再用 `/endpoints` 指标丰富两者 — p50 延迟和吞吐量。它从不删除任何东西：从两份列表中都消失的模型会设为 `is_active=False`。引用该模型的配置不会损坏 — 调用会开始以 `ModelDisabled` 失败，直到你切换配置。',
         },
         { type: 'h3', text: '模型字段' },
         {
@@ -425,7 +503,8 @@ python manage.py sync_models --api-key sk-or-...  # one-off key, never stored` }
             ['`parameter_count`', '近似参数量（70B → 70000000000），用于排序'],
             ['`parameter_label`', '带单位的显示规模：`70B`、`340M`、`8x7B`'],
             ['`supported_parameters`', '支持的参数列表'],
-            ['`modality`', '模态，例如 `text->text`'],
+            ['`modality`', '模态，例如 `text->text` 或 `audio->transcription`'],
+            ['`output_modalities`', '目录中的列表，例如 `["text"]` 或 `["transcription"]`'],
             ['`is_active`', '模型能否在配置中选用'],
             ['`last_synced_at`', '同步上次看到该模型的时间'],
             ['`is_free`（属性）', '若 `prompt`/`completion`/`request` 价格均为零则为 `True`'],
@@ -764,7 +843,29 @@ async def astream(
     profile_name: str | None = None,
     messages: Sequence[Mapping[str, Any]] | None = None,
     **overrides: Any,
-) -> AsyncIterator[ChatChunk]: ...`,
+) -> AsyncIterator[ChatChunk]: ...
+
+def transcribe(
+    audio: bytes | BinaryIO,
+    *,
+    filename: str | None = None,
+    content_type: str | None = None,
+    profile: str | None = None,
+    model: str | None = None,
+    language: str | None = None,
+    prompt: str | None = None,
+) -> TranscriptionResult: ...
+
+async def atranscribe(
+    audio: bytes | BinaryIO,
+    *,
+    filename: str | None = None,
+    content_type: str | None = None,
+    profile: str | None = None,
+    model: str | None = None,
+    language: str | None = None,
+    prompt: str | None = None,
+) -> TranscriptionResult: ...`,
         },
         {
           type: 'p',
@@ -824,6 +925,8 @@ class ChatChunk:
             ['`RateLimitExceeded`', '每日/每月请求限额已用尽'],
             ['`BudgetExceeded`', '每日/每月预算已用尽'],
             ['`OpenRouterAPIError`', '重试和回退后的 API 错误；带有 `status_code`'],
+            ['`UnsupportedAudioFormat`', '转写音频不是 webm/ogg/mp3/wav/m4a/flac/aac'],
+            ['`AudioTooLarge`', '转写音频超过配置档上限（默认 25 MiB）'],
           ],
         },
         {

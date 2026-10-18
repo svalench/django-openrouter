@@ -370,30 +370,108 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
       id: 'transcription',
       group: 'Даведнікі',
       title: 'Маўленне ў тэкст',
-      lead: 'transcribe() / atranscribe() адпраўляюць аўдыё на OpenRouter POST /api/v1/audio/transcriptions. Профілі, бюджэты і журнал — тыя самыя, што ў чата.',
+      lead: 'transcribe() / atranscribe() адпраўляюць аўдыё браўзера або сервера на OpenRouter POST /api/v1/audio/transcriptions. Профілі, бюджэты і журнал запытаў — той самы механізм, што і ў чата.',
       blocks: [
         {
           type: 'p',
-          text: 'Мадэляў транскрыпцыі няма ў чат-каталогу. `sync_models` дадаткова бярэ `GET /api/v1/models?output_modalities=transcription` і захоўвае іх з modality `audio->transcription`. Стварыце профіль з тыпам `transcription`, абярыце толькі гэтыя мадэлі і пры патрэбе мову, ліміт памеру і `max_audio_seconds` (абавязкова, каб рэзерваваць бюджэт для мадэляў з цаной за секунду, напрыклад Whisper). Прафіль па змаўчанні — у наладах OpenRouter, не ў асобным singleton.',
+          text: 'Мадэляў транскрыпцыі няма ў звычайным чат-каталогу. `sync_models` дадаткова запытвае `GET /api/v1/models?output_modalities=transcription` і захоўвае іх з modality `audio->transcription` і `output_modalities: ["transcription"]`. Сінк чата ў астатнім той самы: мадэль, якая знікла з абодвух спісаў, дэактывуецца, а мадэль толькі для транскрыпцыі не выключаецца толькі таму, што яе няма ў чат-спісе.',
         },
+        { type: 'h3', text: 'Наладзіць профіль транскрыпцыі' },
         {
           type: 'p',
-          text: 'Бібліятэка не патрабуе ffmpeg. Дасылайце webm, ogg, mp3, wav, m4a, flac або aac (blob MediaRecorder падыходзіць). Каб перакадаваць, задайце `OPENROUTER["AUDIO_PREPARE"]`: `(data, *, filename, content_type) -> (bytes, filename, content_type)`. `UnsupportedAudioFormat` і `AudioTooLarge` (25 МіБ па змаўчанні) кідаюцца да HTTP. Выключальнік і адсутнасць ключа — па-ранейшаму `OpenRouterDisabled` і `ConfigurationError`.',
+          text: 'У **Профілях выкарыстання** пастаўце **Kind** на **Transcription**, выберыце толькі мадэлі транскрыпцыі (аўтакампліт фільтруецца па полі тыпу) і пры патрэбе мову, ліміт памеру і абмежаванне працягласці. У **OpenRouter settings** укажыце гэты профіль як **Default transcription profile**, калі `transcribe()` павінен працаваць без слага. API-ключ, base URL і kill switch застаюцца на тым жа радку налад. Асобнага singleton для STT няма: бюджэты і логі ўжо жывуць на профілях, і праграма можа трымаць дыктоўку і расшыфроўку сустрэч асобна.',
         },
+        {
+          type: 'table',
+          head: ['Поле профілю', 'Роля'],
+          rows: [
+            ['`kind`', '`chat` (па змаўчанні) або `transcription`'],
+            ['`language`', 'Падказка ISO-639-1 (`en`, `ru`). Пуста = аўтавызначэнне. Для чата ігнаруецца'],
+            ['`max_audio_bytes`', 'Ліміт загрузкі. Пуста = 25 МіБ'],
+            ['`max_audio_seconds`', 'Горшы выпадак у секундах для рэзерву бюджэту мадэляў з цаной за секунду (Whisper: context length 0, цана `prompt` — за секунду)'],
+            ['`max_requests_*` / `budget_usd_*`', 'Тыя самыя дзённыя і месячныя ліміты, што ў чата. Рэзерв сыходзіцца да `usage.cost`'],
+          ],
+        },
+        {
+          type: 'callout',
+          kind: 'warning',
+          title: 'Бюджэт duration-мадэлі патрабуе max_audio_seconds',
+          text: 'Профіль транскрыпцыі з бюджэтам у USD і мадэллю з цаной за секунду кідае `ConfigurationError`, пакуль не зададзены `max_audio_seconds`. Токенныя STT-мадэлі (ненулявы context length) рэзервуюць `context_length ×` найвышэйшую цану за токен — тая ж ідэя, што ў чата.',
+        },
+        { type: 'h3', text: 'Выклік transcribe()' },
         {
           type: 'code',
           lang: 'python',
           title: 'views.py',
-          code: `from django_openrouter import transcribe
+          code: `from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 
-result = transcribe(
-    request.FILES["audio"],
-    filename=request.FILES["audio"].name,
-    content_type=request.FILES["audio"].content_type,
-    profile="dictation",
-    language="be",
+from django_openrouter import transcribe
+from django_openrouter.exceptions import (
+    AudioTooLarge,
+    BudgetExceeded,
+    ConfigurationError,
+    OpenRouterDisabled,
+    UnsupportedAudioFormat,
 )
-print(result.text, result.cost_usd, result.duration_seconds)`,
+
+@require_POST
+def dictate(request):
+    blob = request.FILES["audio"]
+    try:
+        result = transcribe(
+            blob,
+            filename=blob.name,
+            content_type=blob.content_type,
+            profile="dictation",  # або None → профіль транскрыпцыі па змаўчанні
+            language="ru",
+        )
+    except OpenRouterDisabled:
+        return JsonResponse({"error": "disabled"}, status=503)
+    except (UnsupportedAudioFormat, AudioTooLarge, ConfigurationError) as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+    except BudgetExceeded:
+        return JsonResponse({"error": "budget"}, status=429)
+    return JsonResponse(
+        {
+            "text": result.text,
+            "model": result.model_used,
+            "cost_usd": str(result.cost_usd),
+            "seconds": None if result.duration_seconds is None else str(result.duration_seconds),
+        }
+    )`,
+        },
+        {
+          type: 'p',
+          text: 'Бібліятэка не залежыць ад ffmpeg. Дасылайце кантэйнер, які прымае OpenRouter: webm, ogg, mp3, wav, m4a, flac або aac. Блоб браўзернага `MediaRecorder` (`audio/webm;codecs=opus`) падыходзіць. Каб спачатку перакадаваць, задайце `OPENROUTER["AUDIO_PREPARE"]` як dotted path. Функцыя атрымлівае `(data, *, filename, content_type)` і мусіць вярнуць `(bytes, filename, content_type)`.',
+        },
+        {
+          type: 'code',
+          lang: 'javascript',
+          title: 'browser',
+          code: `const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+const chunks = [];
+recorder.ondataavailable = (event) => {
+  if (event.data.size) chunks.push(event.data);
+};
+recorder.onstop = async () => {
+  const blob = new Blob(chunks, { type: recorder.mimeType });
+  const body = new FormData();
+  body.append("audio", blob, "dictation.webm");
+  const response = await fetch("/dictate/", {
+    method: "POST",
+    body,
+    headers: { "X-CSRFToken": csrfToken },
+  });
+  const payload = await response.json();
+  console.log(payload.text);
+};
+recorder.start();`,
+        },
+        {
+          type: 'p',
+          text: '`atranscribe()` і метады `OpenRouterClient.transcribe` / `AsyncOpenRouterClient.transcribe` — той самы выклік. `model=` можа толькі пераставіць мадэль, якая ўжо ёсць у профілі. `prompt=` перадаецца ў JSON-целе; OpenRouter зараз ігнаруе prompt верхняга ўзроўню ў multipart API, таму лічыце яго неабавязковай падказкай, а не гарантаваным зрухам слоўніка. `TranscriptionResult` нясе `text`, лічыльнікі токенаў, `duration_seconds`, `cost_usd`, `catalog_cost_usd`, `model_used`, `latency_ms` і `raw`.',
         },
       ],
     },
@@ -408,7 +486,7 @@ print(result.text, result.cost_usd, result.duration_seconds)`,
 python manage.py sync_models --api-key sk-or-...  # one-off key, never stored` },
         {
           type: 'p',
-          text: 'Каманда робіць upsert каталога (`GET /api/v1/models`) і ўзбагачае яго метрыкамі `/endpoints` — затрымка p50 і прапускная здольнасць. Нічога не выдаляе: мадэлі, якія зніклі з OpenRouter, атрымліваюць `is_active=False`. Профілі, якія спасылаюцца на такую мадэль, не ламаюцца — выклікі пачынаюць падаць з `ModelDisabled`, пакуль вы не пераключыце профіль.',
+          text: 'Каманда робіць upsert чат-каталога (`GET /api/v1/models`) і каталога транскрыпцыі (`GET /api/v1/models?output_modalities=transcription`), затым узбагачае абодва метрыкамі `/endpoints` — затрымка p50 і прапускная здольнасць. Нічога не выдаляе: мадэлі, якія зніклі з абодвух спісаў, атрымліваюць `is_active=False`. Профілі, якія спасылаюцца на такую мадэль, не ламаюцца — выклікі пачынаюць падаць з `ModelDisabled`, пакуль вы не пераключыце профіль.',
         },
         { type: 'h3', text: 'Палі мадэлі' },
         {
@@ -425,7 +503,8 @@ python manage.py sync_models --api-key sk-or-...  # one-off key, never stored` }
             ['`parameter_count`', 'Прыблізная колькасць вагаў (70B → 70000000000), для сартавання'],
             ['`parameter_label`', 'Памер з адзінкай: `70B`, `340M`, `8x7B`'],
             ['`supported_parameters`', 'Спіс падтрыманых параметраў'],
-            ['`modality`', 'Мадальнасць, напрыклад `text->text`'],
+            ['`modality`', 'Мадальнасць, напрыклад `text->text` або `audio->transcription`'],
+            ['`output_modalities`', 'Спіс з каталога, напрыклад `["text"]` або `["transcription"]`'],
             ['`is_active`', 'Ці можна выбраць мадэль у профілях'],
             ['`last_synced_at`', 'Калі сінхранізацыя апошні раз бачыла гэтую мадэль'],
             ['`is_free` (уласнасць)', '`True`, калі цэны `prompt`/`completion`/`request` роўныя нулю'],
@@ -764,7 +843,29 @@ async def astream(
     profile_name: str | None = None,
     messages: Sequence[Mapping[str, Any]] | None = None,
     **overrides: Any,
-) -> AsyncIterator[ChatChunk]: ...`,
+) -> AsyncIterator[ChatChunk]: ...
+
+def transcribe(
+    audio: bytes | BinaryIO,
+    *,
+    filename: str | None = None,
+    content_type: str | None = None,
+    profile: str | None = None,
+    model: str | None = None,
+    language: str | None = None,
+    prompt: str | None = None,
+) -> TranscriptionResult: ...
+
+async def atranscribe(
+    audio: bytes | BinaryIO,
+    *,
+    filename: str | None = None,
+    content_type: str | None = None,
+    profile: str | None = None,
+    model: str | None = None,
+    language: str | None = None,
+    prompt: str | None = None,
+) -> TranscriptionResult: ...`,
         },
         {
           type: 'p',
@@ -824,6 +925,8 @@ class ChatChunk:
             ['`RateLimitExceeded`', 'Вычарпаны дзённы/месячны ліміт запытаў'],
             ['`BudgetExceeded`', 'Вычарпаны дзённы/месячны бюджэт'],
             ['`OpenRouterAPIError`', 'Памылка API пасля паўтораў і fallback; нясе `status_code`'],
+            ['`UnsupportedAudioFormat`', 'Аўдыё транскрыпцыі не ў фармаце webm/ogg/mp3/wav/m4a/flac/aac'],
+            ['`AudioTooLarge`', 'Аўдыё транскрыпцыі перавышае ліміт профілю (па змаўчанні 25 МіБ)'],
           ],
         },
         {

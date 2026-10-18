@@ -370,30 +370,108 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
       id: 'transcription',
       group: 'ガイド',
       title: '音声文字起こし',
-      lead: 'transcribe() / atranscribe() は音声を OpenRouter POST /api/v1/audio/transcriptions に送ります。プロファイル、予算、リクエストログはチャットと同じ仕組みです。',
+      lead: 'transcribe() / atranscribe() はブラウザまたはサーバーの音声を OpenRouter POST /api/v1/audio/transcriptions に送ります。プロファイル、予算、リクエストログはチャットと同じ仕組みです。',
       blocks: [
         {
           type: 'p',
-          text: '文字起こしモデルはチャット用カタログに含まれません。`sync_models` は `GET /api/v1/models?output_modalities=transcription` も取得し、modality `audio->transcription` で保存します。種別 `transcription` の利用プロファイルを作り、そのモデルだけを選び、必要なら言語、サイズ上限、`max_audio_seconds` を設定します（Whisper のように秒課金のモデルで予算を予約するには必須です）。既定プロファイルは OpenRouter 設定にあり、別のシングルトンではありません。',
+          text: '文字起こしモデルは通常のチャット用カタログに含まれません。`sync_models` は `GET /api/v1/models?output_modalities=transcription` も取得し、modality `audio->transcription` と `output_modalities: ["transcription"]` で保存します。チャットの同期はそれ以外変わりません。両方のカタログから消えたモデルは無効化され、文字起こし専用モデルはチャット一覧に無いという理由だけでは無効化されません。',
         },
+        { type: 'h3', text: '文字起こしプロファイルを設定する' },
         {
           type: 'p',
-          text: 'ライブラリは ffmpeg を要求しません。webm、ogg、mp3、wav、m4a、flac、aac を送ってください（MediaRecorder の blob で十分です）。変換するなら `OPENROUTER["AUDIO_PREPARE"]` に `(data, *, filename, content_type) -> (bytes, filename, content_type)` を指定します。`UnsupportedAudioFormat` と `AudioTooLarge`（既定 25 MiB）は HTTP の前に送出されます。キルスイッチとキー欠如は従来どおり `OpenRouterDisabled` と `ConfigurationError` です。',
+          text: '**利用プロファイル**で **Kind** を **Transcription** にし、文字起こしモデルだけを選びます（オートコンプリートは種別フィールドで絞り込みます）。必要なら言語、アップロードサイズ、長さの上限も設定します。スラッグなしで `transcribe()` を動かすなら、**OpenRouter settings** でそのプロファイルを **Default transcription profile** にします。API キー、base URL、キルスイッチは同じ設定行のままです。STT 専用のシングルトンはありません。予算とログはすでにプロファイルにあり、アプリ側でディクテーションと会議の文字起こしを分けられます。',
         },
+        {
+          type: 'table',
+          head: ['プロファイルのフィールド', '役割'],
+          rows: [
+            ['`kind`', '`chat`（既定）または `transcription`'],
+            ['`language`', 'ISO-639-1 のヒント（`en`、`ru`）。空なら自動検出。チャットでは無視'],
+            ['`max_audio_bytes`', 'アップロード上限。空なら 25 MiB'],
+            ['`max_audio_seconds`', '秒課金モデル向けに予約する最悪ケースの秒数（Whisper は context length が 0 で、`prompt` の価格は秒あたり）'],
+            ['`max_requests_*` / `budget_usd_*`', 'チャットと同じ日次・月次の上限。予約は `usage.cost` に照合される'],
+          ],
+        },
+        {
+          type: 'callout',
+          kind: 'warning',
+          title: '秒課金の予算には max_audio_seconds が必要',
+          text: 'USD 予算のある文字起こしプロファイルで秒課金モデルを使うと、`max_audio_seconds` を設定するまで `ConfigurationError` になります。トークン課金の STT モデル（context length が 0 でないもの）は、チャットと同じ考え方で `context_length ×` 最も高いトークン単価を予約します。',
+        },
+        { type: 'h3', text: 'transcribe() を呼ぶ' },
         {
           type: 'code',
           lang: 'python',
           title: 'views.py',
-          code: `from django_openrouter import transcribe
+          code: `from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 
-result = transcribe(
-    request.FILES["audio"],
-    filename=request.FILES["audio"].name,
-    content_type=request.FILES["audio"].content_type,
-    profile="dictation",
-    language="ja",
+from django_openrouter import transcribe
+from django_openrouter.exceptions import (
+    AudioTooLarge,
+    BudgetExceeded,
+    ConfigurationError,
+    OpenRouterDisabled,
+    UnsupportedAudioFormat,
 )
-print(result.text, result.cost_usd, result.duration_seconds)`,
+
+@require_POST
+def dictate(request):
+    blob = request.FILES["audio"]
+    try:
+        result = transcribe(
+            blob,
+            filename=blob.name,
+            content_type=blob.content_type,
+            profile="dictation",  # または None → 既定の文字起こしプロファイル
+            language="ru",
+        )
+    except OpenRouterDisabled:
+        return JsonResponse({"error": "disabled"}, status=503)
+    except (UnsupportedAudioFormat, AudioTooLarge, ConfigurationError) as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+    except BudgetExceeded:
+        return JsonResponse({"error": "budget"}, status=429)
+    return JsonResponse(
+        {
+            "text": result.text,
+            "model": result.model_used,
+            "cost_usd": str(result.cost_usd),
+            "seconds": None if result.duration_seconds is None else str(result.duration_seconds),
+        }
+    )`,
+        },
+        {
+          type: 'p',
+          text: 'ライブラリは ffmpeg に依存しません。OpenRouter が受け付けるコンテナを送ってください。webm、ogg、mp3、wav、m4a、flac、aac です。ブラウザの `MediaRecorder` blob（`audio/webm;codecs=opus`）で問題ありません。先に変換するなら `OPENROUTER["AUDIO_PREPARE"]` に dotted path を指定します。呼び出し可能オブジェクトは `(data, *, filename, content_type)` を受け取り、`(bytes, filename, content_type)` を返します。',
+        },
+        {
+          type: 'code',
+          lang: 'javascript',
+          title: 'browser',
+          code: `const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+const chunks = [];
+recorder.ondataavailable = (event) => {
+  if (event.data.size) chunks.push(event.data);
+};
+recorder.onstop = async () => {
+  const blob = new Blob(chunks, { type: recorder.mimeType });
+  const body = new FormData();
+  body.append("audio", blob, "dictation.webm");
+  const response = await fetch("/dictate/", {
+    method: "POST",
+    body,
+    headers: { "X-CSRFToken": csrfToken },
+  });
+  const payload = await response.json();
+  console.log(payload.text);
+};
+recorder.start();`,
+        },
+        {
+          type: 'p',
+          text: '`atranscribe()` と `OpenRouterClient.transcribe` / `AsyncOpenRouterClient.transcribe` は同じ呼び出しです。`model=` で並べ替えられるのは、そのプロファイルに既にあるモデルだけです。`prompt=` は JSON ボディに載ります。OpenRouter は現在、multipart API のトップレベル prompt を無視するため、語彙を必ず偏らせるものではなく任意のヒント文として扱ってください。`TranscriptionResult` には `text`、トークン数、`duration_seconds`、`cost_usd`、`catalog_cost_usd`、`model_used`、`latency_ms`、`raw` が入ります。',
         },
       ],
     },
@@ -408,7 +486,7 @@ print(result.text, result.cost_usd, result.duration_seconds)`,
 python manage.py sync_models --api-key sk-or-...  # 使い捨てキー。保存されません` },
         {
           type: 'p',
-          text: 'このコマンドはカタログ（`GET /api/v1/models`）を upsert し、`/endpoints` のメトリクス（p50 レイテンシとスループット）で補強します。削除は一切行いません。OpenRouter から消えたモデルには `is_active=False` が付きます。そのモデルを参照するプロファイルは壊れません — プロファイルを切り替えるまで、呼び出しが `ModelDisabled` で失敗するだけです。',
+          text: 'このコマンドはチャット用カタログ（`GET /api/v1/models`）と文字起こし用カタログ（`GET /api/v1/models?output_modalities=transcription`）を upsert し、両方を `/endpoints` のメトリクス（p50 レイテンシとスループット）で補強します。削除は一切行いません。両方の一覧から消えたモデルには `is_active=False` が付きます。そのモデルを参照するプロファイルは壊れません — プロファイルを切り替えるまで、呼び出しが `ModelDisabled` で失敗するだけです。',
         },
         { type: 'h3', text: 'モデルのフィールド' },
         {
@@ -425,7 +503,8 @@ python manage.py sync_models --api-key sk-or-...  # 使い捨てキー。保存�
             ['`parameter_count`', 'おおよその重み数（70B → 70000000000）。ソート用'],
             ['`parameter_label`', '単位付きの表示サイズ：`70B`、`340M`、`8x7B`'],
             ['`supported_parameters`', 'サポートされるパラメータの一覧'],
-            ['`modality`', 'モダリティ。例：`text->text`'],
+            ['`modality`', 'モダリティ。例：`text->text` または `audio->transcription`'],
+            ['`output_modalities`', 'カタログのリスト。例：`["text"]` または `["transcription"]`'],
             ['`is_active`', 'プロファイルで選択可能か'],
             ['`last_synced_at`', '同期が最後にこのモデルを確認した日時'],
             ['`is_free`（property）', '`prompt`/`completion`/`request` の価格がすべてゼロなら `True`'],
@@ -764,7 +843,29 @@ async def astream(
     profile_name: str | None = None,
     messages: Sequence[Mapping[str, Any]] | None = None,
     **overrides: Any,
-) -> AsyncIterator[ChatChunk]: ...`,
+) -> AsyncIterator[ChatChunk]: ...
+
+def transcribe(
+    audio: bytes | BinaryIO,
+    *,
+    filename: str | None = None,
+    content_type: str | None = None,
+    profile: str | None = None,
+    model: str | None = None,
+    language: str | None = None,
+    prompt: str | None = None,
+) -> TranscriptionResult: ...
+
+async def atranscribe(
+    audio: bytes | BinaryIO,
+    *,
+    filename: str | None = None,
+    content_type: str | None = None,
+    profile: str | None = None,
+    model: str | None = None,
+    language: str | None = None,
+    prompt: str | None = None,
+) -> TranscriptionResult: ...`,
         },
         {
           type: 'p',
@@ -824,6 +925,8 @@ class ChatChunk:
             ['`RateLimitExceeded`', '日次/月次リクエスト上限の超過'],
             ['`BudgetExceeded`', '日次/月次予算の超過'],
             ['`OpenRouterAPIError`', 'リトライとフォールバック後の API エラー。`status_code` を保持'],
+            ['`UnsupportedAudioFormat`', '文字起こし音声が webm/ogg/mp3/wav/m4a/flac/aac ではない'],
+            ['`AudioTooLarge`', '文字起こし音声がプロファイルの上限を超えている（既定 25 MiB）'],
           ],
         },
         {

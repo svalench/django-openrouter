@@ -44,3 +44,10 @@ DONE
 - python -m build + twine check --strict: django_openrouter-0.4.0 sdist и wheel PASSED
 - PostgreSQL-джоба локально не запускалась: pg_isready нет
 DONE
+
+## 2026-10-18 — docs parity STT
+- be/de/es/fr/ja/pl/zh: полный раздел transcription как в en.ts (профиль, поля, view, MediaRecorder, AUDIO_PREPARE, исключения, каталог, сигнатуры)
+- README: «Added in 0.4.0»; отдельной changelog-страницы на сайте нет, meta.version уже 0.4.0
+- site: npm ci && npm run build (tsc -b && vite build) ок
+- код библиотеки и версия не менялись
+DONE

@@ -202,7 +202,7 @@ Async: `astream("chat", messages=...)` / `AsyncOpenRouterClient("chat").stream(.
 
 ## Speech-to-text
 
-Transcription models are not in the default chat catalog. `sync_models` also fetches `GET /api/v1/models?output_modalities=transcription` and stores them with modality `audio->transcription`. Create a usage profile with **kind** `transcription` (only those models), set language / size / duration limits if you need them, and point **Default transcription profile** at it. Budgets and the request log are the same as for chat. There is no separate settings singleton: a profile is already the unit of model choice, limits and spend.
+Added in 0.4.0. Transcription models are not in the default chat catalog. `sync_models` also fetches `GET /api/v1/models?output_modalities=transcription` and stores them with modality `audio->transcription`. Create a usage profile with **kind** `transcription` (only those models), set language / size / duration limits if you need them, and point **Default transcription profile** at it. Budgets and the request log are the same as for chat. There is no separate settings singleton: a profile is already the unit of model choice, limits and spend.
 
 ```python
 from django_openrouter import transcribe
