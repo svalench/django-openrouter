@@ -4,7 +4,7 @@ export const de: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: 'OpenRouter für Django — Modelle, Profile, Budgets und Logs über das Admin-Panel verwaltet',
-    version: '0.3.1',
+    version: '0.4.0',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -363,6 +363,37 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
             ['`latency_ms`', '`int`', 'Latenz des erfolgreichen Versuchs'],
             ['`raw`', '`dict`', 'Rohe JSON-Antwort von OpenRouter'],
           ],
+        },
+      ],
+    },
+    {
+      id: 'transcription',
+      group: 'Anleitungen',
+      title: 'Sprache zu Text',
+      lead: 'transcribe() / atranscribe() schicken Audio an OpenRouter POST /api/v1/audio/transcriptions. Profile, Budgets und das Request-Log sind dieselben wie beim Chat.',
+      blocks: [
+        {
+          type: 'p',
+          text: 'Transkriptionsmodelle stehen nicht im Chat-Katalog. `sync_models` holt zusätzlich `GET /api/v1/models?output_modalities=transcription` und speichert sie mit Modality `audio->transcription`. Lege ein Nutzungsprofil mit Typ `transcription` an, wähle nur diese Modelle und optional Sprache, maximale Größe und `max_audio_seconds` (nötig, um bei sekundenbasierten Modellen wie Whisper ein Budget zu reservieren). Das Standardprofil liegt in den OpenRouter-Einstellungen, nicht in einem eigenen Singleton.',
+        },
+        {
+          type: 'p',
+          text: 'Die Bibliothek braucht kein ffmpeg. Sende webm, ogg, mp3, wav, m4a, flac oder aac (ein MediaRecorder-Blob reicht). Zum Umcodieren setzt du `OPENROUTER["AUDIO_PREPARE"]` auf `(data, *, filename, content_type) -> (bytes, filename, content_type)`. `UnsupportedAudioFormat` und `AudioTooLarge` (Standard 25 MiB) kommen vor dem HTTP-Aufruf. Kill-Switch und fehlender Schlüssel bleiben `OpenRouterDisabled` und `ConfigurationError`.',
+        },
+        {
+          type: 'code',
+          lang: 'python',
+          title: 'views.py',
+          code: `from django_openrouter import transcribe
+
+result = transcribe(
+    request.FILES["audio"],
+    filename=request.FILES["audio"].name,
+    content_type=request.FILES["audio"].content_type,
+    profile="dictation",
+    language="de",
+)
+print(result.text, result.cost_usd, result.duration_seconds)`,
         },
       ],
     },

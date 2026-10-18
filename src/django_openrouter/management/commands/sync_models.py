@@ -8,7 +8,10 @@ from django_openrouter.sync import sync_openrouter_models
 
 
 class Command(BaseCommand):
-    help = _("Fetch GET /api/v1/models and upsert the local OpenRouter catalog.")
+    help = _(
+        "Fetch GET /api/v1/models and transcription models "
+        "(output_modalities=transcription), then upsert the local catalog."
+    )
 
     def add_arguments(self, parser: ArgumentParser) -> None:
         parser.add_argument(

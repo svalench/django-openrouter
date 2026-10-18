@@ -8,8 +8,11 @@ pytestmark = pytest.mark.django_db
 def test_lazy_package_exports() -> None:
     import django_openrouter as pkg
 
-    assert pkg.__version__ == "0.3.2"
+    assert pkg.__version__ == "0.4.0"
     assert callable(pkg.chat)
+    assert callable(pkg.transcribe)
+    assert callable(pkg.atranscribe)
+    assert pkg.TranscriptionResult is not None
     assert pkg.OpenRouterClient is not None
     assert pkg.AsyncOpenRouterClient is not None
     assert pkg.ChatResult is not None

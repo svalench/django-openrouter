@@ -7,6 +7,7 @@
         return {
             price: document.getElementById("or-model-price-filter")?.value || "",
             speed: document.getElementById("or-model-speed-filter")?.value || "",
+            kind: document.getElementById("id_kind")?.value || "",
         };
     }
 

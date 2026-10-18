@@ -344,6 +344,7 @@ def test_admin_add_profile_without_models(admin_client) -> None:
         url,
         {
             "name": "nomodels",
+            "kind": "chat",
             "is_active": "on",
             f"{prefix}-TOTAL_FORMS": "1",
             f"{prefix}-INITIAL_FORMS": "0",
@@ -369,6 +370,7 @@ def test_admin_add_profile_syncs_primary(
         url,
         {
             "name": "pack",
+            "kind": "chat",
             "is_active": "on",
             f"{prefix}-TOTAL_FORMS": "2",
             f"{prefix}-INITIAL_FORMS": "0",
@@ -445,10 +447,10 @@ def test_model_changelist_fetches_and_caches(
     assert first.status_code == 200
     assert b"GPT-4" in first.content
     assert b"$30000" in first.content
-    assert models_route.call_count == 1
+    assert models_route.call_count == 2
     second = admin_client.get(url)
     assert second.status_code == 200
-    assert models_route.call_count == 1
+    assert models_route.call_count == 2
     model = OpenRouterModel.objects.get(model_id="openai/gpt-4")
     assert model.latency_ms == pytest.approx(250.0)
     assert model.throughput == pytest.approx(40.0)
@@ -544,13 +546,13 @@ def test_manual_sync_hits_api_even_if_cache_fresh(
     _mock_endpoints(respx_mock)
     url = reverse("admin:django_openrouter_openroutermodel_changelist")
     admin_client.get(url)
-    assert models_route.call_count == 1
+    assert models_route.call_count == 2
     dummy = OpenRouterModel.objects.get(model_id="openai/gpt-4")
     admin_client.post(
         url,
         {"action": "sync_with_openrouter", "_selected_action": [str(dummy.pk)]},
     )
-    assert models_route.call_count == 2
+    assert models_route.call_count == 4
 
 
 def _autocomplete_params(**extra: str) -> dict[str, str]:

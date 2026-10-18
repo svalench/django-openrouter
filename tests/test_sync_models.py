@@ -38,6 +38,67 @@ def _item(model_id: str, name: str, prompt: str = "0") -> dict:
     }
 
 
+def _stt_item(model_id: str = "openai/whisper-large-v3-turbo") -> dict:
+    return {
+        "id": model_id,
+        "name": "Whisper Large V3 Turbo",
+        "context_length": 0,
+        "pricing": {"prompt": "0.00000333", "completion": "0"},
+        "architecture": {
+            "modality": "audio->transcription",
+            "input_modalities": ["audio"],
+            "output_modalities": ["transcription"],
+        },
+        "supported_parameters": [],
+    }
+
+
+def _catalog_by_modality(request: httpx.Request) -> httpx.Response:
+    if request.url.params.get("output_modalities") == "transcription":
+        return httpx.Response(200, json=_payload(_stt_item()))
+    return httpx.Response(200, json=_payload(_item("openai/gpt-4", "GPT-4", "0.03")))
+
+
+@respx.mock
+def test_sync_includes_transcription_models_without_dropping_chat(
+    respx_mock: respx.MockRouter,
+) -> None:
+    OpenRouterModel.objects.create(model_id="legacy/gone", name="Gone", is_active=True)
+    respx_mock.get(MODELS_URL).mock(side_effect=_catalog_by_modality)
+    summary = sync_openrouter_models(api_key="sk-cli")
+    chat = OpenRouterModel.objects.get(model_id="openai/gpt-4")
+    stt = OpenRouterModel.objects.get(model_id="openai/whisper-large-v3-turbo")
+    assert chat.modality == "text->text"
+    assert chat.is_transcription is False
+    assert chat.is_active is True
+    assert stt.modality == "audio->transcription"
+    assert stt.output_modalities == ["transcription"]
+    assert stt.is_transcription is True
+    assert stt.is_active is True
+    assert OpenRouterModel.objects.get(model_id="legacy/gone").is_active is False
+    assert summary.created == 2
+    assert summary.total_remote == 2
+
+
+@respx.mock
+def test_transcription_catalog_failure_does_not_deactivate_chat(
+    respx_mock: respx.MockRouter,
+) -> None:
+    kept = OpenRouterModel.objects.create(model_id="local/kept", name="Kept", is_active=True)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.params.get("output_modalities") == "transcription":
+            return httpx.Response(500, json={"error": "stt down"})
+        return httpx.Response(200, json=_payload(_item("openai/gpt-4", "GPT-4")))
+
+    respx_mock.get(MODELS_URL).mock(side_effect=handler)
+    with pytest.raises(httpx.HTTPStatusError):
+        sync_openrouter_models(api_key="sk-cli")
+    kept.refresh_from_db()
+    assert kept.is_active is True
+    assert not OpenRouterModel.objects.filter(model_id="openai/gpt-4").exists()
+
+
 @respx.mock
 def test_sync_models_upsert_and_deactivate(respx_mock: respx.MockRouter) -> None:
     OpenRouterModel.objects.create(
@@ -188,7 +249,8 @@ def test_ensure_catalog_fresh_uses_cache(
     assert first is not None
     second = ensure_catalog_fresh()
     assert second is None
-    assert models_route.call_count == 1
+    # Чат-каталог и каталог транскрипции — два GET на один и тот же маршрут.
+    assert models_route.call_count == 2
 
 
 @pytest.mark.parametrize(

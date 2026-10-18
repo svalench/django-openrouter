@@ -20,6 +20,14 @@ from django_openrouter.fields import EncryptedTextField
 
 Period = Literal["day", "month"]
 
+
+class ProfileKind(models.TextChoices):
+    """Назначение профиля: чат или речь-в-текст."""
+
+    CHAT = "chat", _("Chat")
+    TRANSCRIPTION = "transcription", _("Transcription")
+
+
 # Клиент закрыл стрим до конца ответа (nginx-конвенция).
 CLIENT_CLOSED_STATUS = 499
 # Резерв создан, попытка ещё в полёте.
@@ -68,6 +76,14 @@ class OpenRouterModel(models.Model):
     )
     supported_parameters = models.JSONField(default=list, blank=True)
     modality = models.CharField(max_length=64, blank=True)
+    output_modalities = models.JSONField(
+        default=list,
+        blank=True,
+        help_text=_(
+            "Output modalities from the catalog, e.g. text or transcription. "
+            "Transcription models come from /models?output_modalities=transcription."
+        ),
+    )
     prompt_price = models.DecimalField(
         max_digits=20,
         decimal_places=12,
@@ -115,6 +131,14 @@ class OpenRouterModel(models.Model):
         return self.model_id
 
     @property
+    def is_transcription(self) -> bool:
+        """True для моделей речи-в-текст (modality или output_modalities)."""
+        outputs = self.output_modalities if isinstance(self.output_modalities, list) else []
+        if any(str(item) == "transcription" for item in outputs):
+            return True
+        return "transcription" in (self.modality or "")
+
+    @property
     def is_free(self) -> bool:
         """True, если prompt/completion/request в каталоге равны нулю."""
         pricing = self.pricing or {}
@@ -131,7 +155,38 @@ class UsageProfile(models.Model):
     name = models.SlugField(
         max_length=64,
         unique=True,
-        help_text=_("Stable slug used in code, e.g. chat, translation."),
+        help_text=_("Stable slug used in code, e.g. chat, translation, dictation."),
+    )
+    kind = models.CharField(
+        max_length=32,
+        choices=ProfileKind.choices,
+        default=ProfileKind.CHAT,
+        help_text=_(
+            "Chat profiles call /chat/completions. "
+            "Transcription profiles call /audio/transcriptions "
+            "and only accept transcription models."
+        ),
+    )
+    language = models.CharField(
+        max_length=16,
+        blank=True,
+        default="",
+        help_text=_(
+            "ISO-639-1 hint for transcription (en, ru). Blank = auto-detect. Ignored for chat."
+        ),
+    )
+    max_audio_bytes = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text=_("Max transcription upload size in bytes. Blank = 25 MiB. Ignored for chat."),
+    )
+    max_audio_seconds = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text=_(
+            "Worst-case audio length used to reserve budget for duration-priced "
+            "transcription models (Whisper and similar, context length 0). Ignored for chat."
+        ),
     )
     model = models.ForeignKey(
         OpenRouterModel,
@@ -179,7 +234,19 @@ class UsageProfile(models.Model):
 
     def clean(self) -> None:
         super().clean()
-        if self.temperature is not None and not 0 <= self.temperature <= 2:
+        if self.language:
+            normalized = self.language.strip().lower()
+            if len(normalized) != 2 or not normalized.isalpha():
+                raise ValidationError(
+                    {"language": _("Language must be an ISO-639-1 code, for example en.")}
+                )
+            self.language = normalized
+        if self.kind == ProfileKind.TRANSCRIPTION:
+            if self.temperature is not None and not 0 <= self.temperature <= 1:
+                raise ValidationError(
+                    {"temperature": _("Transcription temperature must be between 0 and 1.")}
+                )
+        elif self.temperature is not None and not 0 <= self.temperature <= 2:
             raise ValidationError({"temperature": _("Temperature must be between 0 and 2.")})
         if self.model_id:
             primary = self.model
@@ -319,6 +386,13 @@ class UsageProfileFallback(models.Model):
             raise ValidationError(
                 {"model": _("only_free_models allows only free fallback models.")}
             )
+        if self.profile_id and not _model_matches_profile_kind(self.profile, self.model):
+            raise ValidationError(
+                {
+                    "model": _("Model %(model_id)r does not match profile kind %(kind)r.")
+                    % {"model_id": self.model.model_id, "kind": self.profile.kind}
+                }
+            )
 
 
 class OpenRouterSettings(models.Model):
@@ -336,6 +410,17 @@ class OpenRouterSettings(models.Model):
         blank=True,
         on_delete=models.SET_NULL,
         related_name="+",
+        limit_choices_to={"kind": ProfileKind.CHAT},
+        help_text=_("Used by chat() when no profile name is passed."),
+    )
+    default_transcription_profile = models.ForeignKey(
+        UsageProfile,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        limit_choices_to={"kind": ProfileKind.TRANSCRIPTION},
+        help_text=_("Used by transcribe() when no profile name is passed."),
     )
     request_timeout = models.PositiveIntegerField(
         default=60,
@@ -379,6 +464,25 @@ class OpenRouterSettings(models.Model):
         """Возвращает единственную строку настроек, создавая её при необходимости."""
         obj, _created = cls.objects.get_or_create(pk=1)
         return obj
+
+    def clean(self) -> None:
+        super().clean()
+        if self.default_profile_id:
+            profile = self.default_profile
+            if profile is not None and profile.kind != ProfileKind.CHAT:
+                raise ValidationError(
+                    {"default_profile": _("Default profile must be a chat profile.")}
+                )
+        if self.default_transcription_profile_id:
+            profile = self.default_transcription_profile
+            if profile is not None and profile.kind != ProfileKind.TRANSCRIPTION:
+                raise ValidationError(
+                    {
+                        "default_transcription_profile": _(
+                            "Default transcription profile must be a transcription profile."
+                        )
+                    }
+                )
 
 
 class RequestLog(models.Model):
@@ -466,6 +570,22 @@ def usage_totals_by_profile(profile_ids: Sequence[int]) -> dict[int, ProfileUsag
             total_cost_usd=_as_decimal(row["total_cost_usd"]),
         )
     return result
+
+
+def _model_matches_profile_kind(profile: UsageProfile, model: OpenRouterModel) -> bool:
+    """Чат-профиль не принимает STT-модели, и наоборот."""
+    if profile.kind == ProfileKind.TRANSCRIPTION:
+        return model.is_transcription
+    return not model.is_transcription
+
+
+def transcription_model_q() -> Q:
+    """Фильтр каталога: модели речи-в-текст.
+
+    Сравнение по modality, а не по JSON contains: SQLite его не поддерживает.
+    Синк дописывает «transcription» в modality, если оно есть только в output_modalities.
+    """
+    return Q(modality__contains="transcription")
 
 
 def _period_start(period: Period) -> datetime:

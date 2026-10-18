@@ -27,6 +27,14 @@ class RateLimitExceeded(OpenRouterError):
     """Исчерпан лимит запросов профиля за день или месяц."""
 
 
+class UnsupportedAudioFormat(OpenRouterError):
+    """Формат аудио не из списка, который принимает транскрипция OpenRouter."""
+
+
+class AudioTooLarge(OpenRouterError):
+    """Размер аудио больше лимита профиля или 25 МиБ по умолчанию."""
+
+
 class OpenRouterAPIError(OpenRouterError):
     """Ошибка HTTP API OpenRouter после исчерпания retry/fallback."""
 

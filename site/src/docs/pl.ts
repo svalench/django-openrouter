@@ -4,7 +4,7 @@ export const pl: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: 'OpenRouter dla Django — modele, profile, budżety i logi żądań zarządzane z panelu admina',
-    version: '0.3.1',
+    version: '0.4.0',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -363,6 +363,37 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
             ['`latency_ms`', '`int`', 'Opóźnienie udanej próby'],
             ['`raw`', '`dict`', 'Surowa odpowiedź JSON z OpenRouter'],
           ],
+        },
+      ],
+    },
+    {
+      id: 'transcription',
+      group: 'Przewodniki',
+      title: 'Mowa na tekst',
+      lead: 'transcribe() / atranscribe() wysyłają audio do OpenRouter POST /api/v1/audio/transcriptions. Profile, budżety i dziennik są te same co przy czacie.',
+      blocks: [
+        {
+          type: 'p',
+          text: 'Modele transkrypcji nie ma w katalogu czatu. `sync_models` dociąga też `GET /api/v1/models?output_modalities=transcription` i zapisuje je z modality `audio->transcription`. Utwórz profil użycia typu `transcription`, wybierz tylko te modele oraz opcjonalnie język, limit rozmiaru i `max_audio_seconds` (wymagane, by zarezerwować budżet dla modeli rozliczanych za sekundę, np. Whisper). Domyślny profil jest w ustawieniach OpenRouter, nie w osobnym singletonie.',
+        },
+        {
+          type: 'p',
+          text: 'Biblioteka nie wymaga ffmpeg. Wyślij webm, ogg, mp3, wav, m4a, flac albo aac (blob MediaRecorder wystarczy). Do transkodowania ustaw `OPENROUTER["AUDIO_PREPARE"]`: `(data, *, filename, content_type) -> (bytes, filename, content_type)`. `UnsupportedAudioFormat` i `AudioTooLarge` (domyślnie 25 MiB) lecą przed HTTP. Wyłącznik i brak klucza to nadal `OpenRouterDisabled` i `ConfigurationError`.',
+        },
+        {
+          type: 'code',
+          lang: 'python',
+          title: 'views.py',
+          code: `from django_openrouter import transcribe
+
+result = transcribe(
+    request.FILES["audio"],
+    filename=request.FILES["audio"].name,
+    content_type=request.FILES["audio"].content_type,
+    profile="dictation",
+    language="pl",
+)
+print(result.text, result.cost_usd, result.duration_seconds)`,
         },
       ],
     },

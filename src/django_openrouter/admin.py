@@ -23,10 +23,12 @@ from django_openrouter.exceptions import ConfigurationError, OpenRouterError
 from django_openrouter.models import (
     OpenRouterModel,
     OpenRouterSettings,
+    ProfileKind,
     ProfileUsageTotals,
     RequestLog,
     UsageProfile,
     UsageProfileFallback,
+    transcription_model_q,
     usage_totals_by_profile,
 )
 from django_openrouter.parameter_size import display_parameter_label
@@ -139,6 +141,11 @@ class OpenRouterAutocompleteJsonView(AutocompleteJsonView):
         if getattr(self.model_admin, "model", None) is OpenRouterModel:
             qs = apply_price_filter(qs, str(self.request.GET.get("price") or ""))
             qs = apply_speed_filter(qs, str(self.request.GET.get("speed") or ""))
+            kind = str(self.request.GET.get("kind") or "")
+            if kind == ProfileKind.TRANSCRIPTION:
+                qs = qs.filter(transcription_model_q())
+            elif kind == ProfileKind.CHAT:
+                qs = qs.exclude(transcription_model_q())
         return qs
 
 
@@ -165,6 +172,7 @@ class OpenRouterSettingsForm(ModelForm):
             "api_key",
             "base_url",
             "default_profile",
+            "default_transcription_profile",
             "request_timeout",
             "max_retries",
             "streaming_enabled",
@@ -221,6 +229,7 @@ class OpenRouterSettingsAdmin(admin.ModelAdmin):
                     "clear_api_key",
                     "base_url",
                     "default_profile",
+                    "default_transcription_profile",
                     "request_timeout",
                     "max_retries",
                     "streaming_enabled",
@@ -288,6 +297,11 @@ class UsageProfileFallbackInlineFormSet(BaseInlineFormSet):
                 raise ValidationError(_("Models in the chain must be active."))
             if only_free and not model.is_free:
                 raise ValidationError(_("only_free_models allows only free models."))
+            if not _chain_model_matches(self.instance, model):
+                raise ValidationError(
+                    _("Model %(model_id)r does not match profile kind %(kind)r.")
+                    % {"model_id": model.model_id, "kind": self.instance.kind}
+                )
             if model.pk in seen:
                 raise ValidationError(_("Each model may appear only once."))
             seen.add(model.pk)
@@ -319,11 +333,21 @@ class UsageProfileFallbackInline(admin.TabularInline):
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
+def _chain_model_matches(profile: UsageProfile, model: OpenRouterModel) -> bool:
+    if profile.kind == ProfileKind.TRANSCRIPTION:
+        return model.is_transcription
+    return not model.is_transcription
+
+
 class UsageProfileForm(ModelForm):
     class Meta:
         model = UsageProfile
         fields = (
             "name",
+            "kind",
+            "language",
+            "max_audio_bytes",
+            "max_audio_seconds",
             "max_tokens",
             "temperature",
             "max_requests_per_day",
@@ -399,6 +423,7 @@ class UsageProfileAdmin(admin.ModelAdmin):
     empty_value_display = "—"
     list_display = (
         "name",
+        "kind",
         "model",
         "is_active",
         "only_free_models",
@@ -410,7 +435,7 @@ class UsageProfileAdmin(admin.ModelAdmin):
         "avg_cost_display",
         "total_cost_display",
     )
-    list_filter = ("is_active", "only_free_models")
+    list_filter = ("kind", "is_active", "only_free_models")
     search_fields = ("name",)
 
     class Media:
@@ -499,6 +524,7 @@ class OpenRouterModelAdmin(admin.ModelAdmin):
         "throughput",
         "price_display",
         "parameter_size_display",
+        "modality",
         "is_active",
     )
     list_display_links = ("name",)
@@ -513,6 +539,7 @@ class OpenRouterModelAdmin(admin.ModelAdmin):
         "throughput",
         "parameter_count",
         "parameter_label",
+        "output_modalities",
     )
     empty_value_display = "—"
     ordering = ("name",)
@@ -639,6 +666,7 @@ class OpenRouterModelAdmin(admin.ModelAdmin):
             "duplicates": [],
             "inactive": [],
             "not_free": [],
+            "wrong_kind": [],
         }
         for model in queryset.order_by("model_id"):
             if model.pk in existing:
@@ -649,6 +677,9 @@ class OpenRouterModelAdmin(admin.ModelAdmin):
                 continue
             if profile.only_free_models and not model.is_free:
                 skipped["not_free"].append(model)
+                continue
+            if not _chain_model_matches(profile, model):
+                skipped["wrong_kind"].append(model)
                 continue
             next_order += 1
             UsageProfileFallback.objects.create(
@@ -671,6 +702,7 @@ class OpenRouterModelAdmin(admin.ModelAdmin):
             (_("%(count)s already in the chain"), "duplicates"),
             (_("%(count)s inactive"), "inactive"),
             (_("%(count)s not free (only_free_models)"), "not_free"),
+            (_("%(count)s wrong type for this profile"), "wrong_kind"),
         ]
         skipped_parts = [
             template % {"count": len(skipped[key])} for template, key in reasons if skipped[key]

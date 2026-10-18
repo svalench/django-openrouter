@@ -4,7 +4,7 @@ export const ja: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: 'OpenRouter for Django — モデル・プロファイル・予算・ログを管理画面から運用',
-    version: '0.3.1',
+    version: '0.4.0',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -363,6 +363,37 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
             ['`latency_ms`', '`int`', '成功した試行のレイテンシ'],
             ['`raw`', '`dict`', 'OpenRouter の生 JSON レスポンス'],
           ],
+        },
+      ],
+    },
+    {
+      id: 'transcription',
+      group: 'ガイド',
+      title: '音声文字起こし',
+      lead: 'transcribe() / atranscribe() は音声を OpenRouter POST /api/v1/audio/transcriptions に送ります。プロファイル、予算、リクエストログはチャットと同じ仕組みです。',
+      blocks: [
+        {
+          type: 'p',
+          text: '文字起こしモデルはチャット用カタログに含まれません。`sync_models` は `GET /api/v1/models?output_modalities=transcription` も取得し、modality `audio->transcription` で保存します。種別 `transcription` の利用プロファイルを作り、そのモデルだけを選び、必要なら言語、サイズ上限、`max_audio_seconds` を設定します（Whisper のように秒課金のモデルで予算を予約するには必須です）。既定プロファイルは OpenRouter 設定にあり、別のシングルトンではありません。',
+        },
+        {
+          type: 'p',
+          text: 'ライブラリは ffmpeg を要求しません。webm、ogg、mp3、wav、m4a、flac、aac を送ってください（MediaRecorder の blob で十分です）。変換するなら `OPENROUTER["AUDIO_PREPARE"]` に `(data, *, filename, content_type) -> (bytes, filename, content_type)` を指定します。`UnsupportedAudioFormat` と `AudioTooLarge`（既定 25 MiB）は HTTP の前に送出されます。キルスイッチとキー欠如は従来どおり `OpenRouterDisabled` と `ConfigurationError` です。',
+        },
+        {
+          type: 'code',
+          lang: 'python',
+          title: 'views.py',
+          code: `from django_openrouter import transcribe
+
+result = transcribe(
+    request.FILES["audio"],
+    filename=request.FILES["audio"].name,
+    content_type=request.FILES["audio"].content_type,
+    profile="dictation",
+    language="ja",
+)
+print(result.text, result.cost_usd, result.duration_seconds)`,
         },
       ],
     },

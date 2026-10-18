@@ -18,7 +18,7 @@ from django_openrouter.models import (
     UsageProfileFallback,
 )
 
-CACHE_KEY = "django_openrouter:runtime_config:v1"
+CACHE_KEY = "django_openrouter:runtime_config:v2"
 CATALOG_CACHE_KEY = "django_openrouter:admin_catalog:v1"
 _DEFAULT_CACHE_TIMEOUT = 60
 _DEFAULT_CATALOG_CACHE_TIMEOUT = 600
@@ -79,6 +79,10 @@ class ProfileSnapshot:
     budget_usd_per_month: Any
     only_free_models: bool
     is_active: bool
+    kind: str = "chat"
+    language: str = ""
+    max_audio_bytes: int | None = None
+    max_audio_seconds: int | None = None
 
 
 @dataclass
@@ -95,6 +99,7 @@ class RuntimeConfig:
     http_referer: str
     x_title: str
     default_profile_name: str | None
+    default_transcription_profile_name: str | None = None
     profiles: dict[str, ProfileSnapshot] = field(default_factory=dict)
 
 
@@ -169,17 +174,8 @@ def load_runtime_config() -> RuntimeConfig:
             continue
         profiles[profile.name] = _profile_snapshot(profile)
 
-    default_name: str | None = None
-    if settings_obj.default_profile_id:
-        default_profile = settings_obj.default_profile
-        if (
-            default_profile is not None
-            and default_profile.is_active
-            and default_profile.ordered_models()
-        ):
-            default_name = default_profile.name
-            if default_name not in profiles:
-                profiles[default_name] = _profile_snapshot(default_profile)
+    default_name = _active_profile_name(settings_obj.default_profile, profiles)
+    transcription_name = _active_profile_name(settings_obj.default_transcription_profile, profiles)
 
     http_referer = str(openrouter_setting("HTTP_REFERER", "") or "")
     x_title = str(openrouter_setting("X_TITLE", "") or "")
@@ -194,8 +190,20 @@ def load_runtime_config() -> RuntimeConfig:
         http_referer=http_referer,
         x_title=x_title,
         default_profile_name=default_name,
+        default_transcription_profile_name=transcription_name,
         profiles=profiles,
     )
+
+
+def _active_profile_name(
+    profile: UsageProfile | None, profiles: dict[str, ProfileSnapshot]
+) -> str | None:
+    """Имя профиля попадает в runtime, только если он активен и с цепочкой моделей."""
+    if profile is None or not profile.is_active or not profile.ordered_models():
+        return None
+    if profile.name not in profiles:
+        profiles[profile.name] = _profile_snapshot(profile)
+    return profile.name
 
 
 def snapshot_from_model(model: OpenRouterModel) -> ModelSnapshot:
@@ -226,4 +234,8 @@ def _profile_snapshot(profile: UsageProfile) -> ProfileSnapshot:
         budget_usd_per_month=profile.budget_usd_per_month,
         only_free_models=bool(profile.only_free_models),
         is_active=bool(profile.is_active),
+        kind=profile.kind,
+        language=profile.language,
+        max_audio_bytes=profile.max_audio_bytes,
+        max_audio_seconds=profile.max_audio_seconds,
     )

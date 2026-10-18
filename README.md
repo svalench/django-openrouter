@@ -100,7 +100,8 @@ Singleton: the changelist redirects to the only row. The row cannot be deleted.
 - **Enabled** — global kill switch. Off → every `chat()` / `stream()` fails.
 - **API key** — write-only, Fernet-encrypted from `SECRET_KEY`. After save the value cannot be viewed. Blank keeps the stored key; a new value replaces it. **Clear stored API key** wipes the DB key so the process falls back to `OPENROUTER_API_KEY` / `settings.OPENROUTER["API_KEY"]`.
 - **Base URL** — OpenRouter API root (`https://openrouter.ai/api/v1`).
-- **Default profile** — used when `chat(messages=...)` omits a profile name.
+- **Default profile** — used when `chat(messages=...)` omits a profile name. Must be a chat profile.
+- **Default transcription profile** — used when `transcribe()` omits a profile name. Must be a transcription profile.
 - **Request timeout** / **Max retries** — HTTP timeout and retries on transport / 5xx before the next model in the chain.
 - **Streaming enabled** — allows SSE via `stream()` / `astream()` and `chat(stream=True)`. Off by default.
 - **Max parallel requests** — cap on concurrent HTTP calls in this process (`0` = unlimited).
@@ -130,7 +131,7 @@ A profile is the slug your code passes (`chat`, `translation`, …) plus an orde
 
 Changelist: name, primary model, active, only-free, daily request/budget caps, and aggregates from logs (request count, avg/total latency, avg/total cost).
 
-On the form: `max_tokens`, `temperature` (0–2), daily/monthly request and USD limits (blank = unlimited), **only free models**, **is active**. Inline **Models (priority order)** uses catalog autocomplete (price + latency in the label; same price/speed query filters as the catalog). Saving syncs the first chain item into `model`.
+On the form: `kind` (`chat` or `transcription`), `max_tokens`, `temperature` (0–2 for chat, 0–1 for transcription), optional ISO-639-1 `language`, `max_audio_bytes` / `max_audio_seconds` for speech-to-text, daily/monthly request and USD limits (blank = unlimited), **only free models**, **is active**. Inline **Models (priority order)** uses catalog autocomplete (price + latency in the label; same price/speed query filters as the catalog, plus the profile kind). A transcription profile only accepts transcription models. Saving syncs the first chain item into `model`.
 
 ### Request logs
 
@@ -199,6 +200,78 @@ Async: `astream("chat", messages=...)` / `AsyncOpenRouterClient("chat").stream(.
 
 **Max parallel requests** (default 10, `0` = unlimited) caps concurrent HTTP calls to OpenRouter in the current process — both `chat()` and `stream()`, sync and async.
 
+## Speech-to-text
+
+Transcription models are not in the default chat catalog. `sync_models` also fetches `GET /api/v1/models?output_modalities=transcription` and stores them with modality `audio->transcription`. Create a usage profile with **kind** `transcription` (only those models), set language / size / duration limits if you need them, and point **Default transcription profile** at it. Budgets and the request log are the same as for chat. There is no separate settings singleton: a profile is already the unit of model choice, limits and spend.
+
+```python
+from django_openrouter import transcribe
+
+result = transcribe(
+    audio_bytes,
+    filename="dictation.webm",
+    content_type="audio/webm",
+    profile="dictation",
+    language="ru",
+)
+print(result.text, result.cost_usd, result.duration_seconds)
+```
+
+`atranscribe()` and `OpenRouterClient("dictation").transcribe(...)` / `AsyncOpenRouterClient` are the same call. A missing profile name uses `default_transcription_profile`.
+
+The library does not bundle ffmpeg. Send webm, ogg, mp3, wav, m4a, flac or aac (a browser `MediaRecorder` blob is fine). To transcode in the host project, set `OPENROUTER["AUDIO_PREPARE"]` to a dotted path:
+
+```python
+def prepare(data: bytes, *, filename: str, content_type: str) -> tuple[bytes, str, str]:
+    ...
+    return wav_bytes, "audio.wav", "audio/wav"
+```
+
+Django view for a `MediaRecorder` upload:
+
+```python
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+
+from django_openrouter import transcribe
+from django_openrouter.exceptions import (
+    AudioTooLarge,
+    BudgetExceeded,
+    ConfigurationError,
+    OpenRouterDisabled,
+    UnsupportedAudioFormat,
+)
+
+@require_POST
+def dictate(request):
+    blob = request.FILES["audio"]
+    try:
+        result = transcribe(blob, filename=blob.name, content_type=blob.content_type)
+    except OpenRouterDisabled:
+        return JsonResponse({"error": "disabled"}, status=503)
+    except (UnsupportedAudioFormat, AudioTooLarge, ConfigurationError) as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+    except BudgetExceeded:
+        return JsonResponse({"error": "budget"}, status=429)
+    return JsonResponse({"text": result.text, "model": result.model_used})
+```
+
+```javascript
+const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+recorder.onstop = async () => {
+  const body = new FormData();
+  body.append("audio", new Blob(chunks, { type: "audio/webm" }), "dictation.webm");
+  const response = await fetch("/dictate/", {
+    method: "POST",
+    body,
+    headers: { "X-CSRFToken": csrfToken },
+  });
+  console.log((await response.json()).text);
+};
+```
+
+`UnsupportedAudioFormat` and `AudioTooLarge` (default 25 MiB, override with `max_audio_bytes`) are raised before HTTP. Disabled integration and a missing key raise `OpenRouterDisabled` and `ConfigurationError`. A USD budget on a duration-priced model (Whisper, context length 0) needs `max_audio_seconds` so the reservation has an upper bound. `prompt` is sent when you pass it; OpenRouter currently ignores a top-level prompt on the multipart API.
+
 ## Management command
 
 ```bash
@@ -206,7 +279,7 @@ python manage.py sync_models
 python manage.py sync_models --api-key sk-or-...
 ```
 
-Upserts the catalog, never deletes rows, and sets `is_active=False` on models that disappeared from OpenRouter.
+Upserts the chat catalog and the transcription catalog (`output_modalities=transcription`). Never deletes rows. Sets `is_active=False` on models that disappeared from both lists.
 
 ```bash
 python manage.py prune_request_logs --days 90 [--dry-run]

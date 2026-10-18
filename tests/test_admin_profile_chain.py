@@ -12,6 +12,7 @@ def _change_data(profile: UsageProfile, model: OpenRouterModel) -> dict[str, str
     link = profile.fallback_links.get()
     return {
         "name": profile.name,
+        "kind": "chat",
         "temperature": "0.4",
         "is_active": "on",
         "fallback_links-TOTAL_FORMS": "1",
