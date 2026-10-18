@@ -591,6 +591,10 @@ def _prepare(
         raise OpenRouterDisabled(_("OpenRouter is disabled in admin settings."))
     if not cfg.api_key:
         raise ConfigurationError(_("OpenRouter API key is not configured."))
+    if "models" in overrides:
+        raise ConfigurationError(
+            _("models overrides are not allowed; configure fallback models in the usage profile.")
+        )
     snapshot = _resolve_profile(cfg, profile_name)
     profile = UsageProfile.objects.select_related("model").get(pk=snapshot.pk)
     check_limits(profile)

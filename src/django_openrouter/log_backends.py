@@ -237,7 +237,8 @@ class FileBackend(LogBackend):
         self.path = str(self.config.get("PATH") or _DEFAULT_FILE_PATH)
         self.max_bytes = int(self.config.get("MAX_BYTES") or _DEFAULT_MAX_BYTES)
         self.backup_count = int(self.config.get("BACKUP_COUNT") or _DEFAULT_BACKUP_COUNT)
-        self._logger = logging.getLogger("django_openrouter.request_log")
+        # Each backend writes only to its own handler, including after reconfiguration.
+        self._logger = logging.Logger("django_openrouter.request_log")
         self._logger.setLevel(logging.INFO)
         self._logger.propagate = False
         key = (self.path, self.max_bytes, self.backup_count)

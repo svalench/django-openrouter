@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from django import forms
@@ -241,13 +241,15 @@ class OpenRouterSettingsAdmin(admin.ModelAdmin):
         request: HttpRequest,
         extra_context: dict[str, object] | None = None,
     ) -> HttpResponse:
+        if not self.has_view_or_change_permission(request):
+            raise PermissionDenied
         obj = OpenRouterSettings.load()
         return redirect(
             reverse("admin:django_openrouter_openroutersettings_change", args=[obj.pk])
         )
 
     def has_add_permission(self, request: HttpRequest) -> bool:
-        return not OpenRouterSettings.objects.exists()
+        return super().has_add_permission(request) and not OpenRouterSettings.objects.exists()
 
     def has_delete_permission(
         self, request: HttpRequest, obj: OpenRouterSettings | None = None
@@ -295,7 +297,7 @@ class UsageProfileFallbackInlineFormSet(BaseInlineFormSet):
         kept.sort(key=lambda item: (item[0], item[1]))
         for new_order, (_old, _index, form) in enumerate(kept):
             form.cleaned_data["order"] = new_order
-            form.instance.order = new_order
+            cast(UsageProfileFallback, form.instance).order = new_order
 
 
 class UsageProfileFallbackInline(admin.TabularInline):
@@ -522,7 +524,7 @@ class OpenRouterModelAdmin(admin.ModelAdmin):
         self, request: HttpRequest, obj: OpenRouterModel | None = None
     ) -> bool:
         # Changelist/actions (sync) — да; карточка модели — только просмотр.
-        return obj is None
+        return obj is None and super().has_change_permission(request, obj)
 
     def has_delete_permission(
         self, request: HttpRequest, obj: OpenRouterModel | None = None
@@ -537,7 +539,7 @@ class OpenRouterModelAdmin(admin.ModelAdmin):
         request: HttpRequest,
         extra_context: dict[str, object] | None = None,
     ) -> HttpResponse:
-        if request.method == "GET":
+        if request.method == "GET" and self.has_change_permission(request):
             try:
                 ensure_catalog_fresh()
             except (ConfigurationError, OpenRouterError, OSError, httpx.HTTPError) as exc:
@@ -563,7 +565,7 @@ class OpenRouterModelAdmin(admin.ModelAdmin):
             return str(self.get_empty_value_display())
         return label
 
-    @admin.action(description=_("Sync catalog with OpenRouter"))
+    @admin.action(description=_("Sync catalog with OpenRouter"), permissions=["change"])
     def sync_with_openrouter(
         self,
         request: HttpRequest,
@@ -588,7 +590,12 @@ class OpenRouterModelAdmin(admin.ModelAdmin):
             },
         )
 
-    @admin.action(description=_("Assign to usage profile…"))
+    def has_assign_permission(self, request: HttpRequest) -> bool:
+        return self.has_change_permission(request) and request.user.has_perm(
+            "django_openrouter.change_usageprofile"
+        )
+
+    @admin.action(description=_("Assign to usage profile…"), permissions=["assign"])
     def assign_to_profile(
         self,
         request: HttpRequest,

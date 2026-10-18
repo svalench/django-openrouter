@@ -25,6 +25,7 @@ from django_openrouter.exceptions import (
     OpenRouterDisabled,
 )
 from django_openrouter.models import (
+    OpenRouterModel,
     OpenRouterSettings,
     RequestLog,
     UsageProfile,
@@ -728,3 +729,30 @@ def test_stream_messages_required(or_settings: OpenRouterSettings) -> None:
     _enable_streaming(or_settings)
     with pytest.raises(TypeError):
         list(stream("chat"))
+
+
+@pytest.mark.parametrize("use_async", [False, True])
+@pytest.mark.parametrize("use_stream", [False, True])
+@respx.mock
+def test_server_side_models_cannot_escape_profile_policy(
+    respx_mock: respx.MockRouter,
+    or_settings: OpenRouterSettings,
+    profile: UsageProfile,
+    free_model: OpenRouterModel,
+    use_async: bool,
+    use_stream: bool,
+) -> None:
+    profile.model = free_model
+    profile.only_free_models = True
+    profile.save()
+    or_settings.streaming_enabled = True
+    or_settings.save()
+    with pytest.raises(ConfigurationError, match=r"models.*profile"):
+        if use_async:
+            async_to_sync(achat)(
+                "chat", messages=MESSAGES, models=["unconfigured/paid"], stream=use_stream
+            )
+        else:
+            chat("chat", messages=MESSAGES, models=["unconfigured/paid"], stream=use_stream)
+    assert not respx_mock.calls
+    assert not RequestLog.objects.exists()
