@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 
 class OpenRouterError(Exception):
     """Базовое исключение библиотеки."""
@@ -41,3 +43,16 @@ class OpenRouterAPIError(OpenRouterError):
     def __init__(self, message: str, status_code: int | None = None) -> None:
         super().__init__(message)
         self.status_code = status_code
+
+
+class OpenRouterTimeout(OpenRouterError):
+    """Истёк общий дедлайн вызова, а не пауза между байтами.
+
+    partial — неполный ChatResult (текст, картинки, usage), если провайдер
+    успел что-то прислать. Для stream() тот же результат приходит финальным
+    чанком с incomplete=True, и исключение из генератора не бросается.
+    """
+
+    def __init__(self, message: str, *, partial: Any = None) -> None:
+        super().__init__(message)
+        self.partial = partial

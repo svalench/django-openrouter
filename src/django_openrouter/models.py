@@ -204,6 +204,25 @@ class UsageProfile(models.Model):
     )
     max_tokens = models.PositiveIntegerField(null=True, blank=True)
     temperature = models.FloatField(null=True, blank=True)
+    request_timeout = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1)],
+        help_text=_(
+            "Idle timeout between bytes for this profile only, in seconds. "
+            "Blank uses the global request timeout. "
+            "A streaming profile can wait longer without changing other profiles."
+        ),
+    )
+    total_timeout = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1)],
+        help_text=_(
+            "Wall-clock deadline for one chat or stream call, in seconds. "
+            "Blank uses the global total timeout, or no deadline if that is also blank."
+        ),
+    )
     max_requests_per_day = models.PositiveIntegerField(null=True, blank=True)
     max_requests_per_month = models.PositiveIntegerField(null=True, blank=True)
     budget_usd_per_day = models.DecimalField(
@@ -425,7 +444,20 @@ class OpenRouterSettings(models.Model):
     request_timeout = models.PositiveIntegerField(
         default=60,
         validators=[MinValueValidator(1)],
-        help_text=_("HTTP timeout in seconds."),
+        help_text=_(
+            "Idle timeout between bytes, in seconds. "
+            "A stream that keeps sending data is not stopped by this value; "
+            "set total timeout for a wall-clock deadline."
+        ),
+    )
+    total_timeout = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1)],
+        help_text=_(
+            "Optional wall-clock deadline in seconds for one chat or stream call. "
+            "Blank means no overall deadline. Does not change the idle timeout."
+        ),
     )
     max_retries = models.PositiveIntegerField(
         default=2,

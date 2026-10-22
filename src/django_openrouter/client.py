@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import base64
+import binascii
 import json
 import logging
 import random
+import threading
 import time
 from collections.abc import (
     AsyncGenerator,
@@ -16,9 +19,10 @@ from collections.abc import (
     Sequence,
 )
 from contextlib import aclosing, closing
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from decimal import Decimal, InvalidOperation
 from typing import TYPE_CHECKING, Any, BinaryIO
+from urllib.parse import unquote_to_bytes
 
 import httpx
 from asgiref.sync import sync_to_async
@@ -36,6 +40,7 @@ from django_openrouter.exceptions import (
     ModelDisabled,
     OpenRouterAPIError,
     OpenRouterDisabled,
+    OpenRouterTimeout,
 )
 from django_openrouter.http_clients import get_async_client, get_sync_client
 from django_openrouter.log_backends import (
@@ -89,18 +94,39 @@ _PASSTHROUGH_KEYS = frozenset(
         "session_id",
         "metadata",
         "modalities",
+        "reasoning",
     }
 )
+# Параметры вызова библиотеки: в тело OpenRouter не попадают.
+_CALL_OPTION_KEYS = frozenset({"total_timeout", "deadline_s", "request_timeout"})
 _MANAGED_KEYS = frozenset({"stream", "max_tokens", "temperature", "model", "stream_options"})
 # OpenRouter-ошибка в теле 200 без кода — считаем upstream-сбоем, чтобы сработал fallback.
 _BODY_ERROR_STATUS = 502
 _ERROR_TEXT_LIMIT = 2000
 _DEFAULT_RETRY_BACKOFF = 0.5
 _MAX_RETRY_DELAY = 30.0
+# Скачивание картинки по http(s) из ответа модели. Data URL в сеть не уходит.
+_MAX_REMOTE_IMAGE_BYTES = 25 * 1024 * 1024
+_IMAGE_PART_TYPES = frozenset({"image_url", "image", "output_image"})
 
 
 class _UsageMissing(OpenRouterAPIError):
     """Ответ получен (и оплачен), но без usage: без retry/fallback, резерв не закрываем."""
+
+
+@dataclass(frozen=True)
+class GeneratedImage:
+    """Картинка из ответа модели.
+
+    data URL декодируется в data и mime, url остаётся пустым (сама строка
+    data URL уже содержит байты и не дублируется). У http(s) URL байты
+    подгружаются отдельным GET без ключа OpenRouter; если скачать не вышло,
+    data остаётся None, а url сохраняется.
+    """
+
+    data: bytes | None
+    mime: str | None
+    url: str | None
 
 
 @dataclass(frozen=True)
@@ -118,6 +144,8 @@ class ChatResult:
     finish_reason: str | None = None
     tool_calls: list[dict[str, Any]] = field(default_factory=list)
     reasoning: str | None = None
+    images: list[GeneratedImage] = field(default_factory=list)
+    incomplete: bool = False
 
 
 @dataclass(frozen=True)
@@ -401,6 +429,8 @@ def _build_result(
     finish_reason: str | None = None,
     tool_calls: list[dict[str, Any]] | None = None,
     reasoning: str | None = None,
+    images: list[GeneratedImage] | None = None,
+    incomplete: bool = False,
     require_usage: bool = True,
 ) -> ChatResult:
     # Без usage резерв бюджета нельзя закрыть фактической суммой — оставляем его pending.
@@ -429,6 +459,8 @@ def _build_result(
         finish_reason=finish_reason,
         tool_calls=tool_calls or [],
         reasoning=reasoning or None,
+        images=list(images or []),
+        incomplete=incomplete,
     )
 
 
@@ -465,6 +497,7 @@ def _parse_json_response(
         finish_reason=choice.get("finish_reason"),
         tool_calls=tool_calls if isinstance(tool_calls, list) else None,
         reasoning=message.get("reasoning"),
+        images=_images_from_message(message),
     )
 
 
@@ -488,6 +521,8 @@ class _SSEState:
         self.parts: list[str] = []
         self.reasoning: list[str] = []
         self.tool_calls: dict[int, dict[str, Any]] = {}
+        self.images: list[GeneratedImage] = []
+        self._image_keys: set[tuple[object, ...]] = set()
         self.model_used = model.model_id
         self.usage: dict[str, Any] = {}
         self.last_event: dict[str, Any] = {}
@@ -497,6 +532,10 @@ class _SSEState:
     @property
     def has_content(self) -> bool:
         return bool(self.parts)
+
+    def has_output(self) -> bool:
+        """Уже есть текст, картинка, tool call, reasoning или usage."""
+        return bool(self.parts or self.reasoning or self.tool_calls or self.images or self.usage)
 
     def feed(self, line: str) -> ChatChunk | None:
         """Возвращает чанк с дельтой текста либо None. Ошибка в событии → исключение."""
@@ -524,6 +563,10 @@ class _SSEState:
         if delta.get("reasoning"):
             self.reasoning.append(str(delta["reasoning"]))
         self._merge_tool_calls(delta.get("tool_calls"))
+        self._add_images(delta)
+        message = choice.get("message")
+        if isinstance(message, Mapping):
+            self._add_images(message)
         text = _join_content(delta.get("content"))
         if not text:
             return None
@@ -555,7 +598,15 @@ class _SSEState:
                 call["function"]["name"] += str(function.get("name") or "")
                 call["function"]["arguments"] += str(function.get("arguments") or "")
 
-    def result(self, *, partial: bool = False) -> ChatResult:
+    def _add_images(self, node: Mapping[str, Any]) -> None:
+        for image in _images_from_message(node):
+            key = _image_identity(image)
+            if key in self._image_keys:
+                continue
+            self._image_keys.add(key)
+            self.images.append(image)
+
+    def result(self, *, partial: bool = False, incomplete: bool = False) -> ChatResult:
         if not partial and not self.finished:
             raise OpenRouterAPIError(
                 _("OpenRouter stream ended before [DONE]."), status_code=_BODY_ERROR_STATUS
@@ -575,7 +626,391 @@ class _SSEState:
             finish_reason=self.finish_reason,
             tool_calls=[self.tool_calls[key] for key in sorted(self.tool_calls)],
             reasoning="".join(self.reasoning),
+            images=list(self.images),
+            incomplete=incomplete,
         )
+
+
+@dataclass(frozen=True)
+class _CallClock:
+    """Idle-таймаут между байтами и абсолютный дедлайн вызова (monotonic)."""
+
+    idle_s: float
+    deadline_at: float | None
+
+    def due(self) -> bool:
+        return self.deadline_at is not None and time.monotonic() >= self.deadline_at
+
+    def bounds_httpx_timeout(self) -> bool:
+        """True, если ближайший httpx-таймаут упирается в дедлайн, а не в idle."""
+        if self.deadline_at is None:
+            return False
+        return self.deadline_at - time.monotonic() < self.idle_s
+
+    def httpx_timeout(self) -> httpx.Timeout:
+        """Таймаут одного чтения: не длиннее idle и не длиннее остатка дедлайна."""
+        idle = self.idle_s
+        if self.deadline_at is None:
+            return httpx.Timeout(idle)
+        remaining = self.deadline_at - time.monotonic()
+        if remaining <= 0:
+            remaining = 0.001
+        bound = min(idle, remaining)
+        return httpx.Timeout(connect=bound, read=bound, write=bound, pool=bound)
+
+
+def _positive_seconds(value: object, name: str) -> float:
+    try:
+        number = float(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError) as exc:
+        raise ConfigurationError(
+            _("%(name)s must be a positive number of seconds.") % {"name": name}
+        ) from exc
+    if number != number or number <= 0 or number == float("inf"):
+        raise ConfigurationError(
+            _("%(name)s must be a positive number of seconds.") % {"name": name}
+        )
+    return number
+
+
+def _resolve_call_clock(
+    overrides: dict[str, Any], profile: UsageProfile, cfg: RuntimeConfig
+) -> _CallClock:
+    """Снимает таймауты вызова с overrides, чтобы они не ушли в JSON OpenRouter."""
+    deadline_s = overrides.pop("deadline_s", None)
+    total = overrides.pop("total_timeout", None)
+    if deadline_s is not None and total is not None:
+        if _positive_seconds(deadline_s, "deadline_s") != _positive_seconds(
+            total, "total_timeout"
+        ):
+            raise ConfigurationError(
+                _("total_timeout and deadline_s are the same deadline; pass one value.")
+            )
+    chosen = deadline_s if deadline_s is not None else total
+    if chosen is None:
+        chosen = profile.total_timeout if profile.total_timeout is not None else cfg.total_timeout
+    idle = overrides.pop("request_timeout", None)
+    if idle is None:
+        idle = (
+            profile.request_timeout if profile.request_timeout is not None else cfg.request_timeout
+        )
+    total_s = None if chosen is None else _positive_seconds(chosen, "total_timeout")
+    deadline_at = None if total_s is None else time.monotonic() + total_s
+    return _CallClock(
+        idle_s=_positive_seconds(idle, "request_timeout"),
+        deadline_at=deadline_at,
+    )
+
+
+def _timeout_exception(state: _SSEState) -> OpenRouterTimeout:
+    partial = state.result(partial=True, incomplete=True) if state.has_output() else None
+    return OpenRouterTimeout(_("OpenRouter call exceeded the total timeout."), partial=partial)
+
+
+class _ResponseDeadline:
+    """По дедлайну закрывает только этот response, не общий httpx-клиент."""
+
+    def __init__(self, response: httpx.Response, clock: _CallClock) -> None:
+        self.clock = clock
+        self.fired = False
+        self._response = response
+        self._timer: threading.Timer | None = None
+        if clock.deadline_at is None:
+            return
+        delay = clock.deadline_at - time.monotonic()
+        if delay <= 0:
+            self._close()
+            return
+        timer = threading.Timer(delay, self._close)
+        timer.daemon = True
+        self._timer = timer
+        timer.start()
+
+    def _close(self) -> None:
+        # Флаг до close(): гонка с чтением всё равно считается дедлайном.
+        self.fired = True
+        try:
+            self._response.close()
+        except Exception:
+            logger.debug("deadline response close failed", exc_info=True)
+
+    def cancel(self) -> None:
+        if self._timer is not None:
+            self._timer.cancel()
+            self._timer = None
+
+    def due(self) -> bool:
+        return self.fired or self.clock.due()
+
+    def ensure(self, state: _SSEState) -> None:
+        if self.due():
+            self._close()
+            raise _timeout_exception(state)
+
+
+def _image_identity(image: GeneratedImage) -> tuple[object, ...]:
+    if image.url:
+        return ("url", image.url)
+    return ("data", image.mime, image.data)
+
+
+def _image_from_url(url: str) -> GeneratedImage:
+    if url.startswith("data:"):
+        header, separator, payload = url.partition(",")
+        if not separator:
+            return GeneratedImage(data=None, mime=None, url=None)
+        meta = header[5:]
+        mime = meta.split(";", 1)[0].strip() or "application/octet-stream"
+        if "base64" in meta:
+            try:
+                data: bytes | None = base64.b64decode("".join(payload.split()), validate=True)
+            except (ValueError, binascii.Error):
+                data = None
+        else:
+            data = unquote_to_bytes(payload)
+        if data == b"":
+            data = None
+        # url не храним: data URL уже содержит байты и может быть на мегабайты.
+        return GeneratedImage(data=data, mime=mime, url=None)
+    if url.startswith(("http://", "https://")):
+        return GeneratedImage(data=None, mime=None, url=url)
+    return GeneratedImage(data=None, mime=None, url=None)
+
+
+def _image_from_inline(inline: Mapping[str, Any]) -> GeneratedImage:
+    mime_value = inline.get("mime_type") if "mime_type" in inline else inline.get("mime")
+    mime = str(mime_value or "application/octet-stream")
+    raw = inline.get("data")
+    data: bytes | None
+    if isinstance(raw, str) and raw:
+        try:
+            data = base64.b64decode("".join(raw.split()), validate=True)
+        except (ValueError, binascii.Error):
+            data = None
+    else:
+        data = None
+    if data == b"":
+        data = None
+    return GeneratedImage(data=data, mime=mime, url=None)
+
+
+def _url_of_image_item(item: Mapping[str, Any]) -> str | None:
+    image_url = item.get("image_url")
+    if isinstance(image_url, str) and image_url:
+        return image_url
+    if isinstance(image_url, Mapping):
+        url = image_url.get("url")
+        if isinstance(url, str) and url:
+            return url
+    if item.get("type") in _IMAGE_PART_TYPES:
+        url = item.get("url")
+        if isinstance(url, str) and url:
+            return url
+    return None
+
+
+def _images_from_message(node: Mapping[str, Any]) -> list[GeneratedImage]:
+    """Картинки из message.images и из частей content (data URL и http URL)."""
+    blobs: list[object] = []
+    images = node.get("images")
+    if isinstance(images, list):
+        blobs.extend(images)
+    content = node.get("content")
+    if isinstance(content, list):
+        blobs.extend(part for part in content if isinstance(part, Mapping))
+    found: list[GeneratedImage] = []
+    seen: set[tuple[object, ...]] = set()
+    for item in blobs:
+        if not isinstance(item, Mapping):
+            continue
+        inline = item.get("inline_data")
+        if isinstance(inline, Mapping) and "data" in inline:
+            image = _image_from_inline(inline)
+        else:
+            url = _url_of_image_item(item)
+            if not url:
+                continue
+            image = _image_from_url(url)
+        key = _image_identity(image)
+        if key in seen:
+            continue
+        seen.add(key)
+        found.append(image)
+    return found
+
+
+def _read_body_sync(response: httpx.Response, guard: _ResponseDeadline, state: _SSEState) -> bytes:
+    chunks: list[bytes] = []
+    try:
+        for chunk in response.iter_bytes():
+            guard.ensure(state)
+            chunks.append(chunk)
+    except OpenRouterTimeout:
+        raise
+    except Exception as exc:
+        if guard.due():
+            raise _timeout_exception(state) from exc
+        raise
+    guard.ensure(state)
+    return b"".join(chunks)
+
+
+def _rehydrate(response: httpx.Response, raw: bytes) -> httpx.Response:
+    return httpx.Response(
+        status_code=response.status_code,
+        headers=response.headers,
+        content=raw,
+        request=response.request,
+    )
+
+
+def _materialize_sync(
+    http: httpx.Client, image: GeneratedImage, clock: _CallClock
+) -> GeneratedImage:
+    if image.data is not None or not image.url:
+        return image
+    if not image.url.startswith(("http://", "https://")) or clock.due():
+        return image
+    try:
+        with http.stream(
+            "GET", image.url, timeout=clock.httpx_timeout(), follow_redirects=True
+        ) as response:
+            if response.status_code != 200:
+                logger.warning("Generated image URL returned HTTP %s", response.status_code)
+                return image
+            mime = response.headers.get("content-type", "").split(";", 1)[0].strip() or image.mime
+            declared = response.headers.get("content-length")
+            if declared and declared.isdigit() and int(declared) > _MAX_REMOTE_IMAGE_BYTES:
+                logger.warning("Generated image URL exceeds the size cap: %s", image.url)
+                return image
+            chunks: list[bytes] = []
+            total = 0
+            for chunk in response.iter_bytes():
+                if clock.due():
+                    return image
+                total += len(chunk)
+                if total > _MAX_REMOTE_IMAGE_BYTES:
+                    logger.warning("Generated image URL exceeds the size cap: %s", image.url)
+                    return image
+                chunks.append(chunk)
+            return GeneratedImage(data=b"".join(chunks), mime=mime, url=image.url)
+    except httpx.HTTPError:
+        logger.warning("Failed to download generated image %s", image.url, exc_info=True)
+        return image
+
+
+def _materialize_all_sync(
+    http: httpx.Client, images: list[GeneratedImage], clock: _CallClock
+) -> list[GeneratedImage]:
+    return [_materialize_sync(http, image, clock) for image in images]
+
+
+async def _aclose_response(response: httpx.Response) -> None:
+    try:
+        await response.aclose()
+    except Exception:
+        logger.debug("deadline response close failed", exc_info=True)
+
+
+async def _anext_with_deadline(
+    agen: AsyncIterator[Any],
+    clock: _CallClock,
+    state: _SSEState,
+    response: httpx.Response,
+) -> Any:
+    if clock.deadline_at is None:
+        return await agen.__anext__()
+    remaining = clock.deadline_at - time.monotonic()
+    if remaining <= 0:
+        await _aclose_response(response)
+        raise _timeout_exception(state)
+    try:
+        return await asyncio.wait_for(agen.__anext__(), remaining)
+    except TimeoutError as exc:
+        # wait_for отменяет только это чтение. Клиент процесса не закрываем.
+        await _aclose_response(response)
+        raise _timeout_exception(state) from exc
+
+
+async def _aread_body(response: httpx.Response, clock: _CallClock, state: _SSEState) -> bytes:
+    chunks: list[bytes] = []
+    agen = response.aiter_bytes().__aiter__()
+    while True:
+        try:
+            chunk = await _anext_with_deadline(agen, clock, state, response)
+        except StopAsyncIteration:
+            break
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
+async def _aread_remote(response: httpx.Response, clock: _CallClock) -> bytes | None:
+    """Тело картинки. None — дедлайн или размер больше лимита; вызов чата при этом жив."""
+    chunks: list[bytes] = []
+    total = 0
+    agen = response.aiter_bytes().__aiter__()
+    while True:
+        if clock.due():
+            await _aclose_response(response)
+            return None
+        try:
+            if clock.deadline_at is None:
+                chunk = await agen.__anext__()
+            else:
+                remaining = clock.deadline_at - time.monotonic()
+                if remaining <= 0:
+                    await _aclose_response(response)
+                    return None
+                chunk = await asyncio.wait_for(agen.__anext__(), remaining)
+        except StopAsyncIteration:
+            break
+        except TimeoutError:
+            await _aclose_response(response)
+            return None
+        total += len(chunk)
+        if total > _MAX_REMOTE_IMAGE_BYTES:
+            await _aclose_response(response)
+            return None
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
+async def _materialize_async(
+    http: httpx.AsyncClient, image: GeneratedImage, clock: _CallClock
+) -> GeneratedImage:
+    if image.data is not None or not image.url:
+        return image
+    if not image.url.startswith(("http://", "https://")) or clock.due():
+        return image
+    try:
+        async with http.stream(
+            "GET", image.url, timeout=clock.httpx_timeout(), follow_redirects=True
+        ) as response:
+            if response.status_code != 200:
+                logger.warning("Generated image URL returned HTTP %s", response.status_code)
+                return image
+            mime = response.headers.get("content-type", "").split(";", 1)[0].strip() or image.mime
+            declared = response.headers.get("content-length")
+            if declared and declared.isdigit() and int(declared) > _MAX_REMOTE_IMAGE_BYTES:
+                logger.warning("Generated image URL exceeds the size cap: %s", image.url)
+                return image
+            raw = await _aread_remote(response, clock)
+            if raw is None:
+                logger.warning("Generated image URL was not fully downloaded: %s", image.url)
+                return image
+            return GeneratedImage(data=raw, mime=mime, url=image.url)
+    except httpx.HTTPError:
+        logger.warning("Failed to download generated image %s", image.url, exc_info=True)
+        return image
+
+
+async def _materialize_all_async(
+    http: httpx.AsyncClient, images: list[GeneratedImage], clock: _CallClock
+) -> list[GeneratedImage]:
+    resolved: list[GeneratedImage] = []
+    for image in images:
+        resolved.append(await _materialize_async(http, image, clock))
+    return resolved
 
 
 def _want_sse(cfg: RuntimeConfig, overrides: Mapping[str, Any], *, force: bool = False) -> bool:
@@ -589,7 +1024,7 @@ def _want_sse(cfg: RuntimeConfig, overrides: Mapping[str, Any], *, force: bool =
 def _prepare(
     profile_name: str | None,
     overrides: dict[str, Any],
-) -> tuple[RuntimeConfig, UsageProfile, list[OpenRouterModel]]:
+) -> tuple[RuntimeConfig, UsageProfile, list[OpenRouterModel], _CallClock]:
     """Конфиг, профиль и допустимая цепочка моделей. Резерв — на каждую попытку."""
     set_active_reservation(None)
     cfg = get_runtime_config()
@@ -609,8 +1044,9 @@ def _prepare(
             % {"name": profile.name, "kind": profile.kind}
         )
     check_limits(profile)
+    clock = _resolve_call_clock(overrides, profile, cfg)
     chain = _allowed_models(profile, _model_chain(profile, overrides))
-    return cfg, profile, chain
+    return cfg, profile, chain, clock
 
 
 def _activate_reservation(profile: UsageProfile, reservation: RequestLog | None) -> None:
@@ -651,17 +1087,23 @@ def _abort_record(
     )
 
 
+def _unwrap_result(result: ChatResult) -> ChatResult:
+    if result.incomplete:
+        raise OpenRouterTimeout(_("OpenRouter call exceeded the total timeout."), partial=result)
+    return result
+
+
 def _collect_result(chunks: Iterator[ChatChunk]) -> ChatResult:
     for chunk in chunks:
         if chunk.done and chunk.result is not None:
-            return chunk.result
+            return _unwrap_result(chunk.result)
     raise OpenRouterAPIError(_("All models failed without a specific error."))
 
 
 async def _acollect_result(chunks: AsyncIterator[ChatChunk]) -> ChatResult:
     async for chunk in chunks:
         if chunk.done and chunk.result is not None:
-            return chunk.result
+            return _unwrap_result(chunk.result)
     raise OpenRouterAPIError(_("All models failed without a specific error."))
 
 
@@ -703,13 +1145,19 @@ class OpenRouterClient:
         )
         return result
 
+    def generate_image(
+        self, prompt: str, *, model: str | None = None, **overrides: Any
+    ) -> ChatResult:
+        """Генерация картинки профилем клиента. modalities по умолчанию image+text."""
+        return generate_image(prompt, model=model, profile=self.profile_name, **overrides)
+
     def _run(
         self, messages: ChatMessages, overrides: dict[str, Any], *, emit: bool
     ) -> Generator[ChatChunk, None, None]:
-        cfg, profile, chain = _prepare(self.profile_name, overrides)
+        cfg, profile, chain, clock = _prepare(self.profile_name, overrides)
         sse = _want_sse(cfg, overrides, force=emit)
         with closing(
-            _iter_chain_sync(cfg, profile, chain, messages, overrides, sse=sse, emit=emit)
+            _iter_chain_sync(cfg, profile, chain, messages, overrides, clock, sse=sse, emit=emit)
         ) as chunks:
             yield from chunks
 
@@ -720,6 +1168,7 @@ def _iter_chain_sync(
     chain: list[OpenRouterModel],
     messages: ChatMessages,
     overrides: dict[str, Any],
+    clock: _CallClock,
     *,
     sse: bool,
     emit: bool,
@@ -727,12 +1176,16 @@ def _iter_chain_sync(
     last_error: OpenRouterAPIError | None = None
     credits_exhausted = False
     for model in chain:
+        if clock.due():
+            raise OpenRouterTimeout(_("OpenRouter call exceeded the total timeout."))
         if credits_exhausted and not model.is_free:
             continue
         payload = _build_payload(profile, model, messages, overrides, stream=sse)
         emitted = False
         try:
-            with closing(_attempt_sync(cfg, profile, model, payload, sse=sse, emit=emit)) as it:
+            with closing(
+                _attempt_sync(cfg, profile, model, payload, clock, sse=sse, emit=emit)
+            ) as it:
                 for chunk in it:
                     if chunk.done:
                         yield chunk
@@ -748,11 +1201,36 @@ def _iter_chain_sync(
     raise last_error or OpenRouterAPIError(_("All models failed without a specific error."))
 
 
+def _emit_timeout_sync(
+    profile: UsageProfile,
+    model: OpenRouterModel,
+    started: float,
+    state: _SSEState,
+    exc: OpenRouterTimeout,
+) -> Generator[ChatChunk, None, None]:
+    """499 в логе. Частичный ответ — финальный чанк, пустой — исключение наружу."""
+    dispatch_log(
+        _record(
+            profile,
+            model,
+            started,
+            status_code=CLIENT_CLOSED_STATUS,
+            error_message=str(exc)[:_ERROR_TEXT_LIMIT],
+            result=exc.partial,
+        )
+    )
+    if exc.partial is not None:
+        yield _done_chunk(exc.partial, state.last_event)
+        return
+    raise exc
+
+
 def _attempt_sync(
     cfg: RuntimeConfig,
     profile: UsageProfile,
     model: OpenRouterModel,
     payload: dict[str, Any],
+    clock: _CallClock,
     *,
     sse: bool,
     emit: bool,
@@ -764,56 +1242,97 @@ def _attempt_sync(
     retries = int(cfg.max_retries)
     image_count = _count_images(payload.get("messages"))
     for attempt in range(retries + 1):
+        if clock.due():
+            raise OpenRouterTimeout(_("OpenRouter call exceeded the total timeout."))
         _activate_reservation(profile, reserve_request(profile, model, image_count=image_count))
         started = time.perf_counter()
         retry_after: str | None = None
         state = _SSEState(model, started)
+        deadline_bound = clock.bounds_httpx_timeout()
+        parsed: ChatResult | None = None
         try:
             with limiter.slot(cfg.max_parallel_requests):
-                if not sse:
-                    response = http.post(
-                        url, json=payload, headers=_headers(cfg), timeout=cfg.request_timeout
-                    )
-                    if response.status_code == 200:
-                        result = _parse_json_response(response, model, started)
-                        dispatch_log(
-                            _record(profile, model, started, status_code=200, result=result)
-                        )
-                        yield _done_chunk(result, result.raw)
-                        return
-                    retry_after = response.headers.get("Retry-After")
-                    raise _http_error(response.status_code, response.text)
                 with http.stream(
-                    "POST", url, json=payload, headers=_headers(cfg), timeout=cfg.request_timeout
+                    "POST",
+                    url,
+                    json=payload,
+                    headers=_headers(cfg),
+                    timeout=clock.httpx_timeout(),
                 ) as response:
-                    if response.status_code != 200:
-                        retry_after = response.headers.get("Retry-After")
-                        text = response.read().decode("utf-8", errors="replace")
-                        raise _http_error(response.status_code, text)
+                    # Таймер закрывает только этот response. Общий клиент не трогаем.
+                    guard = _ResponseDeadline(response, clock)
                     try:
-                        for line in response.iter_lines():
-                            chunk = state.feed(line)
-                            if chunk is not None:
-                                yield chunk
-                            if state.finished:
-                                break
-                    except GeneratorExit:
-                        partial = state.result(partial=True)
-                        dispatch_log(
-                            _record(
-                                profile,
-                                model,
-                                started,
-                                status_code=CLIENT_CLOSED_STATUS,
-                                error_message="stream closed by consumer",
-                                result=partial,
+                        if response.status_code != 200:
+                            retry_after = response.headers.get("Retry-After")
+                            raw = _read_body_sync(response, guard, state)
+                            raise _http_error(
+                                response.status_code, raw.decode("utf-8", errors="replace")
                             )
-                        )
-                        raise
-                    result = state.result()
-                    dispatch_log(_record(profile, model, started, status_code=200, result=result))
-                    yield _done_chunk(result, state.last_event)
-                    return
+                        if not sse:
+                            raw = _read_body_sync(response, guard, state)
+                            parsed = _parse_json_response(
+                                _rehydrate(response, raw), model, started
+                            )
+                        else:
+                            parsed = None
+                            try:
+                                for line in response.iter_lines():
+                                    guard.ensure(state)
+                                    chunk = state.feed(line)
+                                    if chunk is not None:
+                                        yield chunk
+                                    if state.finished:
+                                        break
+                            except GeneratorExit:
+                                partial = state.result(partial=True)
+                                dispatch_log(
+                                    _record(
+                                        profile,
+                                        model,
+                                        started,
+                                        status_code=CLIENT_CLOSED_STATUS,
+                                        error_message="stream closed by consumer",
+                                        result=partial,
+                                    )
+                                )
+                                raise
+                            except OpenRouterTimeout:
+                                raise
+                            except Exception as exc:
+                                if guard.due():
+                                    raise _timeout_exception(state) from exc
+                                raise
+                            if guard.due() and not state.finished:
+                                raise _timeout_exception(state)
+                    finally:
+                        guard.cancel()
+            if not sse:
+                assert parsed is not None
+                result = replace(
+                    parsed,
+                    images=_materialize_all_sync(http, parsed.images, clock),
+                    latency_ms=_elapsed_ms(started),
+                )
+                dispatch_log(_record(profile, model, started, status_code=200, result=result))
+                yield _done_chunk(result, result.raw)
+                return
+            state.images = _materialize_all_sync(http, state.images, clock)
+            result = state.result()
+            dispatch_log(_record(profile, model, started, status_code=200, result=result))
+            yield _done_chunk(result, state.last_event)
+            return
+        except OpenRouterTimeout as exc:
+            yield from _emit_timeout_sync(profile, model, started, state, exc)
+            return
+        except httpx.TimeoutException as exc:
+            if deadline_bound or clock.due():
+                timeout_exc = _timeout_exception(state)
+                yield from _emit_timeout_sync(profile, model, started, state, timeout_exc)
+                return
+            error = OpenRouterAPIError(str(exc), status_code=None)
+            dispatch_log(_record(profile, model, started, status_code=0, error_message=str(exc)))
+            if (emit and state.has_content) or attempt >= retries:
+                raise error from exc
         except httpx.RequestError as exc:
             error = OpenRouterAPIError(str(exc), status_code=None)
             dispatch_log(_record(profile, model, started, status_code=0, error_message=str(exc)))
@@ -842,6 +1361,8 @@ def _attempt_sync(
                 dispatch_log(record)
             raise
         delay = _retry_delay(attempt, retry_after)
+        if clock.deadline_at is not None:
+            delay = min(delay, max(0.0, clock.deadline_at - time.monotonic()))
         if delay:
             time.sleep(delay)
     raise OpenRouterAPIError(_("All models failed without a specific error."))
@@ -888,16 +1409,22 @@ class AsyncOpenRouterClient:
         )
         return result
 
+    async def generate_image(
+        self, prompt: str, *, model: str | None = None, **overrides: Any
+    ) -> ChatResult:
+        """Асинхронная генерация картинки профилем клиента."""
+        return await agenerate_image(prompt, model=model, profile=self.profile_name, **overrides)
+
     async def _run(
         self, messages: ChatMessages, overrides: dict[str, Any], *, emit: bool
     ) -> AsyncGenerator[ChatChunk, None]:
         set_active_reservation(None)
-        cfg, profile, chain = await sync_to_async(_prepare, thread_sensitive=True)(
+        cfg, profile, chain, clock = await sync_to_async(_prepare, thread_sensitive=True)(
             self.profile_name, overrides
         )
         sse = _want_sse(cfg, overrides, force=emit)
         async with aclosing(
-            _aiter_chain(cfg, profile, chain, messages, overrides, sse=sse, emit=emit)
+            _aiter_chain(cfg, profile, chain, messages, overrides, clock, sse=sse, emit=emit)
         ) as chunks:
             async for chunk in chunks:
                 yield chunk
@@ -909,6 +1436,7 @@ async def _aiter_chain(
     chain: list[OpenRouterModel],
     messages: ChatMessages,
     overrides: dict[str, Any],
+    clock: _CallClock,
     *,
     sse: bool,
     emit: bool,
@@ -916,13 +1444,15 @@ async def _aiter_chain(
     last_error: OpenRouterAPIError | None = None
     credits_exhausted = False
     for model in chain:
+        if clock.due():
+            raise OpenRouterTimeout(_("OpenRouter call exceeded the total timeout."))
         if credits_exhausted and not model.is_free:
             continue
         payload = _build_payload(profile, model, messages, overrides, stream=sse)
         emitted = False
         try:
             async with aclosing(
-                _attempt_async(cfg, profile, model, payload, sse=sse, emit=emit)
+                _attempt_async(cfg, profile, model, payload, clock, sse=sse, emit=emit)
             ) as it:
                 async for chunk in it:
                     if chunk.done:
@@ -939,11 +1469,35 @@ async def _aiter_chain(
     raise last_error or OpenRouterAPIError(_("All models failed without a specific error."))
 
 
+async def _emit_timeout_async(
+    profile: UsageProfile,
+    model: OpenRouterModel,
+    started: float,
+    state: _SSEState,
+    exc: OpenRouterTimeout,
+) -> AsyncGenerator[ChatChunk, None]:
+    await adispatch_log(
+        _record(
+            profile,
+            model,
+            started,
+            status_code=CLIENT_CLOSED_STATUS,
+            error_message=str(exc)[:_ERROR_TEXT_LIMIT],
+            result=exc.partial,
+        )
+    )
+    if exc.partial is not None:
+        yield _done_chunk(exc.partial, state.last_event)
+        return
+    raise exc
+
+
 async def _attempt_async(
     cfg: RuntimeConfig,
     profile: UsageProfile,
     model: OpenRouterModel,
     payload: dict[str, Any],
+    clock: _CallClock,
     *,
     sse: bool,
     emit: bool,
@@ -955,6 +1509,8 @@ async def _attempt_async(
     retries = int(cfg.max_retries)
     image_count = _count_images(payload.get("messages"))
     for attempt in range(retries + 1):
+        if clock.due():
+            raise OpenRouterTimeout(_("OpenRouter call exceeded the total timeout."))
         reservation = await sync_to_async(reserve_request, thread_sensitive=True)(
             profile, model, image_count=image_count
         )
@@ -962,56 +1518,90 @@ async def _attempt_async(
         started = time.perf_counter()
         retry_after: str | None = None
         state = _SSEState(model, started)
+        deadline_bound = clock.bounds_httpx_timeout()
+        parsed: ChatResult | None = None
         try:
             async with limiter.aslot(cfg.max_parallel_requests):
-                if not sse:
-                    response = await http.post(
-                        url, json=payload, headers=_headers(cfg), timeout=cfg.request_timeout
-                    )
-                    if response.status_code == 200:
-                        result = _parse_json_response(response, model, started)
-                        await adispatch_log(
-                            _record(profile, model, started, status_code=200, result=result)
-                        )
-                        yield _done_chunk(result, result.raw)
-                        return
-                    retry_after = response.headers.get("Retry-After")
-                    raise _http_error(response.status_code, response.text)
                 async with http.stream(
-                    "POST", url, json=payload, headers=_headers(cfg), timeout=cfg.request_timeout
+                    "POST",
+                    url,
+                    json=payload,
+                    headers=_headers(cfg),
+                    timeout=clock.httpx_timeout(),
                 ) as response:
                     if response.status_code != 200:
                         retry_after = response.headers.get("Retry-After")
-                        raw = await response.aread()
+                        raw = await _aread_body(response, clock, state)
                         raise _http_error(
                             response.status_code, raw.decode("utf-8", errors="replace")
                         )
-                    try:
-                        async for line in response.aiter_lines():
-                            chunk = state.feed(line)
-                            if chunk is not None:
-                                yield chunk
-                            if state.finished:
-                                break
-                    except GeneratorExit:
-                        partial = state.result(partial=True)
-                        await adispatch_log(
-                            _record(
-                                profile,
-                                model,
-                                started,
-                                status_code=CLIENT_CLOSED_STATUS,
-                                error_message="stream closed by consumer",
-                                result=partial,
+                    if not sse:
+                        raw = await _aread_body(response, clock, state)
+                        parsed = _parse_json_response(_rehydrate(response, raw), model, started)
+                    else:
+                        agen = response.aiter_lines().__aiter__()
+                        try:
+                            while True:
+                                try:
+                                    line = await _anext_with_deadline(agen, clock, state, response)
+                                except StopAsyncIteration:
+                                    break
+                                chunk = state.feed(line)
+                                if chunk is not None:
+                                    yield chunk
+                                if state.finished:
+                                    break
+                        except GeneratorExit:
+                            partial = state.result(partial=True)
+                            await adispatch_log(
+                                _record(
+                                    profile,
+                                    model,
+                                    started,
+                                    status_code=CLIENT_CLOSED_STATUS,
+                                    error_message="stream closed by consumer",
+                                    result=partial,
+                                )
                             )
-                        )
-                        raise
-                    result = state.result()
-                    await adispatch_log(
-                        _record(profile, model, started, status_code=200, result=result)
-                    )
-                    yield _done_chunk(result, state.last_event)
-                    return
+                            raise
+                        if clock.due() and not state.finished:
+                            await _aclose_response(response)
+                            raise _timeout_exception(state)
+            if not sse:
+                assert parsed is not None
+                result = replace(
+                    parsed,
+                    images=await _materialize_all_async(http, parsed.images, clock),
+                    latency_ms=_elapsed_ms(started),
+                )
+                await adispatch_log(
+                    _record(profile, model, started, status_code=200, result=result)
+                )
+                yield _done_chunk(result, result.raw)
+                return
+            state.images = await _materialize_all_async(http, state.images, clock)
+            result = state.result()
+            await adispatch_log(_record(profile, model, started, status_code=200, result=result))
+            yield _done_chunk(result, state.last_event)
+            return
+        except OpenRouterTimeout as exc:
+            async for chunk in _emit_timeout_async(profile, model, started, state, exc):
+                yield chunk
+            return
+        except httpx.TimeoutException as exc:
+            if deadline_bound or clock.due():
+                timeout_exc = _timeout_exception(state)
+                async for chunk in _emit_timeout_async(
+                    profile, model, started, state, timeout_exc
+                ):
+                    yield chunk
+                return
+            error = OpenRouterAPIError(str(exc), status_code=None)
+            await adispatch_log(
+                _record(profile, model, started, status_code=0, error_message=str(exc))
+            )
+            if (emit and state.has_content) or attempt >= retries:
+                raise error from exc
         except httpx.RequestError as exc:
             error = OpenRouterAPIError(str(exc), status_code=None)
             await adispatch_log(
@@ -1042,6 +1632,8 @@ async def _attempt_async(
                 await adispatch_log(record)
             raise
         delay = _retry_delay(attempt, retry_after)
+        if clock.deadline_at is not None:
+            delay = min(delay, max(0.0, clock.deadline_at - time.monotonic()))
         if delay:
             await asyncio.sleep(delay)
     raise OpenRouterAPIError(_("All models failed without a specific error."))
@@ -1090,3 +1682,37 @@ async def astream(
         raise TypeError("astream() missing required argument: 'messages'")
     async for chunk in AsyncOpenRouterClient(profile_name).stream(messages, **overrides):
         yield chunk
+
+
+def _image_prompt_messages(prompt: str) -> list[dict[str, str]]:
+    if not isinstance(prompt, str) or not prompt.strip():
+        raise ConfigurationError(_("Image prompt must be a non-empty string."))
+    return [{"role": "user", "content": prompt}]
+
+
+def generate_image(
+    prompt: str,
+    *,
+    model: str | None = None,
+    profile: str | None = None,
+    **overrides: Any,
+) -> ChatResult:
+    """Картинка через chat-completions. По умолчанию modalities=["image", "text"]."""
+    overrides.setdefault("modalities", ["image", "text"])
+    if model is not None:
+        overrides["model"] = model
+    return chat(profile, messages=_image_prompt_messages(prompt), **overrides)
+
+
+async def agenerate_image(
+    prompt: str,
+    *,
+    model: str | None = None,
+    profile: str | None = None,
+    **overrides: Any,
+) -> ChatResult:
+    """Асинхронное зеркало generate_image()."""
+    overrides.setdefault("modalities", ["image", "text"])
+    if model is not None:
+        overrides["model"] = model
+    return await achat(profile, messages=_image_prompt_messages(prompt), **overrides)

@@ -102,7 +102,9 @@ Singleton: the changelist redirects to the only row. The row cannot be deleted.
 - **Base URL** — OpenRouter API root (`https://openrouter.ai/api/v1`).
 - **Default profile** — used when `chat(messages=...)` omits a profile name. Must be a chat profile.
 - **Default transcription profile** — used when `transcribe()` omits a profile name. Must be a transcription profile.
-- **Request timeout** / **Max retries** — HTTP timeout and retries on transport / 5xx before the next model in the chain.
+- **Request timeout** — idle timeout between bytes, in seconds (default 60). A stream that keeps sending tokens is not stopped by this value.
+- **Total timeout** — optional wall-clock deadline for one `chat()` / `stream()` call. Blank means no overall deadline.
+- **Max retries** — retries on transport / 5xx before the next model in the chain.
 - **Streaming enabled** — allows SSE via `stream()` / `astream()` and `chat(stream=True)`. Off by default.
 - **Max parallel requests** — cap on concurrent HTTP calls in this process (`0` = unlimited).
 
@@ -131,7 +133,7 @@ A profile is the slug your code passes (`chat`, `translation`, …) plus an orde
 
 Changelist: name, primary model, active, only-free, daily request/budget caps, and aggregates from logs (request count, avg/total latency, avg/total cost).
 
-On the form: `kind` (`chat` or `transcription`), `max_tokens`, `temperature` (0–2 for chat, 0–1 for transcription), optional ISO-639-1 `language`, `max_audio_bytes` / `max_audio_seconds` for speech-to-text, daily/monthly request and USD limits (blank = unlimited), **only free models**, **is active**. Inline **Models (priority order)** uses catalog autocomplete (price + latency in the label; same price/speed query filters as the catalog, plus the profile kind). A transcription profile only accepts transcription models. Saving syncs the first chain item into `model`.
+On the form: `kind` (`chat` or `transcription`), `max_tokens`, `temperature` (0–2 for chat, 0–1 for transcription), optional per-profile **request timeout** and **total timeout** (blank = the global values), optional ISO-639-1 `language`, `max_audio_bytes` / `max_audio_seconds` for speech-to-text, daily/monthly request and USD limits (blank = unlimited), **only free models**, **is active**. Inline **Models (priority order)** uses catalog autocomplete (price + latency in the label; same price/speed query filters as the catalog, plus the profile kind). A transcription profile only accepts transcription models. Saving syncs the first chain item into `model`.
 
 ### Request logs
 
@@ -177,7 +179,9 @@ If a profile’s limit or budget is exhausted, `chat()` raises `BudgetExceeded` 
 
 Retries (`max_retries` in admin) apply to `408`, `425`, `429`, `5xx` and transport errors on the same model, honouring `Retry-After`, otherwise exponential backoff with jitter (`RETRY_BACKOFF`).
 
-`ChatResult` also exposes `finish_reason`, `tool_calls` (merged from stream deltas too) and `reasoning`. `cost_usd` is the amount OpenRouter actually billed (`usage.cost`); `catalog_cost_usd` is the catalog estimate for reconciliation.
+`ChatResult` also exposes `finish_reason`, `tool_calls` (merged from stream deltas too), `reasoning` and `images` (`GeneratedImage` with `data`, `mime` and `url`). `cost_usd` is the amount OpenRouter actually billed (`usage.cost`); `catalog_cost_usd` is the catalog estimate for reconciliation.
+
+`reasoning={"enabled": False}` is sent through to OpenRouter. Pass either `total_timeout=` or `deadline_s=` on a call; they are the same deadline and are not sent in the JSON body.
 
 `model=` can reorder only models already configured in that profile; it cannot introduce a model outside the profile chain. The upstream `models=` override is rejected: configure fallback models in the usage profile so each attempt is checked and budgeted locally.
 
@@ -194,11 +198,58 @@ for chunk in stream("chat", messages=[{"role": "user", "content": "Hello"}]):
 
 `chat(..., stream=True)` uses the same SSE transport and returns a complete `ChatResult`. Plain `chat()` always uses a regular JSON response, even with streaming enabled.
 
+**Request timeout** is the idle gap between bytes. One streaming profile can set its own `request_timeout` (or pass `request_timeout=` on that call) without changing the global value used by other profiles.
+
+**Total timeout** is the wall-clock deadline for that call. Set it on the call, on the profile, or globally. Per-call overrides the profile, which overrides the global setting. `deadline_s=` is an alias of `total_timeout=`.
+
+```python
+from django_openrouter import chat, stream
+from django_openrouter.exceptions import OpenRouterTimeout
+
+try:
+    result = chat(
+        "chat",
+        messages=[{"role": "user", "content": "Think briefly"}],
+        total_timeout=45,
+        reasoning={"enabled": False},
+    )
+except OpenRouterTimeout as exc:
+    partial = exc.partial  # ChatResult or None
+else:
+    print(result.content, result.prompt_tokens, result.completion_tokens)
+
+for chunk in stream("chat", messages=[{"role": "user", "content": "Hello"}], deadline_s=45):
+    print(chunk.delta, end="", flush=True)
+    if chunk.done and chunk.result is not None and chunk.result.incomplete:
+        print(chunk.result.content, chunk.result.prompt_tokens)
+```
+
+`stream()` stops with `result.incomplete=True` and keeps the partial text and usage. `chat()` raises `OpenRouterTimeout` instead of returning that partial result (`exc.partial`). Nothing arrived → `partial is None` and `stream()` raises too. Only that response is closed; other calls on the shared client continue. The row is logged as `499` (same as an interrupted stream) with the token counts that were already known. A budget reservation stays at the conservative amount, because a non-200 row is not reconciled. The attempt is not retried.
+
 `CurrentUserMiddleware` keeps the username bound while a `StreamingHttpResponse` body is iterated, so `stream()` inside a streaming view is logged under the right user.
 
 Async: `astream("chat", messages=...)` / `AsyncOpenRouterClient("chat").stream(...)`.
 
 **Max parallel requests** (default 10, `0` = unlimited) caps concurrent HTTP calls to OpenRouter in the current process — both `chat()` and `stream()`, sync and async.
+
+## Image generation
+
+Added in 0.5.0. OpenRouter image models answer on `POST /chat/completions` with `modalities: ["image", "text"]`. `generate_image()` sets that for you. The model still has to be on the usage profile (`model=` only reorders that chain).
+
+```python
+from django_openrouter import generate_image
+
+result = generate_image(
+    "A red paper crane on a wooden desk",
+    profile="images",
+    model="google/gemini-2.5-flash-image",
+)
+print(result.content, result.cost_usd, result.prompt_tokens)
+for image in result.images:
+    print(image.mime, image.url, len(image.data or b""))
+```
+
+`agenerate_image()` and `OpenRouterClient("images").generate_image(...)` / `AsyncOpenRouterClient` are the same call. A data URL in the provider payload is decoded into `data` and `mime` (`url` is left empty so the base64 blob is not stored twice). An `http` or `https` URL is fetched without the OpenRouter API key; `url` is kept even when the download fails. `chat()` fills `images` the same way when the assistant message contains them. Usage and `cost_usd` are reported as for any other chat call.
 
 ## Speech-to-text
 
@@ -291,7 +342,7 @@ Deletes `RequestLog` rows older than N days (the current month is always kept, m
 python manage.py release_stale_reservations --minutes 60 [--dry-run]
 ```
 
-Releases budget reservations still pending after N minutes (left by a killed worker): sets status `499` and cost `0`. Reservations for responses that came back without `usage` are kept. Run it from cron; keep N well above `request_timeout × (max_retries + 1)`.
+Releases budget reservations still pending after N minutes (left by a killed worker): sets status `499` and cost `0`. Reservations for responses that came back without `usage` are kept. Run it from cron; keep N well above the longest call you allow (`total_timeout`, or `request_timeout × (max_retries + 1)` when no deadline is set).
 
 ## `settings.OPENROUTER`
 
