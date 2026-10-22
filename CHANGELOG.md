@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.1 — 2026-10-22
+
+Fix chat calls failing when OpenRouter compresses the response body.
+
+- `chat()`, `achat()`, `generate_image()` and `agenerate_image()` read the body with `iter_bytes()` / `aiter_bytes()` so a wall-clock deadline can close that response. Those iterators already remove `Content-Encoding`. Rebuilding an `httpx.Response` with the original header made `.json()` decompress the bytes again (`Error -3 while decompressing data: incorrect header check` for gzip, and the brotli equivalent for `br`). The decoded bytes are parsed directly.
+- `stream()` / `astream()` already consumed the decoded SSE text and were not inflated twice. Regression tests cover gzip, brotli and `identity` for chat, async chat, both streaming APIs and image generation.
+- Depend on `httpx[brotli]` so `br` is advertised and decoded. httpx only offers that encoding when the brotli package is installed.
+
 ## 0.5.0 — 2026-10-22
 
 Wall-clock deadlines for chat calls, and first-class image output. Compatible with the 0.4.0 call signatures.

@@ -51,3 +51,10 @@ DONE
 - site: npm ci && npm run build (tsc -b && vite build) ок
 - код библиотеки и версия не менялись
 DONE
+
+## 2026-10-22 — 0.5.1 content-encoding
+- причина: iter_bytes уже снимает Content-Encoding, _rehydrate собирал httpx.Response с тем же заголовком, .json() распаковывал второй раз (zlib -3)
+- фикс: json.loads по раскодированным байтам, _rehydrate удалён
+- тесты: gzip/br/identity для chat, achat, stream, astream, generate_image, agenerate_image
+- pytest 307 passed, coverage 86.06%, ruff, mypy — Python 3.12.3, Django 6.1.2
+DONE

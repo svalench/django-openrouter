@@ -1,0 +1,13 @@
+---
+description: Не распаковывать тело httpx второй раз после iter_bytes
+globs: src/django_openrouter/**/*.py
+alwaysApply: false
+---
+
+# Content-Encoding и httpx
+
+`response.iter_bytes()` / `aiter_bytes()` / `iter_lines()` уже снимают `Content-Encoding` (`gzip`, `br`, `deflate`, `identity`).
+
+- Не собирать новый `httpx.Response` из этих байт с исходными заголовками. `.json()` / `.read()` увидят `content-encoding` и распакуют тело ещё раз: `Error -3 while decompressing data: incorrect header check`.
+- JSON чата разбирать через `json.loads` по уже раскодированным байтам.
+- Не ставить `Accept-Encoding` вручную: httpx сам объявляет кодировки, которые умеет снять, и сам их снимает один раз.

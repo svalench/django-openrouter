@@ -464,12 +464,15 @@ def _build_result(
     )
 
 
-def _parse_json_response(
-    response: httpx.Response, model: OpenRouterModel, started: float
-) -> ChatResult:
-    """Разбор 200-ответа. Ошибка в теле или битый JSON → OpenRouterAPIError."""
+def _parse_json_response(raw: bytes, model: OpenRouterModel, started: float) -> ChatResult:
+    """Разбор уже раскодированных байт 200-ответа.
+
+    iter_bytes/aiter_bytes сами снимают gzip, br и identity. Собирать из этих
+    байт новый httpx.Response с исходным Content-Encoding нельзя: .json()
+    распакует их второй раз (zlib error -3, incorrect header check).
+    """
     try:
-        payload = response.json()
+        payload = json.loads(raw)
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:
         raise OpenRouterAPIError(
             _("OpenRouter returned invalid JSON: %(error)s") % {"error": exc},
@@ -840,6 +843,7 @@ def _images_from_message(node: Mapping[str, Any]) -> list[GeneratedImage]:
 
 
 def _read_body_sync(response: httpx.Response, guard: _ResponseDeadline, state: _SSEState) -> bytes:
+    """Тело без Content-Encoding: gzip, br и identity уже снял httpx."""
     chunks: list[bytes] = []
     try:
         for chunk in response.iter_bytes():
@@ -853,15 +857,6 @@ def _read_body_sync(response: httpx.Response, guard: _ResponseDeadline, state: _
         raise
     guard.ensure(state)
     return b"".join(chunks)
-
-
-def _rehydrate(response: httpx.Response, raw: bytes) -> httpx.Response:
-    return httpx.Response(
-        status_code=response.status_code,
-        headers=response.headers,
-        content=raw,
-        request=response.request,
-    )
 
 
 def _materialize_sync(
@@ -933,6 +928,7 @@ async def _anext_with_deadline(
 
 
 async def _aread_body(response: httpx.Response, clock: _CallClock, state: _SSEState) -> bytes:
+    """Асинхронное зеркало _read_body_sync: байты уже без Content-Encoding."""
     chunks: list[bytes] = []
     agen = response.aiter_bytes().__aiter__()
     while True:
@@ -1270,9 +1266,7 @@ def _attempt_sync(
                             )
                         if not sse:
                             raw = _read_body_sync(response, guard, state)
-                            parsed = _parse_json_response(
-                                _rehydrate(response, raw), model, started
-                            )
+                            parsed = _parse_json_response(raw, model, started)
                         else:
                             parsed = None
                             try:
@@ -1537,7 +1531,7 @@ async def _attempt_async(
                         )
                     if not sse:
                         raw = await _aread_body(response, clock, state)
-                        parsed = _parse_json_response(_rehydrate(response, raw), model, started)
+                        parsed = _parse_json_response(raw, model, started)
                     else:
                         agen = response.aiter_lines().__aiter__()
                         try:
