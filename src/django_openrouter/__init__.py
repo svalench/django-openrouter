@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 default_app_config = "django_openrouter.apps.DjangoOpenRouterConfig"
 
 if TYPE_CHECKING:
@@ -18,10 +18,16 @@ if TYPE_CHECKING:
         ChatResult as ChatResult,
     )
     from django_openrouter.client import (
+        GeneratedImage as GeneratedImage,
+    )
+    from django_openrouter.client import (
         OpenRouterClient as OpenRouterClient,
     )
     from django_openrouter.client import (
         achat as achat,
+    )
+    from django_openrouter.client import (
+        agenerate_image as agenerate_image,
     )
     from django_openrouter.client import (
         astream as astream,
@@ -30,7 +36,13 @@ if TYPE_CHECKING:
         chat as chat,
     )
     from django_openrouter.client import (
+        generate_image as generate_image,
+    )
+    from django_openrouter.client import (
         stream as stream,
+    )
+    from django_openrouter.exceptions import (
+        OpenRouterTimeout as OpenRouterTimeout,
     )
     from django_openrouter.transcription import (
         TranscriptionResult as TranscriptionResult,
@@ -46,13 +58,17 @@ __all__ = [
     "AsyncOpenRouterClient",
     "ChatChunk",
     "ChatResult",
+    "GeneratedImage",
     "OpenRouterClient",
+    "OpenRouterTimeout",
     "TranscriptionResult",
     "__version__",
     "achat",
+    "agenerate_image",
     "astream",
     "atranscribe",
     "chat",
+    "generate_image",
     "stream",
     "transcribe",
 ]
@@ -69,13 +85,21 @@ def __getattr__(name: str) -> Any:
             "AsyncOpenRouterClient": client_module.AsyncOpenRouterClient,
             "ChatChunk": client_module.ChatChunk,
             "ChatResult": client_module.ChatResult,
+            "GeneratedImage": client_module.GeneratedImage,
             "OpenRouterClient": client_module.OpenRouterClient,
+            "OpenRouterTimeout": None,
             "achat": client_module.achat,
+            "agenerate_image": client_module.agenerate_image,
             "astream": client_module.astream,
             "chat": client_module.chat,
+            "generate_image": client_module.generate_image,
             "stream": client_module.stream,
         }
-        if name in mapping:
+        if name == "OpenRouterTimeout":
+            from django_openrouter.exceptions import OpenRouterTimeout
+
+            return OpenRouterTimeout
+        if name in mapping and mapping[name] is not None:
             return mapping[name]
         from django_openrouter import transcription as transcription_module
 

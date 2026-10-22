@@ -18,7 +18,7 @@ from django_openrouter.models import (
     UsageProfileFallback,
 )
 
-CACHE_KEY = "django_openrouter:runtime_config:v2"
+CACHE_KEY = "django_openrouter:runtime_config:v3"
 CATALOG_CACHE_KEY = "django_openrouter:admin_catalog:v1"
 _DEFAULT_CACHE_TIMEOUT = 60
 _DEFAULT_CATALOG_CACHE_TIMEOUT = 600
@@ -93,6 +93,7 @@ class RuntimeConfig:
     api_key: str
     base_url: str
     request_timeout: int
+    total_timeout: int | None
     max_retries: int
     streaming_enabled: bool
     max_parallel_requests: int
@@ -184,6 +185,9 @@ def load_runtime_config() -> RuntimeConfig:
         api_key=resolve_api_key(settings_obj.api_key),
         base_url=(settings_obj.base_url or _DEFAULT_BASE_URL).rstrip("/"),
         request_timeout=int(settings_obj.request_timeout),
+        total_timeout=(
+            int(settings_obj.total_timeout) if settings_obj.total_timeout is not None else None
+        ),
         max_retries=int(settings_obj.max_retries),
         streaming_enabled=bool(settings_obj.streaming_enabled),
         max_parallel_requests=int(settings_obj.max_parallel_requests),

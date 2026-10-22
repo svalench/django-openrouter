@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.0 — 2026-10-22
+
+Wall-clock deadlines for chat calls, and first-class image output. Compatible with the 0.4.0 call signatures.
+
+- `request_timeout` stays the idle timeout between bytes. It no longer has to be raised globally for one streaming profile: set `UsageProfile.request_timeout` (blank = the global value) or pass `request_timeout=` on that call. Other profiles keep the global idle timeout.
+- `total_timeout` on OpenRouter settings and on a usage profile, or `total_timeout=` / `deadline_s=` on a call, is a wall-clock deadline for that chat or stream. A per-call value overrides the profile, which overrides the global setting. Blank means no overall deadline, as in 0.4.0.
+- When the deadline fires, only that request's response is closed. The shared httpx client stays open for other calls in the process. `stream()` / `astream()` end with a final chunk whose `result.incomplete` is true and whose content, images and usage are whatever had already arrived. `chat()` / `achat()` raise `OpenRouterTimeout`; `partial` on the exception is that same result, or `None` when nothing arrived. The attempt is logged as status `499` with the partial token counts. It is not retried and does not fall through to the next model.
+- `ChatResult.images` is a list of `GeneratedImage` (`data`, `mime`, `url`). Data URLs are decoded into `data` and `mime`. `http`/`https` URLs are downloaded without the OpenRouter API key; a failed or oversized download leaves `data` empty and keeps `url`. Text in `content` is unchanged.
+- `generate_image(prompt, model=..., profile=...)` and `agenerate_image()` send `modalities=["image", "text"]` unless the caller sets `modalities`. Usage and cost are reported the same way as `chat()`.
+- `reasoning={"enabled": false}` (and any other `reasoning` object) is forwarded on the chat request.
+
 ## 0.4.0 — 2026-10-18
 
 Speech-to-text via OpenRouter `POST /api/v1/audio/transcriptions`.
