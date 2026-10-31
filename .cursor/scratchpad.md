@@ -58,3 +58,11 @@ DONE
 - тесты: gzip/br/identity для chat, achat, stream, astream, generate_image, agenerate_image
 - pytest 307 passed, coverage 86.06%, ruff, mypy — Python 3.12.3, Django 6.1.2
 DONE
+
+## 2026-10-31 — pydantic-ai adapter
+- точка интеграции: OpenRouterProfileModel (свой Model), не Provider и не pydantic_ai OpenRouterModel — иначе обходятся цепочка, резерв, kill switch, журнал, bound_username
+- extra django-openrouter[pydantic-ai], импорт только из integrations.pydantic_ai
+- tests/test_pydantic_ai.py: 26 passed; полный pytest coverage 86.65% (>=85); ruff check/format; mypy src/django_openrouter
+- site: npm ci && npm run build (tsc -b && vite build) ок, раздел pydantic-ai во всех 9 локалях
+- версия пакета остаётся 0.5.1, CHANGELOG Unreleased
+DONE
