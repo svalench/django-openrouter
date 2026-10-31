@@ -958,6 +958,12 @@ with bound_username("worker"):
           alt: 'Django admin — panel wydatków: filtry, koszt, żądania, odsetek błędów, opóźnienie, tokeny i budżety',
           caption: 'Panel wydatków: koszt, błędy i opóźnienie dla wybranego dnia lub miesiąca obok budżetu profilu.',
         },
+        {
+          type: 'image',
+          src: 'admin-dashboard-dark.png',
+          alt: 'Django admin — panel wydatków w ciemnym motywie: filtry, koszt, żądania, odsetek błędów, opóźnienie, tokeny i budżety',
+          caption: 'Ciemny motyw: te same wykresy podążają za przełącznikiem motywu Django admin.',
+        },
         { type: 'h3', text: 'Ochrona klucza API' },
         {
           type: 'list',

@@ -958,6 +958,12 @@ with bound_username("worker"):
           alt: 'Django admin — tableau de dépense : filtres, coût, requêtes, taux d’erreur, latence, tokens et budgets',
           caption: 'Tableau de dépense : coût, erreurs et latence pour le jour ou le mois choisi, à côté du budget de chaque profil.',
         },
+        {
+          type: 'image',
+          src: 'admin-dashboard-dark.png',
+          alt: 'Django admin — tableau de dépense en thème sombre : filtres, coût, requêtes, taux d’erreur, latence, tokens et budgets',
+          caption: 'Thème sombre : les mêmes graphiques suivent le sélecteur de thème de l’admin Django.',
+        },
         { type: 'h3', text: 'Protection de la clé API' },
         {
           type: 'list',

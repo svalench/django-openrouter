@@ -958,6 +958,12 @@ with bound_username("worker"):
           alt: 'Django admin — panel de gasto: filtros, coste, peticiones, tasa de error, latencia, tokens y presupuestos',
           caption: 'Panel de gasto: coste, errores y latencia del día o mes elegido, junto al presupuesto de cada perfil.',
         },
+        {
+          type: 'image',
+          src: 'admin-dashboard-dark.png',
+          alt: 'Django admin — panel de gasto en tema oscuro: filtros, coste, peticiones, tasa de error, latencia, tokens y presupuestos',
+          caption: 'Tema oscuro: los mismos gráficos siguen el interruptor de tema de Django admin.',
+        },
         { type: 'h3', text: 'Protección de la API key' },
         {
           type: 'list',

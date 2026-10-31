@@ -958,6 +958,12 @@ with bound_username("worker"):
           alt: 'Django admin の利用ダッシュボード：フィルタ、コスト、件数、エラー率、レイテンシ、トークン、プロファイル予算',
           caption: '利用ダッシュボード：選んだ日または月の支出・エラー・レイテンシと、プロファイルの予算。',
         },
+        {
+          type: 'image',
+          src: 'admin-dashboard-dark.png',
+          alt: 'Django admin の利用ダッシュボード（ダークテーマ）：フィルタ、コスト、件数、エラー率、レイテンシ、トークン、プロファイル予算',
+          caption: 'ダークテーマ：同じグラフが Django admin のテーマ切り替えに従います。',
+        },
         { type: 'h3', text: 'API キーの保護' },
         {
           type: 'list',

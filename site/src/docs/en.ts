@@ -964,6 +964,12 @@ with bound_username("worker"):
           alt: 'Django admin usage dashboard: filters, cost, requests, error rate, latency, tokens and profile budgets',
           caption: 'Usage dashboard: spend, errors and latency for the selected day or month, beside each profile’s daily and monthly budget.',
         },
+        {
+          type: 'image',
+          src: 'admin-dashboard-dark.png',
+          alt: 'Django admin usage dashboard in the dark theme: filters, cost, requests, error rate, latency, tokens and profile budgets',
+          caption: 'Dark theme: the same charts follow the Django admin theme toggle.',
+        },
         { type: 'h3', text: 'API key protection' },
         {
           type: 'list',

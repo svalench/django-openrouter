@@ -958,6 +958,12 @@ with bound_username("worker"):
           alt: 'Django 管理后台用量仪表盘：筛选、费用、请求数、错误率、延迟、token 和配置预算',
           caption: '用量仪表盘：所选日期或月份的花费、错误和延迟，以及每个配置的预算。',
         },
+        {
+          type: 'image',
+          src: 'admin-dashboard-dark.png',
+          alt: 'Django 管理后台用量仪表盘（深色主题）：筛选、费用、请求数、错误率、延迟、token 和配置预算',
+          caption: '深色主题：同一组图表跟随 Django 管理后台的主题开关。',
+        },
         { type: 'h3', text: 'API 密钥保护' },
         {
           type: 'list',
