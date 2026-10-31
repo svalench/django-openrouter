@@ -52,6 +52,34 @@ DONE
 - код библиотеки и версия не менялись
 DONE
 
+## 2026-10-31 — usage dashboard
+- staff-only страница RequestLogAdmin.get_urls + admin_view, ссылка на индексе любой AdminSite
+- агрегаты ORM TruncHour/TruncDay, p95 в Python с потолком 20000, индекс (model, created_at)
+- графики inline SVG, фильтры день/месяц + профиль/модель, бюджеты и топ расхода
+- pytest полный, coverage 87.56%, ruff, mypy
+DONE
+
+## 2026-10-31 — dashboard visuals
+- KPI: cost, requests, error rate, p95 latency, дельта к предыдущему окну той же длины
+- Chart.js 4.4.6 MIT в static, данные через json_script, цвета серий стабильны, light/dark через CSS variables админки
+- pytest 324 passed, coverage 87.32%, ruff, mypy
+DONE
+
+## 2026-10-31 — merge master 0.6.0
+- индекс дашборда переименован в 0012, зависит от 0011_requestlog_grouping
+- trace_id, session_id, metadata с master сохранены
+- pytest coverage 86.27%, ruff, mypy, makemigrations --check
+DONE
+
+## 2026-10-31 — 0.6.0 OTEL и группы логов
+- extra `otel` = только opentelemetry-api; спаны выключены, пока OPENROUTER['OTEL'] не true
+- родительский спан на chat/stream/transcribe/generate_image, дочерний на HTTP-попытку
+- RequestLog.trace_id, session_id (индексы), metadata JSON, миграция 0011
+- bound_session, session_id/metadata/trace_id/trace; File и ClickHouse; админка
+- причина падения полного прогона: async for + ранний return не сбрасывает ContextVar (`aclose` в другом Context). Перед yield наружу контекст снимается
+- pytest 332 passed, coverage 85.09%, ruff, mypy; site npm run build
+DONE
+
 ## 2026-10-22 — 0.5.1 content-encoding
 - причина: iter_bytes уже снимает Content-Encoding, _rehydrate собирал httpx.Response с тем же заголовком, .json() распаковывал второй раз (zlib -3)
 - фикс: json.loads по раскодированным байтам, _rehydrate удалён
@@ -65,4 +93,11 @@ DONE
 - tests/test_pydantic_ai.py: 26 passed; полный pytest coverage 86.65% (>=85); ruff check/format; mypy src/django_openrouter
 - site: npm ci && npm run build (tsc -b && vite build) ок, раздел pydantic-ai во всех 9 локалях
 - версия пакета остаётся 0.5.1, CHANGELOG Unreleased
+DONE
+
+## 2026-10-31 — 0.7.0 merge master
+- master c3dd4d3: OTel 0011 и dashboard 0012; версия 0.7.0, отдельного релиза 0.6.0 нет
+- extras otel и pydantic-ai; OpenRouterProfileModel прокидывает conversation_id как session_id, bound_session важнее, trace_id не задаёт — берётся активный спан
+- pytest 378 passed, coverage 86.70%, ruff check, mypy, makemigrations --check, site build, twine check --strict
+- PyPI: push тега v*.*.* (publish.yml), не GitHub Release
 DONE

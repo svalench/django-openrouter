@@ -4,7 +4,7 @@ export const fr: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: 'OpenRouter pour Django — modèles, profils, budgets et journaux gérés depuis l’admin',
-    version: '0.5.1',
+    version: '0.7.0',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -208,6 +208,9 @@ print(result.model_used, result.cost_usd, result.latency_ms)`,
             ['`HTTP_REFERER`', 'non défini', 'En-tête `HTTP-Referer` (attribution de l’app dans OpenRouter)'],
             ['`X_TITLE`', 'non défini', 'En-tête `X-Title`'],
             ['`LOG_BACKENDS`', 'BD seule', 'Où écrire les journaux de requêtes — voir la section « Backends de logs »'],
+            ["`OTEL`", "`false`", "Spans. Reste désactivé même si opentelemetry-api est installé"],
+            ["`OTEL_CAPTURE_CONTENT`", "`false`", "Écrire le prompt et la réponse rédigés sur le span"],
+            ["`OTEL_CONTENT_REDACTOR`", "non défini", "Chemin pointé fn(text, *, kind) -> str"],
           ],
         },
         {
@@ -409,6 +412,10 @@ print(result.output, result.usage.cost, result.response.model_name)`,
         {
           type: 'p',
           text: '`BudgetExceeded` et `RateLimitExceeded` remontent à l’appelant. Ils sont levés avant le HTTP et ne basculent pas silencieusement vers un autre modèle. Le fallback HTTP reste dans la chaîne du profil (`402`, `408`, `429`, `5xx`).',
+        },
+        {
+          type: 'p',
+          text: '`Agent.run(conversation_id=...)` est enregistré comme `session_id` et envoyé dans le corps du chat, sauf si `bound_session()` est déjà actif. La session et les metadata de ce bloc l’emportent et partent aussi dans la requête. L’adaptateur ne passe pas `trace_id`. Un span OpenTelemetry actif — Django, Celery ou `Agent(instrument=True)` — devient le `trace_id` du journal. Sans tracing, chaque appel de modèle a son propre id, partagé par les retries et fallbacks de cet appel.',
         },
         { type: 'h3', text: 'Vue Django' },
         {
@@ -724,7 +731,7 @@ python manage.py sync_models --api-key sk-or-...  # clé à usage unique, jamais
         { type: 'h3', text: 'FileBackend' },
         {
           type: 'p',
-          text: 'JSON Lines vers un fichier avec rotation par taille (`RotatingFileHandler`) : une ligne = un objet JSON avec les champs `created_at`, `profile`, `model`, `status_code`, `error_message`, `prompt_tokens`, `completion_tokens`, `cost_usd`, `latency_ms`, `username`.',
+          text: 'JSON Lines vers un fichier avec rotation par taille (`RotatingFileHandler`) : une ligne = un objet JSON avec les champs `created_at`, `profile`, `model`, `status_code`, `error_message`, `prompt_tokens`, `completion_tokens`, `cost_usd`, `latency_ms`, `username`, `trace_id`, `session_id`, `metadata`.',
         },
         { type: 'h3', text: 'ClickHouseBackend' },
         {
@@ -746,7 +753,10 @@ python manage.py sync_models --api-key sk-or-...  # clé à usage unique, jamais
     completion_tokens UInt32,
     cost_usd Decimal(20, 10),
     latency_ms UInt32,
-    username String
+    username String,
+    trace_id String,
+    session_id String,
+    metadata String
 )
 ENGINE = MergeTree
 ORDER BY (created_at, profile);`,
@@ -778,10 +788,58 @@ with bound_username("worker"):
       ],
     },
     {
+      id: 'tracing',
+      group: "Guides",
+      title: "Traces et groupes de logs",
+      lead: "Spans OpenTelemetry facultatifs, et trace_id, session_id, metadata sur chaque log.",
+      blocks: [
+        {
+          type: "p",
+          text: "pip install django-openrouter[otel] n'ajoute que opentelemetry-api. Le SDK et l'exporteur restent dans le projet hôte. Sans le paquet, aucun import. Les spans restent off tant que OPENROUTER['OTEL'] n'est pas true.",
+        },
+        {
+          type: "h3",
+          text: "Spans",
+        },
+        {
+          type: "p",
+          text: "Un span parent pour chat, stream, transcribe et generate_image, et leurs miroirs async. generate_image n'ajoute pas un second span chat. Chaque tentative HTTP, retry ou fallback, est un span enfant. Le stream note le délai jusqu'au premier token et garde le span jusqu'à la fin du générateur. BudgetExceeded, RateLimitExceeded, timeouts et un stream interrompu (499) sont des erreurs.",
+        },
+        {
+          type: "h3",
+          text: "trace_id / session_id",
+        },
+        {
+          type: "p",
+          text: "RequestLog a trace_id et session_id indexés et nullables, et un JSON metadata nullable. Les retries partagent un trace_id : l'id OpenTelemetry si un span est actif, sinon un id généré. session_id et metadata d'un chat partent toujours vers OpenRouter. trace= reste local. La transcription les stocke sans les mettre dans le JSON audio. L'admin filtre, cherche, et lie toutes les requêtes de la session ou de la trace. metadata est en lecture seule.",
+        },
+        {
+          type: "code",
+          lang: "python",
+          title: "bound_session",
+          code: "from django_openrouter import chat\nfrom django_openrouter.current_user import bound_session\n\nwith bound_session(\"ticket-42\", metadata={\"feature\": \"support\"}):\n    chat(\"chat\", messages=[{\"role\": \"user\", \"content\": \"Hi\"}])\n\nchat(\n    \"chat\",\n    messages=[{\"role\": \"user\", \"content\": \"Hi\"}],\n    session_id=\"other\",\n    metadata={\"feature\": \"billing\"},\n    trace={\"feature.flag\": \"beta\"},\n)",
+        },
+        {
+          type: "p",
+          text: 'Les arguments de l’appel remplacent `bound_session` pour cet appel seulement. Les clés `metadata` de l’appel remplacent celles du bloc. Le texte du prompt et de la réponse n’est écrit sur le span que si `OTEL_CAPTURE_CONTENT` vaut true.',
+        },
+        {
+          type: "h3",
+          text: "Logfire, Langfuse, Jaeger, Tempo",
+        },
+        {
+          type: "code",
+          lang: "python",
+          title: "OTLP",
+          code: "pip install \"django-openrouter[otel]\" opentelemetry-sdk opentelemetry-exporter-otlp\n\n# Logfire: logfire.configure() sets the TracerProvider.\n# Langfuse via OTLP:\n#   OTEL_EXPORTER_OTLP_ENDPOINT=https://cloud.langfuse.com/api/public/otel\n#   OTEL_EXPORTER_OTLP_HEADERS=Authorization=Basic <base64 public:secret>\n# Jaeger or Grafana Tempo (OTLP/HTTP):\n#   OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318\n\nfrom opentelemetry import trace\nfrom opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter\nfrom opentelemetry.sdk.trace import TracerProvider\nfrom opentelemetry.sdk.trace.export import BatchSpanProcessor\n\nprovider = TracerProvider()\nprovider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))\ntrace.set_tracer_provider(provider)",
+        },
+      ],
+    },
+    {
       id: 'admin',
       group: 'Guides',
       title: 'L’admin',
-      lead: 'Toute la politique runtime vit dans quatre sections du Django admin : réglages, catalogue de modèles, profils d’usage et journal des requêtes.',
+      lead: 'Toute la politique runtime vit dans le Django admin : réglages, catalogue de modèles, profils d’usage, journal des requêtes et un tableau de dépense.',
       blocks: [
         {
           type: 'table',
@@ -791,6 +849,7 @@ with bound_username("worker"):
             ['**OpenRouter models**', 'Le catalogue d’OpenRouter : prix, latence, throughput'],
             ['**Usage profiles**', 'Chaîne de modèles, limites, budgets, statistiques de dépense'],
             ['**Request logs**', 'Tokens, coût et latence de chaque appel (lecture seule)'],
+            ['**Usage dashboard**', 'Dépense, taux d’erreur, latence et tokens face aux budgets des profils'],
           ],
         },
         { type: 'h3', text: 'OpenRouter settings' },
@@ -879,6 +938,25 @@ with bound_username("worker"):
           src: 'admin-logs.png',
           alt: 'Django admin — journal des requêtes : heure, username, profil, modèle, statut, tokens, coût, latence ; résumé en haut',
           caption: 'Journal des requêtes : chaque tentative avec tokens, coût et latence, résumé du filtre au-dessus du tableau.',
+        },
+        { type: 'h3', text: 'Tableau de dépense' },
+        {
+          type: 'p',
+          text: 'Le staff avec `view_usage_logs` (et les superusers) ouvre **Usage dashboard** depuis l’index OpenRouter ou le résumé du journal. La vue est enregistrée via `RequestLogAdmin.get_urls` et enveloppée par `admin_view`, donc un `AdminSite` personnalisé qui enregistre `RequestLog` sert la même page. Sur l’admin par défaut le chemin est `/admin/django_openrouter/requestlog/dashboard/`.',
+        },
+        {
+          type: 'list',
+          items: [
+            '**Fenêtre.** Jour = heures (7 jours maximum). Mois = jours (366 jours maximum). Filtres profil et modèle.',
+            '**Graphiques.** Chart.js vendu avec le paquet (MIT, sans build, sans CDN, sans script inline). Les données passent par `json_script` : coût, requêtes, taux d’erreur, latence et tokens moyenne/p95, au total et par profil et par modèle. Une série garde sa couleur et suit le thème clair ou sombre de l’admin. Les cartes comparent la fenêtre à la période précédente de même longueur. Tout statut hors 200–299 est une erreur, y compris 402, 429, 499, 5xx et le statut 0.',
+            '**Budgets.** Jour et mois calendaires face aux limites de requêtes et d’USD, avec le pourcentage utilisé. Le p95 est calculé en Python sur au plus 20 000 lignes les plus récentes.',
+          ],
+        },
+        {
+          type: 'image',
+          src: 'admin-dashboard.png',
+          alt: 'Django admin — tableau de dépense : filtres, coût, requêtes, taux d’erreur, latence, tokens et budgets',
+          caption: 'Tableau de dépense : coût, erreurs et latence pour le jour ou le mois choisi, à côté du budget de chaque profil.',
         },
         { type: 'h3', text: 'Protection de la clé API' },
         {

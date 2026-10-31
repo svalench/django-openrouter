@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 from decimal import Decimal
 from typing import Any, cast
+from urllib.parse import urlencode
 
 import httpx
 from django import forms
@@ -16,9 +18,20 @@ from django.db.models.functions import Coalesce
 from django.forms import BaseInlineFormSet, ModelForm, PasswordInput
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
-from django.urls import reverse
+from django.template.response import TemplateResponse
+from django.urls import NoReverseMatch, path, reverse
+from django.utils.html import format_html
+from django.utils.text import capfirst
+from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 
+from django_openrouter.dashboard import (
+    build_dashboard,
+    model_choices,
+    parse_filters,
+    present,
+    preset_links,
+)
 from django_openrouter.exceptions import ConfigurationError, OpenRouterError
 from django_openrouter.models import (
     OpenRouterModel,
@@ -727,6 +740,52 @@ class OpenRouterModelAdmin(admin.ModelAdmin):
         self.message_user(request, text, level=level)
 
 
+class _ExactIdFilter(SimpleListFilter):
+    """Точный фильтр по id. В сайдбаре — недавние значения, ссылка из строки работает всегда."""
+
+    def lookups(
+        self, request: HttpRequest, model_admin: admin.ModelAdmin
+    ) -> list[tuple[str, str]]:
+        field = self.parameter_name
+        if not field:
+            return []
+        values = (
+            model_admin.get_queryset(request)
+            .exclude(**{f"{field}__isnull": True})
+            .exclude(**{field: ""})
+            .values_list(field, flat=True)
+            .distinct()
+            .order_by(field)[:30]
+        )
+        return [(str(value), str(value)) for value in values]
+
+    def queryset(
+        self,
+        request: HttpRequest,
+        queryset: QuerySet[RequestLog],
+    ) -> QuerySet[RequestLog]:
+        value = self.value()
+        field = self.parameter_name
+        if not value or not field:
+            return queryset
+        return queryset.filter(**{field: value})
+
+
+class SessionIdFilter(_ExactIdFilter):
+    title = _("session")
+    parameter_name = "session_id"
+
+
+class TraceIdFilter(_ExactIdFilter):
+    title = _("trace")
+    parameter_name = "trace_id"
+
+
+def _request_log_url(**params: str) -> str:
+    base = reverse("admin:django_openrouter_requestlog_changelist")
+    return f"{base}?{urlencode(params)}"
+
+
 def _format_per_million(price: Decimal | None) -> str:
     if price is None:
         return "—"
@@ -741,6 +800,8 @@ class RequestLogAdmin(admin.ModelAdmin):
     list_display = (
         "created_at",
         "username",
+        "session_id_link",
+        "trace_id_link",
         "profile",
         "model",
         "status_code",
@@ -749,14 +810,36 @@ class RequestLogAdmin(admin.ModelAdmin):
         "cost_usd",
         "latency_ms",
     )
-    list_filter = ("profile", "status_code", "created_at")
+    list_filter = ("profile", "status_code", SessionIdFilter, TraceIdFilter, "created_at")
     date_hierarchy = "created_at"
-    search_fields = ("error_message", "username")
+    search_fields = ("error_message", "username", "session_id", "trace_id")
     ordering = ("-created_at",)
+    fields = (
+        "created_at",
+        "username",
+        "profile",
+        "model",
+        "session_id",
+        "session_calls_link",
+        "trace_id",
+        "trace_calls_link",
+        "metadata_display",
+        "status_code",
+        "error_message",
+        "prompt_tokens",
+        "completion_tokens",
+        "cost_usd",
+        "latency_ms",
+    )
     readonly_fields = (
         "profile",
         "model",
         "username",
+        "session_id",
+        "trace_id",
+        "metadata_display",
+        "session_calls_link",
+        "trace_calls_link",
         "status_code",
         "error_message",
         "prompt_tokens",
@@ -765,6 +848,53 @@ class RequestLogAdmin(admin.ModelAdmin):
         "latency_ms",
         "created_at",
     )
+
+    @admin.display(description=_("Session"), ordering="session_id")
+    def session_id_link(self, obj: RequestLog) -> str:
+        if not obj.session_id:
+            return "—"
+        return format_html(
+            '<a href="{}">{}</a>',
+            _request_log_url(session_id=obj.session_id),
+            obj.session_id,
+        )
+
+    @admin.display(description=_("Trace"), ordering="trace_id")
+    def trace_id_link(self, obj: RequestLog) -> str:
+        if not obj.trace_id:
+            return "—"
+        return format_html(
+            '<a href="{}">{}</a>',
+            _request_log_url(trace_id=obj.trace_id),
+            obj.trace_id,
+        )
+
+    @admin.display(description=_("Metadata"))
+    def metadata_display(self, obj: RequestLog) -> str:
+        if not obj.metadata:
+            return "—"
+        text = json.dumps(obj.metadata, ensure_ascii=False, indent=2, sort_keys=True)
+        return format_html('<pre style="margin:0;white-space:pre-wrap">{}</pre>', text)
+
+    @admin.display(description=_("Session calls"))
+    def session_calls_link(self, obj: RequestLog) -> str:
+        if not obj.session_id:
+            return "—"
+        return format_html(
+            '<a href="{}">{}</a>',
+            _request_log_url(session_id=obj.session_id),
+            gettext("all calls in this session"),
+        )
+
+    @admin.display(description=_("Trace calls"))
+    def trace_calls_link(self, obj: RequestLog) -> str:
+        if not obj.trace_id:
+            return "—"
+        return format_html(
+            '<a href="{}">{}</a>',
+            _request_log_url(trace_id=obj.trace_id),
+            gettext("all calls in this trace"),
+        )
 
     def has_view_permission(self, request: HttpRequest, obj: RequestLog | None = None) -> bool:
         user = request.user
@@ -783,6 +913,38 @@ class RequestLogAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request: HttpRequest, obj: RequestLog | None = None) -> bool:
         return False
+
+    def get_urls(self) -> list[Any]:
+        # До <path:object_id>, иначе «dashboard» ищется как первичный ключ.
+        custom = [
+            path(
+                "dashboard/",
+                self.admin_site.admin_view(self.dashboard_view),
+                name="django_openrouter_requestlog_dashboard",
+            )
+        ]
+        return custom + super().get_urls()
+
+    def dashboard_view(self, request: HttpRequest) -> HttpResponse:
+        if not self.has_view_permission(request):
+            raise PermissionDenied
+        filters = parse_filters(request.GET)
+        data = build_dashboard(filters)
+        context = {
+            **self.admin_site.each_context(request),
+            "title": _("Usage dashboard"),
+            "opts": self.model._meta,
+            "filters": filters,
+            "page": present(data),
+            "profiles": UsageProfile.objects.order_by("name"),
+            "model_options": model_choices(filters),
+            "presets": preset_links(filters),
+        }
+        return TemplateResponse(
+            request,
+            "admin/django_openrouter/requestlog/dashboard.html",
+            context,
+        )
 
     def changelist_view(
         self,
@@ -804,3 +966,65 @@ class RequestLogAdmin(admin.ModelAdmin):
         )
         response.context_data["summary"] = summary
         return response
+
+
+_DASHBOARD_LINK_INSTALLED = False
+
+
+def install_dashboard_index_link() -> None:
+    """Пункт дашборда на индексе любой AdminSite, где зарегистрирован RequestLog."""
+    global _DASHBOARD_LINK_INSTALLED
+    if _DASHBOARD_LINK_INSTALLED:
+        return
+    original = admin.AdminSite.get_app_list
+
+    def get_app_list(
+        self: admin.AdminSite,
+        request: HttpRequest,
+        app_label: str | None = None,
+    ) -> list[Any]:
+        app_list = original(self, request, app_label)
+        return _with_dashboard_link(self, request, app_list)
+
+    admin.AdminSite.get_app_list = get_app_list  # type: ignore[method-assign]
+    _DASHBOARD_LINK_INSTALLED = True
+
+
+def _with_dashboard_link(
+    site: admin.AdminSite,
+    request: HttpRequest,
+    app_list: list[Any],
+) -> list[Any]:
+    model_admin = site._registry.get(RequestLog)
+    if model_admin is None or not model_admin.has_view_permission(request):
+        return app_list
+    try:
+        url = reverse(
+            "admin:django_openrouter_requestlog_dashboard",
+            current_app=site.name,
+        )
+    except NoReverseMatch:
+        return app_list
+    for app in app_list:
+        if app.get("app_label") != "django_openrouter":
+            continue
+        models = app.get("models")
+        if not isinstance(models, list):
+            continue
+        if any(item.get("object_name") == "UsageDashboard" for item in models):
+            return app_list
+        models.append(
+            {
+                "name": capfirst(str(gettext("Usage dashboard"))),
+                "object_name": "UsageDashboard",
+                "perms": {"add": False, "change": False, "delete": False, "view": True},
+                "admin_url": url,
+                "add_url": None,
+                "view_only": True,
+            }
+        )
+        break
+    return app_list
+
+
+install_dashboard_index_link()

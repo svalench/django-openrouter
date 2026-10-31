@@ -1,7 +1,7 @@
-"""Текущий пользователь для логов запросов (contextvar).
+"""Текущий пользователь и сессия для логов запросов (contextvar).
 
-Заполняется `CurrentUserMiddleware` из `request.user`. Вне HTTP-запроса
-можно обернуть вызов в `bound_username(...)`.
+Username заполняется `CurrentUserMiddleware` из `request.user`. Вне HTTP-запроса
+можно обернуть вызов в `bound_username(...)`. Сессия и metadata — `bound_session`.
 """
 
 from __future__ import annotations
@@ -10,6 +10,10 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar, Token
 from typing import Protocol, runtime_checkable
+
+from django_openrouter.call_context import bound_session as bound_session
+from django_openrouter.call_context import current_metadata as current_metadata
+from django_openrouter.call_context import current_session_id as current_session_id
 
 ANONYMOUS_USERNAME = "anonymous"
 _USERNAME_MAX_LENGTH = 150

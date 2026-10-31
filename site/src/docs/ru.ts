@@ -4,7 +4,7 @@ export const ru: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: 'OpenRouter для Django — модели, профили, бюджеты и логи через админку',
-    version: '0.5.1',
+    version: '0.7.0',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -208,6 +208,9 @@ print(result.model_used, result.cost_usd, result.latency_ms)`,
             ['`HTTP_REFERER`', 'не задан', 'Заголовок `HTTP-Referer` (атрибуция приложения в OpenRouter)'],
             ['`X_TITLE`', 'не задан', 'Заголовок `X-Title`'],
             ['`LOG_BACKENDS`', 'только БД', 'Куда писать логи запросов — см. раздел «Бэкенды логов»'],
+            ["`OTEL`", "`false`", "Спаны. Выключено, даже если opentelemetry-api установлен"],
+            ["`OTEL_CAPTURE_CONTENT`", "`false`", "Писать на спан отредактированные промпт и ответ"],
+            ["`OTEL_CONTENT_REDACTOR`", "не задан", "Dotted path fn(text, *, kind) -> str"],
           ],
         },
         {
@@ -409,6 +412,10 @@ print(result.output, result.usage.cost, result.response.model_name)`,
         {
           type: 'p',
           text: '`BudgetExceeded` и `RateLimitExceeded` доходят до вызывающего кода. Они поднимаются до HTTP и не переключают вызов на другую модель. HTTP-fallback остаётся внутри цепочки профиля (`402`, `408`, `429`, `5xx`).',
+        },
+        {
+          type: 'p',
+          text: '`Agent.run(conversation_id=...)` попадает в журнал как `session_id` и уходит в тело chat, если `bound_session()` ещё не включён. Сессия и metadata из этого блока важнее и тоже уходят в запрос. Адаптер не передаёт `trace_id`. Активный спан OpenTelemetry — Django, Celery или `Agent(instrument=True)` — становится `trace_id` в журнале. Без трейсинга у каждого вызова модели свой id, общий для retry и fallback этого вызова.',
         },
         { type: 'h3', text: 'Django view' },
         {
@@ -724,7 +731,7 @@ python manage.py sync_models --api-key sk-or-...  # разовый ключ, н�
         { type: 'h3', text: 'FileBackend' },
         {
           type: 'p',
-          text: 'JSON Lines в файл с ротацией по объёму (`RotatingFileHandler`): одна строка = один JSON-объект с полями `created_at`, `profile`, `model`, `status_code`, `error_message`, `prompt_tokens`, `completion_tokens`, `cost_usd`, `latency_ms`, `username`.',
+          text: 'JSON Lines в файл с ротацией по объёму (`RotatingFileHandler`): одна строка = один JSON-объект с полями `created_at`, `profile`, `model`, `status_code`, `error_message`, `prompt_tokens`, `completion_tokens`, `cost_usd`, `latency_ms`, `username`, `trace_id`, `session_id`, `metadata`.',
         },
         { type: 'h3', text: 'ClickHouseBackend' },
         {
@@ -746,7 +753,10 @@ python manage.py sync_models --api-key sk-or-...  # разовый ключ, н�
     completion_tokens UInt32,
     cost_usd Decimal(20, 10),
     latency_ms UInt32,
-    username String
+    username String,
+    trace_id String,
+    session_id String,
+    metadata String
 )
 ENGINE = MergeTree
 ORDER BY (created_at, profile);`,
@@ -778,10 +788,62 @@ with bound_username("worker"):
       ],
     },
     {
+      id: 'tracing',
+      group: "Руководство",
+      title: "Трейсинг и группы логов",
+      lead: "Необязательные спаны OpenTelemetry и поля trace_id, session_id, metadata в журнале запросов.",
+      blocks: [
+        {
+          type: "p",
+          text: "pip install django-openrouter[otel] ставит только opentelemetry-api. SDK и экспортёр остаются в проекте-хосте. Если пакета нет, вызовы его не импортируют. Спаны выключены, пока OPENROUTER['OTEL'] не равен true.",
+        },
+        {
+          type: "h3",
+          text: "Спаны",
+        },
+        {
+          type: "p",
+          text: "chat, achat, stream, astream, transcribe, atranscribe, generate_image и agenerate_image открывают один родительский спан. generate_image не добавляет вложенный спан chat. Каждая HTTP-попытка, включая retry и fallback, — дочерний спан. Активный спан Django или Celery остаётся родителем. Стрим пишет время до первого токена и держит родительский спан до конца генератора.",
+        },
+        {
+          type: "p",
+          text: "Атрибуты: gen_ai.system=openrouter, gen_ai.operation.name, модели запроса и ответа, токены и finish reason, плюс openrouter.cost_usd, profile, индекс fallback, индекс retry, код статуса, латентность, username, session_id и trace_id. BudgetExceeded, RateLimitExceeded, таймауты и прерванный стрим (499) — ошибки спана. Текст промпта и ответа не пишется, пока не включён OTEL_CAPTURE_CONTENT. Редактор — dotted path (text, *, kind) -> str. Ключ API и заголовок Authorization в атрибуты не попадают.",
+        },
+        {
+          type: "h3",
+          text: "Группировка",
+        },
+        {
+          type: "p",
+          text: "У RequestLog nullable индексы trace_id и session_id и nullable JSON metadata. Retry и fallback одного вызова делят trace_id: это id трейса OpenTelemetry, если спан пишется, иначе сгенерированный id. trace_id= задаёт id в логе и в атрибуте спана и не подменяет id контекста спана. session_id= и metadata= у chat по-прежнему уходят в OpenRouter. trace= — дополнительные атрибуты спана, в запрос не входят. Транскрипция сохраняет поля и не кладёт их в JSON аудио.",
+        },
+        {
+          type: "code",
+          lang: "python",
+          title: "bound_session",
+          code: "from django_openrouter import chat\nfrom django_openrouter.current_user import bound_session\n\nwith bound_session(\"ticket-42\", metadata={\"feature\": \"support\"}):\n    chat(\"chat\", messages=[{\"role\": \"user\", \"content\": \"Hi\"}])\n\nchat(\n    \"chat\",\n    messages=[{\"role\": \"user\", \"content\": \"Hi\"}],\n    session_id=\"other\",\n    metadata={\"feature\": \"billing\"},\n    trace={\"feature.flag\": \"beta\"},\n)",
+        },
+        {
+          type: "p",
+          text: "Аргументы вызова перекрывают bound_session только для этого вызова. Ключи metadata вызова заменяют ключи блока. В админке журнал фильтруется и ищется по session_id и trace_id. У строки есть ссылки all calls in this session и all calls in this trace. Metadata на странице записи только для чтения.",
+        },
+        {
+          type: "h3",
+          text: "Logfire, Langfuse, Jaeger, Tempo",
+        },
+        {
+          type: "code",
+          lang: "python",
+          title: "OTLP",
+          code: "pip install \"django-openrouter[otel]\" opentelemetry-sdk opentelemetry-exporter-otlp\n\n# Logfire: logfire.configure() sets the TracerProvider.\n# Langfuse via OTLP:\n#   OTEL_EXPORTER_OTLP_ENDPOINT=https://cloud.langfuse.com/api/public/otel\n#   OTEL_EXPORTER_OTLP_HEADERS=Authorization=Basic <base64 public:secret>\n# Jaeger or Grafana Tempo (OTLP/HTTP):\n#   OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318\n\nfrom opentelemetry import trace\nfrom opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter\nfrom opentelemetry.sdk.trace import TracerProvider\nfrom opentelemetry.sdk.trace.export import BatchSpanProcessor\n\nprovider = TracerProvider()\nprovider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))\ntrace.set_tracer_provider(provider)",
+        },
+      ],
+    },
+    {
       id: 'admin',
       group: 'Руководство',
       title: 'Админка',
-      lead: 'Вся runtime-политика живёт в четырёх разделах Django admin: настройки, каталог моделей, профили использования и журнал запросов.',
+      lead: 'Вся runtime-политика живёт в Django admin: настройки, каталог моделей, профили использования, журнал запросов и панель расхода.',
       blocks: [
         {
           type: 'table',
@@ -791,6 +853,7 @@ with bound_username("worker"):
             ['**OpenRouter models**', 'Каталог из OpenRouter: цена, латентность, throughput'],
             ['**Usage profiles**', 'Цепочка моделей, лимиты, бюджеты, статистика расхода'],
             ['**Request logs**', 'Токены, стоимость и латентность каждого вызова (read-only)'],
+            ['**Usage dashboard**', 'Расход, доля ошибок, латентность и токены рядом с бюджетами профилей'],
           ],
         },
         { type: 'h3', text: 'OpenRouter settings' },
@@ -869,7 +932,8 @@ with bound_username("worker"):
           type: 'list',
           items: [
             '**Колонки:** время, username, профиль, модель, HTTP-статус, токены prompt/completion, стоимость, латентность.',
-            '**Сводка над таблицей:** число запросов и сумма USD по текущему фильтру. Фильтры: профиль, статус, дата; есть поиск по тексту ошибки и username.',
+            '**Сводка над таблицей:** число запросов и сумма USD по текущему фильтру. Фильтры: профиль, статус, дата, session id, trace id; поиск по тексту ошибки, username, session id и trace id.',
+            '**Сессия и трейс:** у строки ссылки all calls in this session и all calls in this trace. Metadata на странице записи только для чтения.',
             '**Username** подставляет `CurrentUserMiddleware`; без него строки помечаются `anonymous`. В Celery и management-командах — `bound_username("worker")` (см. «Бэкенды логов»).',
             '**Права:** отдельное право `view_usage_logs` позволяет дать саппорту доступ к расходу без доступа к настройкам.',
           ],
@@ -879,6 +943,26 @@ with bound_username("worker"):
           src: 'admin-logs.png',
           alt: 'Django admin — журнал запросов: время, username, профиль, модель, статус, токены, стоимость, латентность; сводка сверху',
           caption: 'Журнал запросов: каждая попытка с токенами, стоимостью и латентностью, сводка по фильтру над таблицей.',
+        },
+        { type: 'h3', text: 'Панель расхода' },
+        {
+          type: 'p',
+          text: 'Сотрудник с правом `view_usage_logs` (и суперпользователь) открывает **Usage dashboard** с индекса OpenRouter или из сводки журнала. Страница регистрируется в `RequestLogAdmin.get_urls` и оборачивается в `admin_view`, поэтому свой `AdminSite`, на котором зарегистрирован `RequestLog`, отдаёт ту же страницу. В стандартной админке путь — `/admin/django_openrouter/requestlog/dashboard/`.',
+        },
+        {
+          type: 'list',
+          items: [
+            '**Окно.** День группирует по часам (не больше 7 дней). Месяц — по дням (не больше 366 дней). Пресеты переключают на сегодня или текущий месяц. Фильтры сужают выборку по профилю и модели.',
+            '**Графики.** Вендорный Chart.js (MIT, без сборки, без CDN и без inline-скрипта). Данные передаются через `json_script`: стоимость, запросы, доля ошибок, средняя и p95 латентность и токены — всего и по профилю и модели. Цвет серии стабилен. Графики следуют светлой и тёмной теме админки. Карточки сверху сравнивают окно с предыдущим периодом той же длины.',
+            '**Ошибки.** Всё вне HTTP 200–299, включая 402, 429, 499, 5xx и незакрытый резерв (статус 0), пока его не сверят.',
+            '**Бюджеты и топ расхода.** У каждого профиля — текущие календарные сутки и месяц против лимитов запросов и USD, с процентом использования. Счётчик запросов совпадает с правилами лимита (HTTP-ошибки кроме 499 не считаются); стоимость включает каждую строку. Фильтр по модели эти цифры не меняет. p95 считается в Python не больше чем по 20 000 самым свежим строкам.',
+          ],
+        },
+        {
+          type: 'image',
+          src: 'admin-dashboard.png',
+          alt: 'Django admin — панель расхода: фильтры, стоимость, запросы, доля ошибок, латентность, токены и бюджеты профилей',
+          caption: 'Панель расхода: траты, ошибки и латентность за выбранный день или месяц рядом с дневным и месячным бюджетом профиля.',
         },
         { type: 'h3', text: 'Защита API-ключа' },
         {

@@ -140,6 +140,7 @@ class OpenRouterProfileModel(Model):
             )
             from django_openrouter.client import AsyncOpenRouterClient
 
+            prepared.overrides.update(_grouping_overrides(messages))
             result = await AsyncOpenRouterClient(self.usage_profile).chat(
                 payload, **prepared.overrides
             )
@@ -167,6 +168,7 @@ class OpenRouterProfileModel(Model):
             )
             from django_openrouter.client import AsyncOpenRouterClient
 
+            prepared.overrides.update(_grouping_overrides(messages))
             chunks = AsyncOpenRouterClient(self.usage_profile).stream(
                 payload, **prepared.overrides
             )
@@ -277,6 +279,43 @@ def _tool_call_event(
         tool_call_id=call_id,
         provider_name=_PROVIDER_NAME,
     )
+
+
+def _grouping_overrides(messages: Sequence[ModelMessage]) -> dict[str, Any]:
+    """session_id и metadata для журнала и тела chat.
+
+    ``bound_session`` важнее ``conversation_id`` агента. ``trace_id`` не
+    передаём: его берёт активный спан OpenTelemetry либо генерирует клиент.
+    """
+    from django_openrouter.call_context import current_metadata, current_session_id
+
+    overrides: dict[str, Any] = {}
+    session_id = current_session_id()
+    if session_id is None:
+        session_id = _conversation_session_id(messages)
+    if session_id is not None:
+        overrides["session_id"] = session_id
+    metadata = current_metadata()
+    if metadata:
+        overrides["metadata"] = metadata
+    return overrides
+
+
+def _conversation_session_id(messages: Sequence[ModelMessage]) -> str | None:
+    from django_openrouter.call_context import coerce_session_id
+    from django_openrouter.exceptions import ConfigurationError
+
+    for message in reversed(messages):
+        if not isinstance(message, ModelRequest):
+            continue
+        conversation_id = message.conversation_id
+        if not isinstance(conversation_id, str):
+            return None
+        try:
+            return coerce_session_id(conversation_id)
+        except ConfigurationError:
+            return None
+    return None
 
 
 async def _prepare_on_db_thread(

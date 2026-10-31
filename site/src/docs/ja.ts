@@ -4,7 +4,7 @@ export const ja: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: 'OpenRouter for Django — モデル・プロファイル・予算・ログを管理画面から運用',
-    version: '0.5.1',
+    version: '0.7.0',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -208,6 +208,9 @@ print(result.model_used, result.cost_usd, result.latency_ms)`,
             ['`HTTP_REFERER`', '未設定', '`HTTP-Referer` ヘッダー（OpenRouter でのアプリ帰属）'],
             ['`X_TITLE`', '未設定', '`X-Title` ヘッダー'],
             ['`LOG_BACKENDS`', 'DB のみ', 'リクエストログの書き込み先 — 「ログバックエンド」セクション参照'],
+            ["`OTEL`", "`false`", "スパン。opentelemetry-api があっても既定ではオフ"],
+            ["`OTEL_CAPTURE_CONTENT`", "`false`", "マスクしたプロンプトと応答をスパンに書く"],
+            ["`OTEL_CONTENT_REDACTOR`", "未設定", "ドットパス fn(text, *, kind) -> str"],
           ],
         },
         {
@@ -409,6 +412,10 @@ print(result.output, result.usage.cost, result.response.model_name)`,
         {
           type: 'p',
           text: '`BudgetExceeded` と `RateLimitExceeded` は呼び出し元まで届きます。HTTP の前に発生し、別モデルへ黙って移りません。HTTP のフォールバックはプロファイルの列の中だけです（`402`、`408`、`429`、`5xx`）。',
+        },
+        {
+          type: 'p',
+          text: '`Agent.run(conversation_id=...)` は、`bound_session()` が無いときリクエストログの `session_id` になり、chat の本文にも送られます。ブロック側の session と metadata が優先され、同じくリクエストに載ります。アダプタは `trace_id` を渡しません。有効な OpenTelemetry スパン（Django、Celery、`Agent(instrument=True)`）がログの `trace_id` になります。トレースがオフなら、モデル呼び出しごとに id が付き、その呼び出しのリトライとフォールバックで共有されます。',
         },
         { type: 'h3', text: 'Django ビュー' },
         {
@@ -724,7 +731,7 @@ python manage.py sync_models --api-key sk-or-...  # 使い捨てキー。保存�
         { type: 'h3', text: 'FileBackend' },
         {
           type: 'p',
-          text: 'サイズベースのローテーション付き（`RotatingFileHandler`）で JSON Lines をファイルへ出力。1 行 = 1 JSON オブジェクトで、フィールドは `created_at`、`profile`、`model`、`status_code`、`error_message`、`prompt_tokens`、`completion_tokens`、`cost_usd`、`latency_ms`、`username` です。',
+          text: 'サイズベースのローテーション付き（`RotatingFileHandler`）で JSON Lines をファイルへ出力。1 行 = 1 JSON オブジェクトで、フィールドは `created_at`、`profile`、`model`、`status_code`、`error_message`、`prompt_tokens`、`completion_tokens`、`cost_usd`、`latency_ms`、`username`、`trace_id`、`session_id`、`metadata` です。',
         },
         { type: 'h3', text: 'ClickHouseBackend' },
         {
@@ -746,7 +753,10 @@ python manage.py sync_models --api-key sk-or-...  # 使い捨てキー。保存�
     completion_tokens UInt32,
     cost_usd Decimal(20, 10),
     latency_ms UInt32,
-    username String
+    username String,
+    trace_id String,
+    session_id String,
+    metadata String
 )
 ENGINE = MergeTree
 ORDER BY (created_at, profile);`,
@@ -778,10 +788,58 @@ with bound_username("worker"):
       ],
     },
     {
+      id: 'tracing',
+      group: "ガイド",
+      title: "トレースとログのグループ",
+      lead: "任意の OpenTelemetry スパンと、各リクエストログの trace_id、session_id、metadata。",
+      blocks: [
+        {
+          type: "p",
+          text: "pip install django-openrouter[otel] は opentelemetry-api だけを入れます。SDK とエクスポーターはホスト側です。未インストールなら import しません。OPENROUTER['OTEL'] が true になるまでスパンはオフです。",
+        },
+        {
+          type: "h3",
+          text: "Spans",
+        },
+        {
+          type: "p",
+          text: "chat、stream、transcribe、generate_image と非同期版は親スパンを一つ開きます。generate_image はネストした chat スパンを足しません。リトライとフォールバックを含む各 HTTP 試行が子スパンです。ストリームは最初のトークンまでの時間を記録し、ジェネレータが終わるまで親を開いたままにします。BudgetExceeded、RateLimitExceeded、タイムアウト、中断したストリーム (499) はエラーです。",
+        },
+        {
+          type: "h3",
+          text: "trace_id / session_id",
+        },
+        {
+          type: "p",
+          text: "RequestLog に nullable でインデックス付きの trace_id と session_id、nullable の JSON metadata があります。一つの呼び出しのリトライは同じ trace_id を共有します。スパンがあるときは OpenTelemetry のトレース id、なければ生成した id です。chat の session_id と metadata はこれまで通り OpenRouter に送られます。trace= はローカルなスパン属性です。文字起こしはフィールドを保存し、音声 JSON には入れません。管理画面では session_id と trace_id で絞り込みと検索ができ、同じセッションまたはトレースの呼び出しへのリンクがあります。metadata は読み取り専用です。",
+        },
+        {
+          type: "code",
+          lang: "python",
+          title: "bound_session",
+          code: "from django_openrouter import chat\nfrom django_openrouter.current_user import bound_session\n\nwith bound_session(\"ticket-42\", metadata={\"feature\": \"support\"}):\n    chat(\"chat\", messages=[{\"role\": \"user\", \"content\": \"Hi\"}])\n\nchat(\n    \"chat\",\n    messages=[{\"role\": \"user\", \"content\": \"Hi\"}],\n    session_id=\"other\",\n    metadata={\"feature\": \"billing\"},\n    trace={\"feature.flag\": \"beta\"},\n)",
+        },
+        {
+          type: "p",
+          text: '呼び出し引数はその呼び出しだけ `bound_session` を上書きします。呼び出しの `metadata` のキーはブロックのキーを置き換えます。プロンプトと応答の本文は `OTEL_CAPTURE_CONTENT` が true のときだけスパンに載ります。',
+        },
+        {
+          type: "h3",
+          text: "Logfire, Langfuse, Jaeger, Tempo",
+        },
+        {
+          type: "code",
+          lang: "python",
+          title: "OTLP",
+          code: "pip install \"django-openrouter[otel]\" opentelemetry-sdk opentelemetry-exporter-otlp\n\n# Logfire: logfire.configure() sets the TracerProvider.\n# Langfuse via OTLP:\n#   OTEL_EXPORTER_OTLP_ENDPOINT=https://cloud.langfuse.com/api/public/otel\n#   OTEL_EXPORTER_OTLP_HEADERS=Authorization=Basic <base64 public:secret>\n# Jaeger or Grafana Tempo (OTLP/HTTP):\n#   OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318\n\nfrom opentelemetry import trace\nfrom opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter\nfrom opentelemetry.sdk.trace import TracerProvider\nfrom opentelemetry.sdk.trace.export import BatchSpanProcessor\n\nprovider = TracerProvider()\nprovider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))\ntrace.set_tracer_provider(provider)",
+        },
+      ],
+    },
+    {
       id: 'admin',
       group: 'ガイド',
       title: '管理画面',
-      lead: 'ランタイムポリシーのすべては Django admin の 4 セクションにあります：設定、モデルカタログ、利用プロファイル、リクエストログ。',
+      lead: 'ランタイムポリシーは Django admin にあります：設定、モデルカタログ、利用プロファイル、リクエストログ、利用ダッシュボード。',
       blocks: [
         {
           type: 'table',
@@ -791,6 +849,7 @@ with bound_username("worker"):
             ['**OpenRouter models**', 'OpenRouter のカタログ：価格・レイテンシ・スループット'],
             ['**Usage profiles**', 'モデルチェーン、上限、予算、消費統計'],
             ['**Request logs**', '各呼び出しのトークン・コスト・レイテンシ（読み取り専用）'],
+            ['**Usage dashboard**', 'コスト、エラー率、レイテンシ、トークンをプロファイル予算と並べて表示'],
           ],
         },
         { type: 'h3', text: 'OpenRouter settings' },
@@ -879,6 +938,25 @@ with bound_username("worker"):
           src: 'admin-logs.png',
           alt: 'Django admin — リクエストログ：時刻、username、プロファイル、モデル、ステータス、トークン、コスト、レイテンシ。上部にサマリー',
           caption: 'リクエストログ：すべての試行をトークン・コスト・レイテンシ付きで記録。フィルターのサマリーがテーブル上部に表示。',
+        },
+        { type: 'h3', text: '利用ダッシュボード' },
+        {
+          type: 'p',
+          text: '`view_usage_logs` を持つスタッフ（とスーパーユーザー）は、OpenRouter のインデックスかログリサマリーから **Usage dashboard** を開きます。ビューは `RequestLogAdmin.get_urls` に登録され `admin_view` で包まれるため、`RequestLog` を登録した独自の `AdminSite` でも同じページになります。既定の admin のパスは `/admin/django_openrouter/requestlog/dashboard/` です。',
+        },
+        {
+          type: 'list',
+          items: [
+            '**期間。** 日は時間バケット（最大 7 日）。月は日バケット（最大 366 日）。プロファイルとモデルで絞り込めます。',
+            '**チャート。** 同梱の Chart.js（MIT、ビルドなし、CDN なし、インラインスクリプトなし）。データは `json_script` で渡します。コスト、件数、エラー率、平均/p95 レイテンシとトークンを、全体およびプロファイル別・モデル別に表示します。系列の色は固定で、管理画面のライト/ダークテーマに追従します。主要カードは同じ長さの直前期間と比較します。200–299 以外（402、429、499、5xx、ステータス 0 を含む）がエラーです。',
+            '**予算。** カレンダー上の当日と当月を、リクエスト上限と USD 上限および使用率と並べます。p95 は直近最大 20,000 行から Python で計算します。',
+          ],
+        },
+        {
+          type: 'image',
+          src: 'admin-dashboard.png',
+          alt: 'Django admin の利用ダッシュボード：フィルタ、コスト、件数、エラー率、レイテンシ、トークン、プロファイル予算',
+          caption: '利用ダッシュボード：選んだ日または月の支出・エラー・レイテンシと、プロファイルの予算。',
         },
         { type: 'h3', text: 'API キーの保護' },
         {

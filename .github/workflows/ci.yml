@@ -32,7 +32,12 @@ jobs:
           required = [
               "py.typed",
               "templates/admin/django_openrouter/requestlog/change_list.html",
+              "templates/admin/django_openrouter/requestlog/dashboard.html",
+              "templates/admin/django_openrouter/requestlog/dashboard_delta.html",
               "static/django_openrouter/js/model_choice_filters.js",
+              "static/django_openrouter/js/dashboard.js",
+              "static/django_openrouter/js/chart.umd.min.js",
+              "static/django_openrouter/css/dashboard.css",
               "locale/ru/LC_MESSAGES/django.mo",
           ]
           required.extend(

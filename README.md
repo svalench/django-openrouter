@@ -82,7 +82,7 @@ Screenshots: [`docs/img/`](https://github.com/svalench/django-openrouter/tree/ma
 
 ## Admin pages
 
-Four models under **OpenRouter**. Runtime policy lives here, not in `settings.py`.
+Four models under **OpenRouter**, plus a usage dashboard linked from that index. Runtime policy lives here, not in `settings.py`.
 
 | Page | What it does |
 | --- | --- |
@@ -90,6 +90,7 @@ Four models under **OpenRouter**. Runtime policy lives here, not in `settings.py
 | [OpenRouter models](#openrouter-models) | Catalog from OpenRouter: price, latency, throughput |
 | [Usage profiles](#usage-profiles) | Ordered model chain, limits, budgets, spend stats |
 | [Request logs](#request-logs) | Per-call tokens, cost, latency (read-only) |
+| [Usage dashboard](#usage-dashboard) | Spend, error rate, latency and tokens versus profile budgets |
 
 ### OpenRouter settings
 
@@ -144,6 +145,18 @@ Read-only. Every HTTP attempt (including fallbacks and errors) is a row when `Da
 Columns: time, username, profile, model, HTTP status, prompt/completion tokens, cost, latency. Above the table: request count and USD total for the current filter. Filters: profile, status, date.
 
 Username comes from `django_openrouter.middleware.CurrentUserMiddleware` (after `AuthenticationMiddleware`). Without it, rows show `anonymous`. In Celery / management commands use `bound_username("worker")`.
+
+### Usage dashboard
+
+Staff who can open request logs (superuser or `django_openrouter.view_usage_logs`) also get **Usage dashboard** on the OpenRouter admin index and in the log summary. On the default admin site the path is `/admin/django_openrouter/requestlog/dashboard/`. The route lives on `RequestLogAdmin.get_urls` and is wrapped with `admin_view`, so a custom `AdminSite` that registers `RequestLog` serves the same page under its own URL namespace.
+
+![Usage dashboard](https://raw.githubusercontent.com/svalench/django-openrouter/master/docs/img/dashboard.png)
+
+- **Day** groups by hour and accepts up to 7 days. **Month** groups by day and accepts up to 366 days. **Today** and **This month** reset the window. Profile and model narrow every chart except the budget table.
+- Charts use a vendored Chart.js 4.4.6 build (MIT, static file, no CDN and no build step). Series data is passed with Django’s `json_script` tag, so the page does not need an inline script and stays compatible with `script-src 'self'`. `dashboard.js` draws the charts, follows the Django admin light and dark themes, and submits the filter form when a control changes. The four headline figures compare the selected window with the immediately previous window of the same length.
+- Series: cost (USD), request count, error rate, average and p95 latency, average and p95 tokens. The same metrics are grouped by profile and by model. Anything outside HTTP 200–299 is an error, including 402, 429, 499, 5xx and an in-flight reservation (status 0) until it is reconciled.
+- **Budgets** compare each profile with its current calendar day and month. Request counts use the same rule as limit enforcement (HTTP errors other than 499 do not count). Cost includes every row. Percent used is blank when the limit is empty. The model filter does not change these figures.
+- **Top expensive profiles** and **Top expensive models** are the highest cost in the selected range. p95 is computed in Python from at most 20,000 of the newest rows, so a wide window on a large log stays bounded. Queries filter on `created_at` and the `(profile, created_at)` / `(model, created_at)` indexes.
 
 ## Usage
 
@@ -255,6 +268,15 @@ print(result.output, result.usage.cost, result.response.model_name)
 `agent.run_stream` / `run_stream_sync` need **Streaming enabled** in OpenRouter settings. Text deltas stream as they arrive; reasoning and tool calls are attached from the final chunk, because the library's SSE chunks only carry text until the stream completes. `result.usage` includes token counts and `cost` (USD from `usage.cost` when OpenRouter sends it, otherwise the catalog estimate).
 
 `BudgetExceeded` and `RateLimitExceeded` propagate to the caller. They are raised before HTTP and do not fall through to another model. HTTP fallback stays inside the profile chain (`402`, `408`, `429`, `5xx`).
+
+`Agent.run(conversation_id=...)` is stored on the request log as `session_id` and sent on the chat body, unless `bound_session()` is already active. That block’s session id and metadata win, and both are forwarded on the chat request. The adapter does not pass `trace_id`. An active OpenTelemetry span — Django, Celery, or `Agent(instrument=True)` — becomes the log `trace_id`. With `OPENROUTER["OTEL"]` left false, each model call gets its own id, shared by that call’s retries and fallbacks.
+
+```python
+from django_openrouter.current_user import bound_session
+
+with bound_session("ticket-42", metadata={"feature": "support"}):
+    agent.run_sync("Hello")
+```
 
 Django view:
 
@@ -425,6 +447,9 @@ Releases budget reservations still pending after N minutes (left by a killed wor
 | `X_TITLE` | unset | Sent as `X-Title` |
 | `LOG_BACKENDS` | DB only | Where request logs are written; see below |
 | `RETRY_BACKOFF` | `0.5` | Base seconds for exponential retry backoff (`0` = no sleep) |
+| `OTEL` | `false` | OpenTelemetry spans. Stays off even when `opentelemetry-api` is installed |
+| `OTEL_CAPTURE_CONTENT` | `false` | Put redacted prompt and completion text on spans |
+| `OTEL_CONTENT_REDACTOR` | unset | Dotted path `fn(text, *, kind) -> str` (`kind` is `prompt` or `completion`) |
 
 Also accepted, in this order, when the admin API key is empty:
 
@@ -482,7 +507,7 @@ All configured backends receive every record. Logging is **best-effort**: a fail
 Backend-specific notes:
 
 - **DatabaseBackend** writes to the `RequestLog` model. Daily/monthly request limits and budgets are aggregated from that table. Profiles with limits raise `ConfigurationError` if this backend is not configured.
-- **FileBackend** uses `logging.handlers.RotatingFileHandler`; the line format is one JSON object per request with `created_at`, `profile`, `model`, `status_code`, `error_message`, `prompt_tokens`, `completion_tokens`, `cost_usd`, `latency_ms`, `username`.
+- **FileBackend** uses `logging.handlers.RotatingFileHandler`; the line format is one JSON object per request with `created_at`, `profile`, `model`, `status_code`, `error_message`, `prompt_tokens`, `completion_tokens`, `cost_usd`, `latency_ms`, `username`, `trace_id`, `session_id`, `metadata`. `metadata` is a JSON string.
 - **ClickHouseBackend** inserts `FORMAT JSONEachRow` per request. Create a table like:
 
 ```sql
@@ -497,7 +522,10 @@ CREATE TABLE analytics.openrouter_request_log
     completion_tokens UInt32,
     cost_usd Decimal(20, 10),
     latency_ms UInt32,
-    username String
+    username String,
+    trace_id String,
+    session_id String,
+    metadata String
 )
 ENGINE = MergeTree
 ORDER BY (created_at, profile);
@@ -512,6 +540,8 @@ with bound_username("worker"):
     chat("chat", messages=[...])
 ```
 
+`metadata` in the file and in ClickHouse is a JSON string (empty when the call had no metadata), not a nested JSON object, so a `String` column matches `JSONEachRow`.
+
 You can also point `LOG_BACKENDS` at your own subclass of `django_openrouter.log_backends.LogBackend` (implement `write()`, optionally `awrite()`).
 
 Add `"BACKGROUND": True` to any backend entry except `DatabaseBackend` to write it from a background thread, so a slow ClickHouse or disk does not add latency to `chat()`.
@@ -519,6 +549,80 @@ Add `"BACKGROUND": True` to any backend entry except `DatabaseBackend` to write 
 For metrics (Prometheus, OpenTelemetry) connect to `django_openrouter.signals.request_logged`; it is sent after every attempt with `record=LogRecord`.
 
 The API key is encrypted with a key derived from `SECRET_KEY`. When rotating it, keep the old value in `SECRET_KEY_FALLBACKS`: the key still decrypts and is re-encrypted with the new `SECRET_KEY` on the next save.
+
+## Tracing and log groups
+
+`pip install django-openrouter[otel]` depends only on `opentelemetry-api`. The SDK and exporter belong to the host project. Without that package, imports stay lazy and calls do not touch OpenTelemetry.
+
+Spans stay **off** until `OPENROUTER["OTEL"]` is true, even if the API package is importable:
+
+```python
+OPENROUTER = {"OTEL": True}
+```
+
+`chat()`, `achat()`, `stream()`, `astream()`, `transcribe()`, `atranscribe()`, `generate_image()` and `agenerate_image()` (and the same methods on the clients) open one parent span. `generate_image()` does not add a second chat parent. Each HTTP attempt, including a retry or a fallback model, is a child span. An active Django or Celery span stays the parent.
+
+Attributes follow the GenAI semantic conventions (`gen_ai.system=openrouter`, `gen_ai.operation.name`, `gen_ai.request.model`, `gen_ai.response.model`, token counts, `gen_ai.response.finish_reasons`) plus `openrouter.cost_usd`, `openrouter.profile`, `openrouter.fallback_index`, `openrouter.retry_index`, `openrouter.status_code`, `openrouter.latency_ms`, `openrouter.username`, `openrouter.session_id`, `openrouter.trace_id`. Streams set `openrouter.time_to_first_token_ms` and keep the parent span open until the generator is exhausted or closed. `BudgetExceeded`, `RateLimitExceeded`, timeouts and an interrupted stream (`499`) are recorded as span errors.
+
+Prompt and completion text is omitted unless `OTEL_CAPTURE_CONTENT` is true. `OTEL_CONTENT_REDACTOR` is an optional dotted path; the callable receives `(text, *, kind)` and must return `str`. API keys and `Authorization` headers are never span attributes. Image and audio bytes are not copied onto the span.
+
+### Grouping calls
+
+`RequestLog` has nullable `trace_id` and `session_id` (both indexed) and a nullable `metadata` JSON field (migration `0011_requestlog_grouping`). Retries and fallbacks of one call share a `trace_id`: the current OpenTelemetry trace id when a span is recording, otherwise a generated id. Pass `trace_id=` to force the id stored on the log and on `openrouter.trace_id`. That does not rewrite the span's own trace id.
+
+`session_id=` and `metadata=` on a chat call are still sent to OpenRouter and stored on the log. `trace=` is a dict of extra span attributes and is not sent. Transcription stores the same fields and does not put them in the audio JSON body.
+
+```python
+from django_openrouter import chat
+from django_openrouter.current_user import bound_session
+
+with bound_session("ticket-42", metadata={"feature": "support"}):
+    chat("chat", messages=[{"role": "user", "content": "Hi"}])
+
+chat(
+    "chat",
+    messages=[{"role": "user", "content": "Hi"}],
+    session_id="other",
+    metadata={"feature": "billing"},
+    trace_id="support-trace",
+    trace={"feature.flag": "beta"},
+)
+```
+
+A call argument overrides `bound_session` for that call only. Metadata is merged: keys on the call replace keys from the block. The admin log list filters and searches by `session_id` and `trace_id`. Each row links to the other calls in that session or trace. Metadata on the change page is read-only.
+
+### Exporters
+
+Install an SDK and exporter next to the extra. Three common setups:
+
+```python
+# Logfire
+import logfire
+
+logfire.configure()  # installs a TracerProvider
+
+# Langfuse over OTLP (HTTP). Set the environment, then configure the OTLP exporter.
+# OTEL_EXPORTER_OTLP_ENDPOINT=https://cloud.langfuse.com/api/public/otel
+# OTEL_EXPORTER_OTLP_HEADERS=Authorization=Basic <base64 public_key:secret_key>
+
+# Jaeger or Grafana Tempo: point OTLP at the collector (4318 HTTP or 4317 gRPC).
+# OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+```
+
+```bash
+pip install opentelemetry-sdk opentelemetry-exporter-otlp
+```
+
+```python
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+provider = TracerProvider()
+provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+trace.set_tracer_provider(provider)
+```
 
 ## Limits
 

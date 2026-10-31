@@ -12,6 +12,11 @@ import httpx
 import pytest
 import respx
 from asgiref.sync import async_to_sync
+from django.test import override_settings
+from opentelemetry import trace as otel_trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from pydantic import BaseModel
 from pydantic_ai import Agent, BinaryContent, ImageUrl, NativeOutput, PromptedOutput
 from pydantic_ai.exceptions import UserError
@@ -24,7 +29,8 @@ from pydantic_ai.messages import (
 )
 from pydantic_ai.models import ModelRequestParameters
 
-from django_openrouter.current_user import bound_username
+from django_openrouter import tracing
+from django_openrouter.current_user import bound_session, bound_username
 from django_openrouter.exceptions import (
     BudgetExceeded,
     OpenRouterAPIError,
@@ -701,3 +707,78 @@ async def test_non_image_binary_is_rejected(or_settings: OpenRouterSettings) -> 
     ]
     with pytest.raises(UserError, match="image binary"):
         await model.request(messages, None, ModelRequestParameters())
+
+
+@respx.mock
+def test_conversation_id_is_session_until_bound_session(
+    respx_mock: respx.MockRouter, or_settings: OpenRouterSettings
+) -> None:
+    route = respx_mock.post(CHAT_URL).mock(
+        return_value=httpx.Response(
+            200, json=completion_payload(content="ok", cost=Decimal("0.001"))
+        )
+    )
+    agent = Agent(OpenRouterProfileModel("chat"))
+    agent.run_sync("Hi", conversation_id="ticket-42")
+    assert _bodies(route)[0]["session_id"] == "ticket-42"
+    assert "trace_id" not in _bodies(route)[0]
+    log = RequestLog.objects.get(status_code=200)
+    assert log.session_id == "ticket-42"
+    assert log.trace_id
+
+    with bound_session("celery-job", metadata={"feature": "support"}):
+        agent.run_sync("Hi", conversation_id="ticket-42")
+    body = _bodies(route)[1]
+    assert body["session_id"] == "celery-job"
+    assert body["metadata"] == {"feature": "support"}
+    bound = RequestLog.objects.get(session_id="celery-job")
+    assert bound.metadata == {"feature": "support"}
+    assert bound.trace_id != log.trace_id
+
+
+@respx.mock
+def test_parent_span_is_the_log_trace_id(
+    respx_mock: respx.MockRouter, or_settings: OpenRouterSettings
+) -> None:
+    tracing._enabled_cache = None
+    exporter = InMemorySpanExporter()
+    provider = TracerProvider()
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+    tracer = provider.get_tracer("pydantic-ai-profile")
+    respx_mock.post(CHAT_URL).mock(
+        return_value=httpx.Response(
+            200, json=completion_payload(content="ok", cost=Decimal("0.001"))
+        )
+    )
+    agent = Agent(OpenRouterProfileModel("chat"))
+    with override_settings(OPENROUTER={"OTEL": True, "RETRY_BACKOFF": 0}):
+        tracing._enabled_cache = None
+        original = tracing._get_tracer
+        tracing._get_tracer = lambda: tracer  # type: ignore[method-assign]
+        try:
+            with tracer.start_as_current_span("agent-run"):
+                expected = f"{otel_trace.get_current_span().get_span_context().trace_id:032x}"
+                agent.run_sync("Hi", conversation_id="span-session")
+        finally:
+            tracing._get_tracer = original  # type: ignore[method-assign]
+            tracing._enabled_cache = None
+    log = RequestLog.objects.get(session_id="span-session")
+    assert log.trace_id == expected
+    assert exporter.get_finished_spans()
+
+
+@respx.mock
+def test_overlong_conversation_id_is_omitted(
+    respx_mock: respx.MockRouter, or_settings: OpenRouterSettings
+) -> None:
+    route = respx_mock.post(CHAT_URL).mock(
+        return_value=httpx.Response(
+            200, json=completion_payload(content="ok", cost=Decimal("0.001"))
+        )
+    )
+    model = OpenRouterProfileModel("chat")
+    messages = [ModelRequest(parts=[UserPromptPart(content="Hi")], conversation_id="x" * 300)]
+
+    async_to_sync(model.request)(messages, None, ModelRequestParameters())
+    assert "session_id" not in _bodies(route)[0]
+    assert RequestLog.objects.get(status_code=200).session_id is None

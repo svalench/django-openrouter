@@ -4,7 +4,7 @@ export const zh: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: '面向 Django 的 OpenRouter — 通过管理后台管理模型、用量配置、预算和请求日志',
-    version: '0.5.1',
+    version: '0.7.0',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -208,6 +208,9 @@ print(result.model_used, result.cost_usd, result.latency_ms)`,
             ['`HTTP_REFERER`', '未设置', '`HTTP-Referer` 头（OpenRouter 中的应用归属）'],
             ['`X_TITLE`', '未设置', '`X-Title` 头'],
             ['`LOG_BACKENDS`', '仅数据库', '请求日志写入位置 — 见「日志后端」一节'],
+            ["`OTEL`", "`false`", "开启 span。即使安装了 opentelemetry-api 也默认关闭"],
+            ["`OTEL_CAPTURE_CONTENT`", "`false`", "把脱敏后的提示和回复写到 span"],
+            ["`OTEL_CONTENT_REDACTOR`", "未设置", "点分路径 fn(text, *, kind) -> str"],
           ],
         },
         {
@@ -409,6 +412,10 @@ print(result.output, result.usage.cost, result.response.model_name)`,
         {
           type: 'p',
           text: '`BudgetExceeded` 和 `RateLimitExceeded` 会抛给调用方。它们在 HTTP 之前发生，不会悄悄换到另一个模型。HTTP 回退只发生在配置档的模型链内（`402`、`408`、`429`、`5xx`）。',
+        },
+        {
+          type: 'p',
+          text: '`Agent.run(conversation_id=...)` 在没有 `bound_session()` 时写入请求日志的 `session_id`，并放进 chat 请求体。块里的 session 和 metadata 优先，同样会转发到请求。适配器不传 `trace_id`。当前的 OpenTelemetry span（Django、Celery 或 `Agent(instrument=True)`）成为日志里的 `trace_id`。未开追踪时，每次模型调用有自己的 id，该调用的重试和回退共用它。',
         },
         { type: 'h3', text: 'Django 视图' },
         {
@@ -724,7 +731,7 @@ python manage.py sync_models --api-key sk-or-...  # one-off key, never stored` }
         { type: 'h3', text: 'FileBackend' },
         {
           type: 'p',
-          text: '按大小滚动的 JSON Lines 文件（`RotatingFileHandler`）：一行 = 一个 JSON 对象，字段为 `created_at`、`profile`、`model`、`status_code`、`error_message`、`prompt_tokens`、`completion_tokens`、`cost_usd`、`latency_ms`、`username`。',
+          text: '按大小滚动的 JSON Lines 文件（`RotatingFileHandler`）：一行 = 一个 JSON 对象，字段为 `created_at`、`profile`、`model`、`status_code`、`error_message`、`prompt_tokens`、`completion_tokens`、`cost_usd`、`latency_ms`、`username`、`trace_id`、`session_id`、`metadata`。',
         },
         { type: 'h3', text: 'ClickHouseBackend' },
         {
@@ -746,7 +753,10 @@ python manage.py sync_models --api-key sk-or-...  # one-off key, never stored` }
     completion_tokens UInt32,
     cost_usd Decimal(20, 10),
     latency_ms UInt32,
-    username String
+    username String,
+    trace_id String,
+    session_id String,
+    metadata String
 )
 ENGINE = MergeTree
 ORDER BY (created_at, profile);`,
@@ -778,10 +788,58 @@ with bound_username("worker"):
       ],
     },
     {
+      id: 'tracing',
+      group: "指南",
+      title: "追踪与日志分组",
+      lead: "可选的 OpenTelemetry span，以及每条请求日志上的 trace_id、session_id 和 metadata。",
+      blocks: [
+        {
+          type: "p",
+          text: "pip install django-openrouter[otel] 只安装 opentelemetry-api。SDK 和导出器由宿主项目选择。未安装时不会 import。在 OPENROUTER['OTEL'] 为 true 之前不会创建 span。",
+        },
+        {
+          type: "h3",
+          text: "Spans",
+        },
+        {
+          type: "p",
+          text: "chat、stream、transcribe、generate_image 及其异步版本各有一个父 span。generate_image 不会再套一层 chat span。每次 HTTP 尝试（含重试和 fallback）是子 span。流式调用记录首 token 时间，并保持父 span 直到生成器结束。BudgetExceeded、RateLimitExceeded、超时和被中断的流（499）记为错误。",
+        },
+        {
+          type: "h3",
+          text: "trace_id / session_id",
+        },
+        {
+          type: "p",
+          text: "RequestLog 增加可空且有索引的 trace_id、session_id，以及可空 JSON metadata。同一次调用的重试共享 trace_id：有 span 时用 OpenTelemetry 的 trace id，否则生成一个。chat 的 session_id 和 metadata 仍会发给 OpenRouter。trace= 只作为 span 属性。转写会保存这些字段，但不会放进音频 JSON。管理后台可按 session_id 和 trace_id 过滤和搜索，并链接到同一会话或同一 trace 的全部调用。metadata 只读。",
+        },
+        {
+          type: "code",
+          lang: "python",
+          title: "bound_session",
+          code: "from django_openrouter import chat\nfrom django_openrouter.current_user import bound_session\n\nwith bound_session(\"ticket-42\", metadata={\"feature\": \"support\"}):\n    chat(\"chat\", messages=[{\"role\": \"user\", \"content\": \"Hi\"}])\n\nchat(\n    \"chat\",\n    messages=[{\"role\": \"user\", \"content\": \"Hi\"}],\n    session_id=\"other\",\n    metadata={\"feature\": \"billing\"},\n    trace={\"feature.flag\": \"beta\"},\n)",
+        },
+        {
+          type: "p",
+          text: '调用参数只在这一次覆盖 `bound_session`。调用里的 `metadata` 键会替换块里的同名键。只有 `OTEL_CAPTURE_CONTENT` 为 true 时，提示和回复正文才会写到 span。',
+        },
+        {
+          type: "h3",
+          text: "Logfire, Langfuse, Jaeger, Tempo",
+        },
+        {
+          type: "code",
+          lang: "python",
+          title: "OTLP",
+          code: "pip install \"django-openrouter[otel]\" opentelemetry-sdk opentelemetry-exporter-otlp\n\n# Logfire: logfire.configure() sets the TracerProvider.\n# Langfuse via OTLP:\n#   OTEL_EXPORTER_OTLP_ENDPOINT=https://cloud.langfuse.com/api/public/otel\n#   OTEL_EXPORTER_OTLP_HEADERS=Authorization=Basic <base64 public:secret>\n# Jaeger or Grafana Tempo (OTLP/HTTP):\n#   OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318\n\nfrom opentelemetry import trace\nfrom opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter\nfrom opentelemetry.sdk.trace import TracerProvider\nfrom opentelemetry.sdk.trace.export import BatchSpanProcessor\n\nprovider = TracerProvider()\nprovider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))\ntrace.set_tracer_provider(provider)",
+        },
+      ],
+    },
+    {
       id: 'admin',
       group: '指南',
       title: '管理后台',
-      lead: '全部运行时策略集中在 Django 管理后台的四个分区：设置、模型目录、用量配置和请求日志。',
+      lead: '全部运行时策略集中在 Django 管理后台：设置、模型目录、用量配置、请求日志和用量仪表盘。',
       blocks: [
         {
           type: 'table',
@@ -791,6 +849,7 @@ with bound_username("worker"):
             ['**OpenRouter models**', '来自 OpenRouter 的目录：价格、延迟、吞吐量'],
             ['**Usage profiles**', '模型链、限额、预算、花费统计'],
             ['**Request logs**', '每次调用的 token、费用和延迟（只读）'],
+            ['**Usage dashboard**', '花费、错误率、延迟和 token，并对照配置的预算'],
           ],
         },
         { type: 'h3', text: 'OpenRouter settings' },
@@ -879,6 +938,25 @@ with bound_username("worker"):
           src: 'admin-logs.png',
           alt: 'Django 管理后台 — 请求日志：时间、用户名、配置、模型、状态、token、费用、延迟；顶部为汇总',
           caption: '请求日志：每次尝试含 token、费用和延迟，表上方有筛选汇总。',
+        },
+        { type: 'h3', text: '用量仪表盘' },
+        {
+          type: 'p',
+          text: '拥有 `view_usage_logs` 的员工（以及超级用户）可以从 OpenRouter 索引或日志摘要打开 **Usage dashboard**。该视图挂在 `RequestLogAdmin.get_urls` 上，并用 `admin_view` 包装，因此注册了 `RequestLog` 的自定义 `AdminSite` 会提供同一页面。默认管理站点的路径是 `/admin/django_openrouter/requestlog/dashboard/`。',
+        },
+        {
+          type: 'list',
+          items: [
+            '**窗口。** 按天查看时按小时分桶（最多 7 天）。按月查看时按天分桶（最多 366 天）。可按配置和模型过滤。',
+            '**图表。** 随包提供的 Chart.js（MIT，无构建、无 CDN、无内联脚本）。数据通过 `json_script` 传入：费用、请求数、错误率、平均/p95 延迟和 token，可按总体、配置和模型查看。同一序列颜色固定，并跟随管理后台的浅色和深色主题。指标卡与等长的上一时段对比。200–299 以外都算错误，包括 402、429、499、5xx 和状态 0。',
+            '**预算。** 用当前日历日和月对照请求上限与美元上限，并显示已用百分比。p95 在 Python 中按窗口内最多 20,000 条最新记录计算。',
+          ],
+        },
+        {
+          type: 'image',
+          src: 'admin-dashboard.png',
+          alt: 'Django 管理后台用量仪表盘：筛选、费用、请求数、错误率、延迟、token 和配置预算',
+          caption: '用量仪表盘：所选日期或月份的花费、错误和延迟，以及每个配置的预算。',
         },
         { type: 'h3', text: 'API 密钥保护' },
         {
