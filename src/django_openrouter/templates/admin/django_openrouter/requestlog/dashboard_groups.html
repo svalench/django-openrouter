@@ -1,0 +1,37 @@
+{% load i18n %}
+<div class="or-dash-table-wrap">
+  <table class="or-dash-table">
+    <thead>
+      <tr>
+        <th>{% trans "Name" %}</th>
+        <th>{% trans "Requests" %}</th>
+        <th>{% trans "Error rate" %}</th>
+        <th>{% trans "Cost (USD)" %}</th>
+        <th>{% trans "Avg latency" %}</th>
+        <th>{% trans "p95 latency" %}</th>
+        <th>{% trans "Total tokens" %}</th>
+        <th>{% trans "Avg tokens" %}</th>
+        <th>{% trans "p95 tokens" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <td>{{ row.label }}</td>
+          <td>{{ row.requests }}</td>
+          <td>{{ row.error_rate }}</td>
+          <td>{{ row.cost }}</td>
+          <td>{{ row.avg_latency }}</td>
+          <td>{{ row.p95_latency }}</td>
+          <td>{{ row.total_tokens }}</td>
+          <td>{{ row.avg_tokens }}</td>
+          <td>{{ row.p95_tokens }}</td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="9">{% trans "No requests in this range." %}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

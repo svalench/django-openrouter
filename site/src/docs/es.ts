@@ -684,7 +684,7 @@ with bound_username("worker"):
       id: 'admin',
       group: 'Guías',
       title: 'El admin',
-      lead: 'Toda la política de runtime vive en cuatro secciones del Django admin: settings, catálogo de modelos, perfiles de uso y log de peticiones.',
+      lead: 'Toda la política de runtime vive en el Django admin: settings, catálogo de modelos, perfiles de uso, log de peticiones y un panel de gasto.',
       blocks: [
         {
           type: 'table',
@@ -694,6 +694,7 @@ with bound_username("worker"):
             ['**OpenRouter models**', 'El catálogo de OpenRouter: precio, latencia, throughput'],
             ['**Usage profiles**', 'Cadena de modelos, límites, presupuestos, estadísticas de gasto'],
             ['**Request logs**', 'Tokens, coste y latencia de cada llamada (solo lectura)'],
+            ['**Usage dashboard**', 'Gasto, tasa de error, latencia y tokens frente a los presupuestos del perfil'],
           ],
         },
         { type: 'h3', text: 'OpenRouter settings' },
@@ -782,6 +783,25 @@ with bound_username("worker"):
           src: 'admin-logs.png',
           alt: 'Django admin — log de peticiones: hora, username, perfil, modelo, estado, tokens, coste, latencia; resumen arriba',
           caption: 'Log de peticiones: cada intento con tokens, coste y latencia, con el resumen del filtro sobre la tabla.',
+        },
+        { type: 'h3', text: 'Panel de gasto' },
+        {
+          type: 'p',
+          text: 'El staff con `view_usage_logs` (y los superusuarios) abre **Usage dashboard** desde el índice de OpenRouter o desde el resumen del log. La vista va en `RequestLogAdmin.get_urls`, envuelta en `admin_view`, así que un `AdminSite` propio que registre `RequestLog` sirve la misma página.',
+        },
+        {
+          type: 'list',
+          items: [
+            '**Ventana.** Día agrupa por hora (máximo 7 días). Mes agrupa por día (máximo 366 días). Filtros de perfil y modelo.',
+            '**Gráficos.** SVG en línea, sin build ni script inline: coste (USD), peticiones, tasa de error, latencia media/p95 y tokens media/p95, en total y agrupados por perfil y por modelo. Cuenta como error todo lo que no sea 200–299, incluidos 402, 429, 499, 5xx y el estado 0.',
+            '**Presupuestos.** Día y mes naturales frente a los límites de peticiones y USD, con el porcentaje usado. El p95 se calcula en Python sobre como mucho 20.000 filas recientes.',
+          ],
+        },
+        {
+          type: 'image',
+          src: 'admin-dashboard.png',
+          alt: 'Django admin — panel de gasto: filtros, coste, peticiones, tasa de error, latencia, tokens y presupuestos',
+          caption: 'Panel de gasto: coste, errores y latencia del día o mes elegido, junto al presupuesto de cada perfil.',
         },
         { type: 'h3', text: 'Protección de la API key' },
         {

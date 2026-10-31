@@ -553,7 +553,10 @@ class RequestLog(models.Model):
         verbose_name = _("Request log")
         verbose_name_plural = _("Request logs")
         indexes = [
+            # (profile, created_at) — лимиты профиля и фильтр дашборда по профилю.
             models.Index(fields=["profile", "created_at"], name="or_log_profile_created"),
+            # (model, created_at) — фильтр дашборда по модели плюс окно created_at.
+            models.Index(fields=["model", "created_at"], name="or_log_model_created"),
         ]
         permissions = [
             ("view_usage_logs", _("Can view usage logs")),

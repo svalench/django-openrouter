@@ -52,6 +52,13 @@ DONE
 - код библиотеки и версия не менялись
 DONE
 
+## 2026-10-31 — usage dashboard
+- staff-only страница RequestLogAdmin.get_urls + admin_view, ссылка на индексе любой AdminSite
+- агрегаты ORM TruncHour/TruncDay, p95 в Python с потолком 20000, индекс (model, created_at)
+- графики inline SVG, фильтры день/месяц + профиль/модель, бюджеты и топ расхода
+- pytest полный, coverage 87.56%, ruff, mypy
+DONE
+
 ## 2026-10-22 — 0.5.1 content-encoding
 - причина: iter_bytes уже снимает Content-Encoding, _rehydrate собирал httpx.Response с тем же заголовком, .json() распаковывал второй раз (zlib -3)
 - фикс: json.loads по раскодированным байтам, _rehydrate удалён

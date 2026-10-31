@@ -16,9 +16,19 @@ from django.db.models.functions import Coalesce
 from django.forms import BaseInlineFormSet, ModelForm, PasswordInput
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
-from django.urls import reverse
+from django.template.response import TemplateResponse
+from django.urls import NoReverseMatch, path, reverse
+from django.utils.text import capfirst
+from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 
+from django_openrouter.dashboard import (
+    build_dashboard,
+    model_choices,
+    parse_filters,
+    present,
+    preset_links,
+)
 from django_openrouter.exceptions import ConfigurationError, OpenRouterError
 from django_openrouter.models import (
     OpenRouterModel,
@@ -784,6 +794,38 @@ class RequestLogAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request: HttpRequest, obj: RequestLog | None = None) -> bool:
         return False
 
+    def get_urls(self) -> list[Any]:
+        # До <path:object_id>, иначе «dashboard» ищется как первичный ключ.
+        custom = [
+            path(
+                "dashboard/",
+                self.admin_site.admin_view(self.dashboard_view),
+                name="django_openrouter_requestlog_dashboard",
+            )
+        ]
+        return custom + super().get_urls()
+
+    def dashboard_view(self, request: HttpRequest) -> HttpResponse:
+        if not self.has_view_permission(request):
+            raise PermissionDenied
+        filters = parse_filters(request.GET)
+        data = build_dashboard(filters)
+        context = {
+            **self.admin_site.each_context(request),
+            "title": _("Usage dashboard"),
+            "opts": self.model._meta,
+            "filters": filters,
+            "page": present(data),
+            "profiles": UsageProfile.objects.order_by("name"),
+            "model_options": model_choices(filters),
+            "presets": preset_links(filters),
+        }
+        return TemplateResponse(
+            request,
+            "admin/django_openrouter/requestlog/dashboard.html",
+            context,
+        )
+
     def changelist_view(
         self,
         request: HttpRequest,
@@ -804,3 +846,65 @@ class RequestLogAdmin(admin.ModelAdmin):
         )
         response.context_data["summary"] = summary
         return response
+
+
+_DASHBOARD_LINK_INSTALLED = False
+
+
+def install_dashboard_index_link() -> None:
+    """Пункт дашборда на индексе любой AdminSite, где зарегистрирован RequestLog."""
+    global _DASHBOARD_LINK_INSTALLED
+    if _DASHBOARD_LINK_INSTALLED:
+        return
+    original = admin.AdminSite.get_app_list
+
+    def get_app_list(
+        self: admin.AdminSite,
+        request: HttpRequest,
+        app_label: str | None = None,
+    ) -> list[Any]:
+        app_list = original(self, request, app_label)
+        return _with_dashboard_link(self, request, app_list)
+
+    admin.AdminSite.get_app_list = get_app_list  # type: ignore[method-assign]
+    _DASHBOARD_LINK_INSTALLED = True
+
+
+def _with_dashboard_link(
+    site: admin.AdminSite,
+    request: HttpRequest,
+    app_list: list[Any],
+) -> list[Any]:
+    model_admin = site._registry.get(RequestLog)
+    if model_admin is None or not model_admin.has_view_permission(request):
+        return app_list
+    try:
+        url = reverse(
+            "admin:django_openrouter_requestlog_dashboard",
+            current_app=site.name,
+        )
+    except NoReverseMatch:
+        return app_list
+    for app in app_list:
+        if app.get("app_label") != "django_openrouter":
+            continue
+        models = app.get("models")
+        if not isinstance(models, list):
+            continue
+        if any(item.get("object_name") == "UsageDashboard" for item in models):
+            return app_list
+        models.append(
+            {
+                "name": capfirst(str(gettext("Usage dashboard"))),
+                "object_name": "UsageDashboard",
+                "perms": {"add": False, "change": False, "delete": False, "view": True},
+                "admin_url": url,
+                "add_url": None,
+                "view_only": True,
+            }
+        )
+        break
+    return app_list
+
+
+install_dashboard_index_link()

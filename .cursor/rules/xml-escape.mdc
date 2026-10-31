@@ -1,0 +1,4 @@
+# Экранирование текста в SVG и HTML
+
+`xml.sax.saxutils.escape` принимает только `entities` и не умеет `quote=`.
+Для текста, который попадает в атрибуты или содержимое SVG/HTML, используй `html.escape(value, quote=True)`.

@@ -684,7 +684,7 @@ with bound_username("worker"):
       id: 'admin',
       group: '指南',
       title: '管理后台',
-      lead: '全部运行时策略集中在 Django 管理后台的四个分区：设置、模型目录、用量配置和请求日志。',
+      lead: '全部运行时策略集中在 Django 管理后台：设置、模型目录、用量配置、请求日志和用量仪表盘。',
       blocks: [
         {
           type: 'table',
@@ -694,6 +694,7 @@ with bound_username("worker"):
             ['**OpenRouter models**', '来自 OpenRouter 的目录：价格、延迟、吞吐量'],
             ['**Usage profiles**', '模型链、限额、预算、花费统计'],
             ['**Request logs**', '每次调用的 token、费用和延迟（只读）'],
+            ['**Usage dashboard**', '花费、错误率、延迟和 token，并对照配置的预算'],
           ],
         },
         { type: 'h3', text: 'OpenRouter settings' },
@@ -782,6 +783,25 @@ with bound_username("worker"):
           src: 'admin-logs.png',
           alt: 'Django 管理后台 — 请求日志：时间、用户名、配置、模型、状态、token、费用、延迟；顶部为汇总',
           caption: '请求日志：每次尝试含 token、费用和延迟，表上方有筛选汇总。',
+        },
+        { type: 'h3', text: '用量仪表盘' },
+        {
+          type: 'p',
+          text: '拥有 `view_usage_logs` 的员工（以及超级用户）可以从 OpenRouter 索引或日志摘要打开 **Usage dashboard**。该视图挂在 `RequestLogAdmin.get_urls` 上，并用 `admin_view` 包装，因此注册了 `RequestLog` 的自定义 `AdminSite` 会提供同一页面。',
+        },
+        {
+          type: 'list',
+          items: [
+            '**窗口。** 按天查看时按小时分桶（最多 7 天）。按月查看时按天分桶（最多 366 天）。可按配置和模型过滤。',
+            '**图表。** 内联 SVG，无需构建，也没有内联脚本：费用（USD）、请求数、错误率、平均/p95 延迟、平均/p95 token，并按配置和模型分组。200–299 以外都算错误，包括 402、429、499、5xx 和状态 0。',
+            '**预算。** 用当前日历日和月对照请求上限与美元上限，并显示已用百分比。p95 在 Python 中按窗口内最多 20,000 条最新记录计算。',
+          ],
+        },
+        {
+          type: 'image',
+          src: 'admin-dashboard.png',
+          alt: 'Django 管理后台用量仪表盘：筛选、费用、请求数、错误率、延迟、token 和配置预算',
+          caption: '用量仪表盘：所选日期或月份的花费、错误和延迟，以及每个配置的预算。',
         },
         { type: 'h3', text: 'API 密钥保护' },
         {
