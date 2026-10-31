@@ -4,7 +4,7 @@ export const ja: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: 'OpenRouter for Django — モデル・プロファイル・予算・ログを管理画面から運用',
-    version: '0.7.0',
+    version: '0.7.1',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -377,7 +377,7 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
       blocks: [
         {
           type: 'p',
-          text: '追加依存を入れます: `pip install "django-openrouter[pydantic-ai]"`（Pydantic AI 2.64+）。`django_openrouter` の import は Pydantic AI を読み込みません。クラスは `django_openrouter.integrations.pydantic_ai.OpenRouterProfileModel` です。extra が無いとその import は `ImportError` になり、インストールコマンドを示します。',
+          text: '追加依存を入れます: `pip install "django-openrouter[pydantic-ai]"`。入るのは `pydantic-ai-slim` 2.64+ で、メタパッケージ `pydantic-ai` ではありません。アダプタは OpenAI SDK を import しないので、extra は `openai` を引かず、`openai<2` に固定したプロジェクトとも解決できます。`django_openrouter` の import は Pydantic AI を読み込みません。クラスは `django_openrouter.integrations.pydantic_ai.OpenRouterProfileModel` です。extra が無いとその import は `ImportError` になり、インストールコマンドを示します。',
         },
         {
           type: 'p',

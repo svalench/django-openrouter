@@ -106,3 +106,10 @@ DONE
 - светлый docs/img/dashboard.png и site/public/admin-dashboard.png уже с редизайна (тот же коммит, что dashboard.css): KPI, графики, бюджеты. Не заменял
 - добавлен тёмный: docs/img/dashboard-dark.png и site/public/admin-dashboard-dark.png; README raw.githubusercontent; все 9 локалей
 DONE
+
+## 2026-10-31 — 0.7.1 pydantic-ai-slim
+- extra pydantic-ai: pydantic-ai-slim>=2.64, без метапакета и без openai SDK
+- OpenRouterProfileModel не импортирует openai; Agent и Model живут в slim
+- проверка: свежий venv с openai>=1.59,<2, openai 1.109.1, slim 2.64.0, метапакета нет, pip check чистый, test_pydantic_ai 29 passed
+- CI 3.13 падал ещё на master: ResourceWarning unclosed sqlite (Django не закрывает :memory:). filterwarnings ignore
+DONE

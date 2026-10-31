@@ -4,7 +4,7 @@ export const be: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: 'OpenRouter для Django — мадэлі, профілі, бюджэты і логі запытаў праз адмінку',
-    version: '0.7.0',
+    version: '0.7.1',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -377,7 +377,7 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
       blocks: [
         {
           type: 'p',
-          text: 'Дадатковая залежнасць: `pip install "django-openrouter[pydantic-ai]"` (Pydantic AI 2.64+). Імпарт `django_openrouter` не цягне Pydantic AI. Клас — `django_openrouter.integrations.pydantic_ai.OpenRouterProfileModel`. Без extra гэты імпарт кідае `ImportError` і падказвае каманду ўсталявання.',
+          text: 'Дадатковая залежнасць: `pip install "django-openrouter[pydantic-ai]"`. Ставіцца `pydantic-ai-slim` 2.64+, а не метапакет `pydantic-ai`. Адаптар не імпартуе SDK OpenAI, таму extra не цягне `openai` і ставіцца побач з праектам, дзе замацаваны `openai<2`. Імпарт `django_openrouter` не цягне Pydantic AI. Клас — `django_openrouter.integrations.pydantic_ai.OpenRouterProfileModel`. Без extra гэты імпарт кідае `ImportError` і падказвае каманду ўсталявання.',
         },
         {
           type: 'p',

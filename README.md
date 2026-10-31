@@ -249,7 +249,7 @@ Async: `astream("chat", messages=...)` / `AsyncOpenRouterClient("chat").stream(.
 
 ## Pydantic AI
 
-Optional. `pip install "django-openrouter[pydantic-ai]"` (Pydantic AI 2.64+). Importing `django_openrouter` does not import Pydantic AI; the adapter lives at `django_openrouter.integrations.pydantic_ai` and raises `ImportError` with that install hint if the extra is missing.
+Optional. `pip install "django-openrouter[pydantic-ai]"` installs `pydantic-ai-slim` 2.64 or newer, not the `pydantic-ai` meta-package. That meta-package depends on `pydantic-ai-slim[openai]`, which requires `openai>=3.31` and conflicts with a project pinned to `openai<2`. `OpenRouterProfileModel` does not import the OpenAI SDK, so the extra does not pull `openai`. Importing `django_openrouter` does not import Pydantic AI; the adapter lives at `django_openrouter.integrations.pydantic_ai` and raises `ImportError` with that install hint if the extra is missing.
 
 The adapter is a Pydantic AI `Model`, not a `Provider`. A provider would only hand Pydantic AI an HTTP client, and its own OpenRouter model would talk to the API directly — skipping the profile chain, budget reservations, rate limits, the kill switch, request logging and `bound_username`. `OpenRouterProfileModel` turns messages, tools and structured output into a chat-completions payload and calls `AsyncOpenRouterClient`. `Agent.run` and `Agent.run_sync` both drive those async methods. Sync ORM stays on `sync_to_async(thread_sensitive=True)`, the same path as `achat()`.
 
