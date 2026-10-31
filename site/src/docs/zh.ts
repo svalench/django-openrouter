@@ -4,7 +4,7 @@ export const zh: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: '面向 Django 的 OpenRouter — 通过管理后台管理模型、用量配置、预算和请求日志',
-    version: '0.6.0',
+    version: '0.7.0',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -370,6 +370,107 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
       ],
     },
     {
+      id: 'pydantic-ai',
+      group: '指南',
+      title: 'Pydantic AI',
+      lead: '可选适配器：Pydantic AI 代理通过使用配置档调用 OpenRouter。模型链、预算、速率限制、总开关和请求日志仍留在 django-openrouter。',
+      blocks: [
+        {
+          type: 'p',
+          text: '安装可选依赖：`pip install "django-openrouter[pydantic-ai]"`（Pydantic AI 2.64+）。导入 `django_openrouter` 不会导入 Pydantic AI。类是 `django_openrouter.integrations.pydantic_ai.OpenRouterProfileModel`。没有该 extra 时，这个导入会抛出 `ImportError` 并给出安装命令。',
+        },
+        {
+          type: 'p',
+          text: '这是 Pydantic AI 的 `Model`，不是 `Provider`。Provider 只会交出 HTTP 客户端，Pydantic AI 会自己调用 OpenRouter，从而绕过配置档模型链、预算预留、速率限制、总开关、请求日志和 `bound_username`。`OpenRouterProfileModel` 组装 chat completions 请求并调用 `AsyncOpenRouterClient`。`Agent.run` 和 `Agent.run_sync` 都走这些异步方法。',
+        },
+        { type: 'h3', text: '代理' },
+        {
+          type: 'code',
+          lang: 'python',
+          code: `from pydantic_ai import Agent
+
+from django_openrouter.integrations.pydantic_ai import OpenRouterProfileModel
+
+agent = Agent(OpenRouterProfileModel("chat"))
+result = agent.run_sync("Hello")
+print(result.output, result.usage.cost, result.response.model_name)`,
+        },
+        {
+          type: 'p',
+          text: '`profile` 是使用配置档的 slug。`None` 使用默认聊天配置档。Pydantic AI 的能力配置传给 `model_profile=`，因为这里的 `profile` 是 Django 的 slug。代理的模型 id 仍是 `openrouter:<slug>`。`result.response.model_name` 是回退后实际作答的目录 id。`result.usage` 含 token 数和美元 `cost`（有 API 的 `usage.cost` 时用它，否则用目录估算）。',
+        },
+        {
+          type: 'p',
+          text: '代理的 `temperature` 和 `max_tokens` 受配置档上限约束。更低的 temperature 会保留。未传的值沿用配置档默认值。`thinking` 会作为 OpenRouter 的 `reasoning` 送出（`False` 变成 `{"enabled": false}`，`"high"` 变成 `{"enabled": true, "effort": "high"}`）。`timeout` 是这一次调用的空闲 `request_timeout`。输入图片（`ImageUrl`、图片 `BinaryContent`）成为 `image_url` 片段。模型返回的图片仍在 `ChatResult.images`，不会转成 Pydantic AI 的图片片段。',
+        },
+        {
+          type: 'callout',
+          kind: 'warning',
+          title: '流式',
+          text: '`agent.run_stream` 和 `run_stream_sync` 需要在 OpenRouter 设置里打开 Streaming。文本增量随 SSE 到达。Reasoning 和 tool calls 从最后一个分片补上。',
+        },
+        {
+          type: 'p',
+          text: '`BudgetExceeded` 和 `RateLimitExceeded` 会抛给调用方。它们在 HTTP 之前发生，不会悄悄换到另一个模型。HTTP 回退只发生在配置档的模型链内（`402`、`408`、`429`、`5xx`）。',
+        },
+        {
+          type: 'p',
+          text: '`Agent.run(conversation_id=...)` 在没有 `bound_session()` 时写入请求日志的 `session_id`，并放进 chat 请求体。块里的 session 和 metadata 优先，同样会转发到请求。适配器不传 `trace_id`。当前的 OpenTelemetry span（Django、Celery 或 `Agent(instrument=True)`）成为日志里的 `trace_id`。未开追踪时，每次模型调用有自己的 id，该调用的重试和回退共用它。',
+        },
+        { type: 'h3', text: 'Django 视图' },
+        {
+          type: 'code',
+          lang: 'python',
+          title: 'views.py',
+          code: `from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from pydantic_ai import Agent
+
+from django_openrouter.exceptions import BudgetExceeded, RateLimitExceeded
+from django_openrouter.integrations.pydantic_ai import OpenRouterProfileModel
+
+agent = Agent(OpenRouterProfileModel("chat"))
+
+@require_POST
+def ask(request):
+    try:
+        result = agent.run_sync(request.POST["q"])
+    except (BudgetExceeded, RateLimitExceeded) as exc:
+        return JsonResponse({"error": str(exc)}, status=429)
+    return JsonResponse(
+        {
+            "answer": result.output,
+            "model": result.response.model_name,
+            "cost_usd": str(result.usage.cost),
+        }
+    )`,
+        },
+        { type: 'h3', text: 'Celery 任务' },
+        {
+          type: 'p',
+          text: '请求之外用 `bound_username` 绑定日志里的用户名。HTTP 里 `CurrentUserMiddleware` 已经这样做。',
+        },
+        {
+          type: 'code',
+          lang: 'python',
+          title: 'tasks.py',
+          code: `from celery import shared_task
+from pydantic_ai import Agent
+
+from django_openrouter.current_user import bound_username
+from django_openrouter.integrations.pydantic_ai import OpenRouterProfileModel
+
+agent = Agent(OpenRouterProfileModel("chat"))
+
+@shared_task
+def summarize(username: str, text: str) -> str:
+    with bound_username(username):
+        result = agent.run_sync(f"Summarize:\\n{text}")
+    return result.output`,
+        },
+      ],
+    },
+    {
       id: 'transcription',
       group: '指南',
       title: '语音转文字',
@@ -719,6 +820,10 @@ with bound_username("worker"):
           code: "from django_openrouter import chat\nfrom django_openrouter.current_user import bound_session\n\nwith bound_session(\"ticket-42\", metadata={\"feature\": \"support\"}):\n    chat(\"chat\", messages=[{\"role\": \"user\", \"content\": \"Hi\"}])\n\nchat(\n    \"chat\",\n    messages=[{\"role\": \"user\", \"content\": \"Hi\"}],\n    session_id=\"other\",\n    metadata={\"feature\": \"billing\"},\n    trace={\"feature.flag\": \"beta\"},\n)",
         },
         {
+          type: "p",
+          text: '调用参数只在这一次覆盖 `bound_session`。调用里的 `metadata` 键会替换块里的同名键。只有 `OTEL_CAPTURE_CONTENT` 为 true 时，提示和回复正文才会写到 span。',
+        },
+        {
           type: "h3",
           text: "Logfire, Langfuse, Jaeger, Tempo",
         },
@@ -837,7 +942,7 @@ with bound_username("worker"):
         { type: 'h3', text: '用量仪表盘' },
         {
           type: 'p',
-          text: '拥有 `view_usage_logs` 的员工（以及超级用户）可以从 OpenRouter 索引或日志摘要打开 **Usage dashboard**。该视图挂在 `RequestLogAdmin.get_urls` 上，并用 `admin_view` 包装，因此注册了 `RequestLog` 的自定义 `AdminSite` 会提供同一页面。',
+          text: '拥有 `view_usage_logs` 的员工（以及超级用户）可以从 OpenRouter 索引或日志摘要打开 **Usage dashboard**。该视图挂在 `RequestLogAdmin.get_urls` 上，并用 `admin_view` 包装，因此注册了 `RequestLog` 的自定义 `AdminSite` 会提供同一页面。默认管理站点的路径是 `/admin/django_openrouter/requestlog/dashboard/`。',
         },
         {
           type: 'list',

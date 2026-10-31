@@ -1,26 +1,31 @@
 # Changelog
 
-## Unreleased
+## 0.7.0 — 2026-10-31
 
-Staff usage dashboard on the request log.
+OpenTelemetry tracing, request-log grouping, a staff usage dashboard, and an optional Pydantic AI model ship together. There is no 0.6.0 release. Upgrade from 0.5.1 with `manage.py migrate` (`0011_requestlog_grouping`, then `0012_requestlog_model_created_idx`).
 
-- Open **Usage dashboard** from the OpenRouter admin index or from the request-log summary. The page is a `RequestLogAdmin.get_urls` route wrapped in `admin_view`, so it stays on whichever admin site registers `RequestLog`. Access matches the log itself: staff who are superusers or have `view_usage_logs`.
+### OpenTelemetry and log grouping
+
+- Extra `django-openrouter[otel]` (`opentelemetry-api` only). The SDK and exporter stay in the host project. If the package is missing, calls do not import it.
+- Spans stay off until `OPENROUTER["OTEL"]` is true. A parent span covers `chat()`, `achat()`, `stream()`, `astream()`, `transcribe()`, `atranscribe()`, `generate_image()` and `agenerate_image()`. Each HTTP attempt, including retries and fallbacks, is a child span and nests under an active Django or Celery span.
+- Attributes follow the GenAI conventions (`gen_ai.system=openrouter`, operation, request and response model, token counts, finish reasons) plus `openrouter.cost_usd`, profile, fallback index, retry index, status, latency, username, `session_id` and `trace_id`. Streams record time to first token and keep the parent span open until the generator finishes. `BudgetExceeded`, `RateLimitExceeded`, timeouts and an interrupted stream (`499`) are span errors.
+- Prompt and completion text is omitted unless `OPENROUTER["OTEL_CAPTURE_CONTENT"]` is true. `OTEL_CONTENT_REDACTOR` is a dotted path `fn(text, *, kind) -> str`. API keys and `Authorization` headers are never span attributes.
+- `RequestLog` gains nullable indexed `trace_id` and `session_id`, and nullable JSON `metadata` (migration `0011_requestlog_grouping`). One call shares a `trace_id` across retries and fallbacks: the OpenTelemetry trace id when a span is recording, otherwise a generated id. `session_id=` and `metadata=` on a chat call are sent to OpenRouter and stored on the log. `trace_id=` and `trace=` (extra span attributes) stay local. `bound_session()` works like `bound_username()`. File and ClickHouse rows include the three fields (`metadata` is a JSON string). The admin log filters and searches by session or trace; a row links to the other calls in that session or trace.
+
+### Usage dashboard
+
+- **Usage dashboard** is on the OpenRouter admin index and in the request-log summary. Default path: `/admin/django_openrouter/requestlog/dashboard/`. The route is `RequestLogAdmin.get_urls` wrapped in `admin_view`, so a custom `AdminSite` that registers `RequestLog` serves the same page. Access matches the log: superuser or `django_openrouter.view_usage_logs`.
 - Day view buckets by hour (at most 7 days). Month view buckets by day (at most 366 days). Filter by date range, profile and model.
-- Charts use vendored Chart.js 4.4.6 (MIT, no build step, no CDN, no inline script). Series data is embedded with `json_script`. Cost, request count, error rate, average and p95 latency, and average and p95 tokens are shown overall and grouped by profile and by model. Colors stay stable per series and follow the admin light and dark themes. Non-2xx statuses count as errors, including 402, 429, 499, 5xx and in-flight reservations (status 0).
-- Headline cards (total cost, requests, error rate, p95 latency) show the change versus the immediately previous window of the same length.
-- Totals sit next to each profile’s current daily and monthly request and USD limits, with percent used. Request counts follow the same rules as limit enforcement. The most expensive profiles and models in the selected range are listed separately.
-- Aggregation stays in the Django ORM (`TruncHour` / `TruncDay`). p95 is computed in Python from at most 20,000 of the newest rows in the window. Migration `0012_requestlog_model_created_idx` adds a `(model, created_at)` index and depends on `0011_requestlog_grouping`. It does not change `trace_id`, `session_id` or `metadata`.
+- Charts use vendored Chart.js 4.4.6 (MIT, no CDN, no inline script). Series data is embedded with `json_script`. Cost, request count, error rate, average and p95 latency, and average and p95 tokens are shown overall and grouped by profile and by model. Headline cards compare the window with the previous window of the same length. Non-2xx statuses count as errors, including 402, 429, 499, 5xx and in-flight reservations (status 0).
+- Totals sit next to each profile’s current daily and monthly request and USD limits. p95 is computed in Python from at most 20,000 of the newest rows. Migration `0012_requestlog_model_created_idx` adds a `(model, created_at)` index and depends on `0011`. It does not change `trace_id`, `session_id` or `metadata`.
 
-## 0.6.0 — 2026-10-31
+### Pydantic AI
 
-Optional OpenTelemetry traces, and a way to group request logs.
-
-- `pip install django-openrouter[otel]` adds `opentelemetry-api` only. Exporters and the SDK stay in the host project. If the package is not installed, calls do not import it.
-- Tracing stays off until `OPENROUTER["OTEL"]` is true. A parent span covers `chat()`, `achat()`, `stream()`, `astream()`, `transcribe()`, `atranscribe()`, `generate_image()` and `agenerate_image()`. Each HTTP attempt, including retries and fallbacks, is a child span. Spans nest under an active Django or Celery span.
-- Attributes follow the GenAI conventions: `gen_ai.system=openrouter`, `gen_ai.operation.name`, `gen_ai.request.model`, `gen_ai.response.model`, `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `gen_ai.response.finish_reasons`. OpenRouter fields: `openrouter.cost_usd`, `openrouter.profile`, `openrouter.fallback_index`, `openrouter.retry_index`, `openrouter.status_code`, `openrouter.latency_ms`, `openrouter.username`. Streams record `openrouter.time_to_first_token_ms` and keep the span open until the generator finishes. `BudgetExceeded`, `RateLimitExceeded`, timeouts and interrupted streams (`499`) are errors on the span.
-- Prompt and completion text is not recorded unless `OPENROUTER["OTEL_CAPTURE_CONTENT"]` is true. `OTEL_CONTENT_REDACTOR` is a dotted path `fn(text, *, kind) -> str`. API keys and `Authorization` headers are never span attributes.
-- `RequestLog` gains nullable `trace_id` (indexed), `session_id` (indexed) and `metadata` (JSON). Pass `session_id=`, `metadata=` and optional `trace_id=` on the chat, stream, transcription and image calls, or use `bound_session()` the same way as `bound_username()`. One call shares a `trace_id` across retries and fallbacks: the OpenTelemetry trace id when tracing is on, otherwise a generated id. `session_id` and `metadata` are still forwarded on chat completions. `trace_id` and `trace=` (extra span attributes) stay local.
-- File and ClickHouse rows include `trace_id`, `session_id` and `metadata` (`metadata` is a JSON string). The admin log can be filtered and searched by session or trace; a row links to the other calls in that session or trace. Metadata on the change page is read-only.
+- Extra `django-openrouter[pydantic-ai]` (`pydantic-ai>=2.64`). `django_openrouter` does not import it. `OpenRouterProfileModel` raises `ImportError` with the install hint when the extra is missing.
+- `OpenRouterProfileModel("chat")` is a Pydantic AI `Model`. It sends chat-completions payloads through `AsyncOpenRouterClient`, so the profile chain, fallback on `402` / `408` / `429` / `5xx`, budget reservations, rate limits, retries, timeouts, the kill switch, the request log and `bound_username` stay in this library.
+- Text, multiple tool calls and tool-result round trips, structured output (`output_type`, including `NativeOutput` / `PromptedOutput`), `Agent.run` / `run_sync` / `run_stream`. Agent `temperature` and `max_tokens` are capped by the profile. `thinking` is forwarded as OpenRouter `reasoning`. Image inputs are sent as `image_url` parts.
+- `BudgetExceeded` and `RateLimitExceeded` are raised to the agent caller and do not fall through to a model outside the profile chain. Token counts and cost are copied onto Pydantic AI `RequestUsage` / `RunUsage.cost`.
+- `Agent.run(conversation_id=...)` is stored as `session_id` and sent on the chat body, unless `bound_session()` is already active — that session and its metadata win. The adapter does not set `trace_id`, so an active OpenTelemetry span (including `Agent(instrument=True)`) becomes the log trace id.
 
 ## 0.5.1 — 2026-10-22
 

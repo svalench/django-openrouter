@@ -148,7 +148,7 @@ Username comes from `django_openrouter.middleware.CurrentUserMiddleware` (after 
 
 ### Usage dashboard
 
-Staff who can open request logs (superuser or `view_usage_logs`) also get **Usage dashboard** on the OpenRouter admin index and in the log summary. The route lives on `RequestLogAdmin.get_urls` and is wrapped with `admin_view`, so a custom `AdminSite` that registers `RequestLog` serves the same page under its own URL namespace.
+Staff who can open request logs (superuser or `django_openrouter.view_usage_logs`) also get **Usage dashboard** on the OpenRouter admin index and in the log summary. On the default admin site the path is `/admin/django_openrouter/requestlog/dashboard/`. The route lives on `RequestLogAdmin.get_urls` and is wrapped with `admin_view`, so a custom `AdminSite` that registers `RequestLog` serves the same page under its own URL namespace.
 
 ![Usage dashboard](https://raw.githubusercontent.com/svalench/django-openrouter/master/docs/img/dashboard.png)
 
@@ -244,6 +244,84 @@ for chunk in stream("chat", messages=[{"role": "user", "content": "Hello"}], dea
 Async: `astream("chat", messages=...)` / `AsyncOpenRouterClient("chat").stream(...)`.
 
 **Max parallel requests** (default 10, `0` = unlimited) caps concurrent HTTP calls to OpenRouter in the current process — both `chat()` and `stream()`, sync and async.
+
+## Pydantic AI
+
+Optional. `pip install "django-openrouter[pydantic-ai]"` (Pydantic AI 2.64+). Importing `django_openrouter` does not import Pydantic AI; the adapter lives at `django_openrouter.integrations.pydantic_ai` and raises `ImportError` with that install hint if the extra is missing.
+
+The adapter is a Pydantic AI `Model`, not a `Provider`. A provider would only hand Pydantic AI an HTTP client, and its own OpenRouter model would talk to the API directly — skipping the profile chain, budget reservations, rate limits, the kill switch, request logging and `bound_username`. `OpenRouterProfileModel` turns messages, tools and structured output into a chat-completions payload and calls `AsyncOpenRouterClient`. `Agent.run` and `Agent.run_sync` both drive those async methods. Sync ORM stays on `sync_to_async(thread_sensitive=True)`, the same path as `achat()`.
+
+```python
+from pydantic_ai import Agent
+
+from django_openrouter.integrations.pydantic_ai import OpenRouterProfileModel
+
+agent = Agent(OpenRouterProfileModel("chat"))
+result = agent.run_sync("Hello")
+print(result.output, result.usage.cost, result.response.model_name)
+```
+
+`profile` is the usage-profile slug (`None` uses the default chat profile). Pydantic AI's own capability profile is the keyword `model_profile`, because `Model(profile=...)` means something else. The agent's model id stays `openrouter:<slug>`. `result.response.model_name` is the catalog id that actually answered, after fallback.
+
+`temperature` and `max_tokens` from the agent are capped by the profile (a lower temperature is kept; omitted values stay on the profile defaults). `thinking` is sent as OpenRouter `reasoning` (`False` → `{"enabled": false}`, `"high"` → `{"enabled": true, "effort": "high"}`). `timeout` becomes the per-call idle `request_timeout`. Input images (`ImageUrl`, image `BinaryContent`) go out as `image_url` parts. Assistant image output is still on `ChatResult.images` and is not turned into Pydantic AI image parts.
+
+`agent.run_stream` / `run_stream_sync` need **Streaming enabled** in OpenRouter settings. Text deltas stream as they arrive; reasoning and tool calls are attached from the final chunk, because the library's SSE chunks only carry text until the stream completes. `result.usage` includes token counts and `cost` (USD from `usage.cost` when OpenRouter sends it, otherwise the catalog estimate).
+
+`BudgetExceeded` and `RateLimitExceeded` propagate to the caller. They are raised before HTTP and do not fall through to another model. HTTP fallback stays inside the profile chain (`402`, `408`, `429`, `5xx`).
+
+`Agent.run(conversation_id=...)` is stored on the request log as `session_id` and sent on the chat body, unless `bound_session()` is already active. That block’s session id and metadata win, and both are forwarded on the chat request. The adapter does not pass `trace_id`. An active OpenTelemetry span — Django, Celery, or `Agent(instrument=True)` — becomes the log `trace_id`. With `OPENROUTER["OTEL"]` left false, each model call gets its own id, shared by that call’s retries and fallbacks.
+
+```python
+from django_openrouter.current_user import bound_session
+
+with bound_session("ticket-42", metadata={"feature": "support"}):
+    agent.run_sync("Hello")
+```
+
+Django view:
+
+```python
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from pydantic_ai import Agent
+
+from django_openrouter.exceptions import BudgetExceeded, RateLimitExceeded
+from django_openrouter.integrations.pydantic_ai import OpenRouterProfileModel
+
+agent = Agent(OpenRouterProfileModel("chat"))
+
+@require_POST
+def ask(request):
+    try:
+        result = agent.run_sync(request.POST["q"])
+    except (BudgetExceeded, RateLimitExceeded) as exc:
+        return JsonResponse({"error": str(exc)}, status=429)
+    return JsonResponse(
+        {
+            "answer": result.output,
+            "model": result.response.model_name,
+            "cost_usd": str(result.usage.cost),
+        }
+    )
+```
+
+Celery (or any code outside a request) binds the log username explicitly. `CurrentUserMiddleware` already does this for HTTP.
+
+```python
+from celery import shared_task
+from pydantic_ai import Agent
+
+from django_openrouter.current_user import bound_username
+from django_openrouter.integrations.pydantic_ai import OpenRouterProfileModel
+
+agent = Agent(OpenRouterProfileModel("chat"))
+
+@shared_task
+def summarize(username: str, text: str) -> str:
+    with bound_username(username):
+        result = agent.run_sync(f"Summarize:\n{text}")
+    return result.output
+```
 
 ## Image generation
 

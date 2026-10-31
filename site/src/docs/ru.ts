@@ -4,7 +4,7 @@ export const ru: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: 'OpenRouter для Django — модели, профили, бюджеты и логи через админку',
-    version: '0.6.0',
+    version: '0.7.0',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -366,6 +366,107 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
             ['`latency_ms`', '`int`', 'Латентность успешной попытки'],
             ['`raw`', '`dict`', 'Сырой JSON ответа OpenRouter'],
           ],
+        },
+      ],
+    },
+    {
+      id: 'pydantic-ai',
+      group: 'Руководство',
+      title: 'Pydantic AI',
+      lead: 'Необязательный адаптер: агент Pydantic AI ходит в OpenRouter через профиль использования. Цепочка моделей, бюджеты, лимиты, kill switch и журнал запросов остаются в django-openrouter.',
+      blocks: [
+        {
+          type: 'p',
+          text: 'Дополнительная зависимость: `pip install "django-openrouter[pydantic-ai]"` (Pydantic AI 2.64+). Импорт `django_openrouter` не тянет Pydantic AI. Класс — `django_openrouter.integrations.pydantic_ai.OpenRouterProfileModel`. Без extra этот импорт поднимает `ImportError` и подсказывает команду установки.',
+        },
+        {
+          type: 'p',
+          text: 'Это `Model` Pydantic AI, а не `Provider`. Провайдер отдал бы только HTTP-клиент, и Pydantic AI сам позвал бы OpenRouter — мимо цепочки профиля, резерва бюджета, лимитов, kill switch, журнала и `bound_username`. `OpenRouterProfileModel` собирает chat-completions и вызывает `AsyncOpenRouterClient`. `Agent.run` и `Agent.run_sync` оба идут в эти async-методы.',
+        },
+        { type: 'h3', text: 'Агент' },
+        {
+          type: 'code',
+          lang: 'python',
+          code: `from pydantic_ai import Agent
+
+from django_openrouter.integrations.pydantic_ai import OpenRouterProfileModel
+
+agent = Agent(OpenRouterProfileModel("chat"))
+result = agent.run_sync("Hello")
+print(result.output, result.usage.cost, result.response.model_name)`,
+        },
+        {
+          type: 'p',
+          text: '`profile` — слаг профиля. `None` берёт чат-профиль по умолчанию. Возможности Pydantic AI передаются как `model_profile=`: здесь `profile` — это слаг Django. Идентификатор модели агента остаётся `openrouter:<slug>`. `result.response.model_name` — id из каталога, который реально ответил, уже после fallback. В `result.usage` токены и `cost` в USD (`usage.cost` из API, если он есть, иначе оценка по каталогу).',
+        },
+        {
+          type: 'p',
+          text: '`temperature` и `max_tokens` агента ограничиваются профилем. Более низкая temperature сохраняется. Если агент их не передал, остаются значения профиля. `thinking` уходит как OpenRouter `reasoning` (`False` → `{"enabled": false}`, `"high"` → `{"enabled": true, "effort": "high"}`). `timeout` — это idle `request_timeout` одного вызова. Картинки на входе (`ImageUrl`, image `BinaryContent`) становятся частями `image_url`. Картинки в ответе модели остаются в `ChatResult.images` и не превращаются в image-части Pydantic AI.',
+        },
+        {
+          type: 'callout',
+          kind: 'warning',
+          title: 'Стриминг',
+          text: '`agent.run_stream` и `run_stream_sync` требуют включённого Streaming в настройках OpenRouter. Текстовые дельты приходят по мере SSE. Reasoning и tool calls дописываются из финального чанка.',
+        },
+        {
+          type: 'p',
+          text: '`BudgetExceeded` и `RateLimitExceeded` доходят до вызывающего кода. Они поднимаются до HTTP и не переключают вызов на другую модель. HTTP-fallback остаётся внутри цепочки профиля (`402`, `408`, `429`, `5xx`).',
+        },
+        {
+          type: 'p',
+          text: '`Agent.run(conversation_id=...)` попадает в журнал как `session_id` и уходит в тело chat, если `bound_session()` ещё не включён. Сессия и metadata из этого блока важнее и тоже уходят в запрос. Адаптер не передаёт `trace_id`. Активный спан OpenTelemetry — Django, Celery или `Agent(instrument=True)` — становится `trace_id` в журнале. Без трейсинга у каждого вызова модели свой id, общий для retry и fallback этого вызова.',
+        },
+        { type: 'h3', text: 'Django view' },
+        {
+          type: 'code',
+          lang: 'python',
+          title: 'views.py',
+          code: `from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from pydantic_ai import Agent
+
+from django_openrouter.exceptions import BudgetExceeded, RateLimitExceeded
+from django_openrouter.integrations.pydantic_ai import OpenRouterProfileModel
+
+agent = Agent(OpenRouterProfileModel("chat"))
+
+@require_POST
+def ask(request):
+    try:
+        result = agent.run_sync(request.POST["q"])
+    except (BudgetExceeded, RateLimitExceeded) as exc:
+        return JsonResponse({"error": str(exc)}, status=429)
+    return JsonResponse(
+        {
+            "answer": result.output,
+            "model": result.response.model_name,
+            "cost_usd": str(result.usage.cost),
+        }
+    )`,
+        },
+        { type: 'h3', text: 'Задача Celery' },
+        {
+          type: 'p',
+          text: 'Вне запроса имя в журнале задаёт `bound_username`. Для HTTP это уже делает `CurrentUserMiddleware`.',
+        },
+        {
+          type: 'code',
+          lang: 'python',
+          title: 'tasks.py',
+          code: `from celery import shared_task
+from pydantic_ai import Agent
+
+from django_openrouter.current_user import bound_username
+from django_openrouter.integrations.pydantic_ai import OpenRouterProfileModel
+
+agent = Agent(OpenRouterProfileModel("chat"))
+
+@shared_task
+def summarize(username: str, text: str) -> str:
+    with bound_username(username):
+        result = agent.run_sync(f"Summarize:\\n{text}")
+    return result.output`,
         },
       ],
     },
@@ -846,7 +947,7 @@ with bound_username("worker"):
         { type: 'h3', text: 'Панель расхода' },
         {
           type: 'p',
-          text: 'Сотрудник с правом `view_usage_logs` (и суперпользователь) открывает **Usage dashboard** с индекса OpenRouter или из сводки журнала. Страница регистрируется в `RequestLogAdmin.get_urls` и оборачивается в `admin_view`, поэтому свой `AdminSite`, на котором зарегистрирован `RequestLog`, отдаёт ту же страницу.',
+          text: 'Сотрудник с правом `view_usage_logs` (и суперпользователь) открывает **Usage dashboard** с индекса OpenRouter или из сводки журнала. Страница регистрируется в `RequestLogAdmin.get_urls` и оборачивается в `admin_view`, поэтому свой `AdminSite`, на котором зарегистрирован `RequestLog`, отдаёт ту же страницу. В стандартной админке путь — `/admin/django_openrouter/requestlog/dashboard/`.',
         },
         {
           type: 'list',
