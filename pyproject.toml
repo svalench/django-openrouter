@@ -91,6 +91,9 @@ filterwarnings = [
     "error",
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
+    # Python 3.13: sqlite3 warns when a connection is collected. Django does not
+    # close in-memory connections, including one opened on the sync_to_async thread.
+    "ignore:unclosed database:ResourceWarning",
 ]
 
 [tool.coverage.run]

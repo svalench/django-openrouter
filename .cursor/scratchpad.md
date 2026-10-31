@@ -110,5 +110,6 @@ DONE
 ## 2026-10-31 — 0.7.1 pydantic-ai-slim
 - extra pydantic-ai: pydantic-ai-slim>=2.64, без метапакета и без openai SDK
 - OpenRouterProfileModel не импортирует openai; Agent и Model живут в slim
-- проверка: свежий venv с openai>=1.59,<2
+- проверка: свежий venv с openai>=1.59,<2, openai 1.109.1, slim 2.64.0, метапакета нет, pip check чистый, test_pydantic_ai 29 passed
+- CI 3.13 падал ещё на master: ResourceWarning unclosed sqlite (Django не закрывает :memory:). filterwarnings ignore
 DONE
