@@ -734,7 +734,7 @@ with bound_username("worker"):
       id: 'admin',
       group: 'Przewodniki',
       title: 'Admin',
-      lead: 'Cała polityka runtime mieszka w czterech sekcjach Django admin: ustawienia, katalog modeli, profile użycia i logi żądań.',
+      lead: 'Cała polityka runtime mieszka w Django admin: ustawienia, katalog modeli, profile użycia, logi żądań i panel wydatków.',
       blocks: [
         {
           type: 'table',
@@ -744,6 +744,7 @@ with bound_username("worker"):
             ['**OpenRouter models**', 'Katalog z OpenRouter: cena, opóźnienie, przepustowość'],
             ['**Usage profiles**', 'Łańcuch modeli, limity, budżety, statystyki wydatków'],
             ['**Request logs**', 'Tokeny, koszt i opóźnienie każdego wywołania (tylko odczyt)'],
+            ['**Usage dashboard**', 'Wydatki, odsetek błędów, opóźnienie i tokeny wobec budżetów profilu'],
           ],
         },
         { type: 'h3', text: 'OpenRouter settings' },
@@ -832,6 +833,25 @@ with bound_username("worker"):
           src: 'admin-logs.png',
           alt: 'Django admin — log żądań: czas, użytkownik, profil, model, status, tokeny, koszt, opóźnienie; podsumowanie na górze',
           caption: 'Logi żądań: każda próba z tokenami, kosztem i opóźnieniem, z podsumowaniem filtra nad tabelą.',
+        },
+        { type: 'h3', text: 'Panel wydatków' },
+        {
+          type: 'p',
+          text: 'Staff z uprawnieniem `view_usage_logs` (oraz superuser) otwiera **Usage dashboard** z indeksu OpenRouter albo ze skrótu logu. Widok jest w `RequestLogAdmin.get_urls` i owinięty w `admin_view`, więc własny `AdminSite` z zarejestrowanym `RequestLog` serwuje tę samą stronę.',
+        },
+        {
+          type: 'list',
+          items: [
+            '**Okno.** Dzień grupuje po godzinach (do 7 dni). Miesiąc — po dniach (do 366 dni). Filtry: profil i model.',
+            '**Wykresy.** Dołączony Chart.js (MIT, bez builda, bez CDN, bez inline script). Dane idą przez `json_script`: koszt, liczba żądań, odsetek błędów, średnia i p95 opóźnienia i tokenów — łącznie oraz według profilu i modelu. Kolor serii jest stały i podąża za jasnym i ciemnym motywem admina. Karty porównują okno z poprzednim okresem tej samej długości. Błędem jest wszystko poza 200–299, w tym 402, 429, 499, 5xx i status 0.',
+            '**Budżety.** Bieżący dzień i miesiąc kalendarzowy wobec limitów żądań i USD, z procentem wykorzystania. p95 liczone jest w Pythonie z co najwyżej 20 000 najnowszych wierszy.',
+          ],
+        },
+        {
+          type: 'image',
+          src: 'admin-dashboard.png',
+          alt: 'Django admin — panel wydatków: filtry, koszt, żądania, odsetek błędów, opóźnienie, tokeny i budżety',
+          caption: 'Panel wydatków: koszt, błędy i opóźnienie dla wybranego dnia lub miesiąca obok budżetu profilu.',
         },
         { type: 'h3', text: 'Ochrona klucza API' },
         {

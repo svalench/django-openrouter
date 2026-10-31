@@ -52,6 +52,25 @@ DONE
 - код библиотеки и версия не менялись
 DONE
 
+## 2026-10-31 — usage dashboard
+- staff-only страница RequestLogAdmin.get_urls + admin_view, ссылка на индексе любой AdminSite
+- агрегаты ORM TruncHour/TruncDay, p95 в Python с потолком 20000, индекс (model, created_at)
+- графики inline SVG, фильтры день/месяц + профиль/модель, бюджеты и топ расхода
+- pytest полный, coverage 87.56%, ruff, mypy
+DONE
+
+## 2026-10-31 — dashboard visuals
+- KPI: cost, requests, error rate, p95 latency, дельта к предыдущему окну той же длины
+- Chart.js 4.4.6 MIT в static, данные через json_script, цвета серий стабильны, light/dark через CSS variables админки
+- pytest 324 passed, coverage 87.32%, ruff, mypy
+DONE
+
+## 2026-10-31 — merge master 0.6.0
+- индекс дашборда переименован в 0012, зависит от 0011_requestlog_grouping
+- trace_id, session_id, metadata с master сохранены
+- pytest coverage 86.27%, ruff, mypy, makemigrations --check
+DONE
+
 ## 2026-10-31 — 0.6.0 OTEL и группы логов
 - extra `otel` = только opentelemetry-api; спаны выключены, пока OPENROUTER['OTEL'] не true
 - родительский спан на chat/stream/transcribe/generate_image, дочерний на HTTP-попытку

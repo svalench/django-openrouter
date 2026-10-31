@@ -742,7 +742,7 @@ with bound_username("worker"):
       id: 'admin',
       group: 'Guides',
       title: 'The admin',
-      lead: 'All runtime policy lives in four Django admin sections: settings, the model catalog, usage profiles and request logs.',
+      lead: 'All runtime policy lives in the Django admin: settings, the model catalog, usage profiles, request logs and a usage dashboard.',
       blocks: [
         {
           type: 'table',
@@ -752,6 +752,7 @@ with bound_username("worker"):
             ['**OpenRouter models**', 'The catalog from OpenRouter: price, latency, throughput'],
             ['**Usage profiles**', 'Model chain, limits, budgets, spend statistics'],
             ['**Request logs**', 'Tokens, cost and latency of every call (read-only)'],
+            ['**Usage dashboard**', 'Spend, error rate, latency and tokens versus profile budgets'],
           ],
         },
         { type: 'h3', text: 'OpenRouter settings' },
@@ -841,6 +842,26 @@ with bound_username("worker"):
           src: 'admin-logs.png',
           alt: 'Django admin — request log: time, username, profile, model, status, tokens, cost, latency; summary on top',
           caption: 'Request logs: every attempt with tokens, cost and latency, with a filter summary above the table.',
+        },
+        { type: 'h3', text: 'Usage dashboard' },
+        {
+          type: 'p',
+          text: 'Staff with `view_usage_logs` (and superusers) open **Usage dashboard** from the OpenRouter index or from the request-log summary. The view is registered with `RequestLogAdmin.get_urls` and wrapped in `admin_view`, so a custom `AdminSite` that registers `RequestLog` gets the same page.',
+        },
+        {
+          type: 'list',
+          items: [
+            '**Window.** Day groups by hour (at most 7 days). Month groups by day (at most 366 days). Presets jump to today or the current month. Filters narrow by profile and model.',
+            '**Charts.** Vendored Chart.js (MIT, no build, no CDN, no inline script). Data is passed with `json_script`: cost, requests, error rate, average and p95 latency and tokens, overall and by profile and by model. The same series keeps the same color. Charts follow the admin light and dark themes. Headline cards compare the window with the previous period of the same length.',
+            '**Errors.** Anything outside HTTP 200–299, including 402, 429, 499, 5xx, and in-flight reservations (status 0) until they are reconciled.',
+            '**Budgets and top spend.** Each profile shows the current calendar day and month against its request and USD limits, with percent used. Request totals follow limit enforcement (HTTP errors other than 499 do not count); cost includes every row. The model filter does not change those budget figures. p95 is computed in Python from at most 20,000 of the newest rows.',
+          ],
+        },
+        {
+          type: 'image',
+          src: 'admin-dashboard.png',
+          alt: 'Django admin usage dashboard: filters, cost, requests, error rate, latency, tokens and profile budgets',
+          caption: 'Usage dashboard: spend, errors and latency for the selected day or month, beside each profile’s daily and monthly budget.',
         },
         { type: 'h3', text: 'API key protection' },
         {

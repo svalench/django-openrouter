@@ -734,7 +734,7 @@ with bound_username("worker"):
       id: 'admin',
       group: 'ガイド',
       title: '管理画面',
-      lead: 'ランタイムポリシーのすべては Django admin の 4 セクションにあります：設定、モデルカタログ、利用プロファイル、リクエストログ。',
+      lead: 'ランタイムポリシーは Django admin にあります：設定、モデルカタログ、利用プロファイル、リクエストログ、利用ダッシュボード。',
       blocks: [
         {
           type: 'table',
@@ -744,6 +744,7 @@ with bound_username("worker"):
             ['**OpenRouter models**', 'OpenRouter のカタログ：価格・レイテンシ・スループット'],
             ['**Usage profiles**', 'モデルチェーン、上限、予算、消費統計'],
             ['**Request logs**', '各呼び出しのトークン・コスト・レイテンシ（読み取り専用）'],
+            ['**Usage dashboard**', 'コスト、エラー率、レイテンシ、トークンをプロファイル予算と並べて表示'],
           ],
         },
         { type: 'h3', text: 'OpenRouter settings' },
@@ -832,6 +833,25 @@ with bound_username("worker"):
           src: 'admin-logs.png',
           alt: 'Django admin — リクエストログ：時刻、username、プロファイル、モデル、ステータス、トークン、コスト、レイテンシ。上部にサマリー',
           caption: 'リクエストログ：すべての試行をトークン・コスト・レイテンシ付きで記録。フィルターのサマリーがテーブル上部に表示。',
+        },
+        { type: 'h3', text: '利用ダッシュボード' },
+        {
+          type: 'p',
+          text: '`view_usage_logs` を持つスタッフ（とスーパーユーザー）は、OpenRouter のインデックスかログリサマリーから **Usage dashboard** を開きます。ビューは `RequestLogAdmin.get_urls` に登録され `admin_view` で包まれるため、`RequestLog` を登録した独自の `AdminSite` でも同じページになります。',
+        },
+        {
+          type: 'list',
+          items: [
+            '**期間。** 日は時間バケット（最大 7 日）。月は日バケット（最大 366 日）。プロファイルとモデルで絞り込めます。',
+            '**チャート。** 同梱の Chart.js（MIT、ビルドなし、CDN なし、インラインスクリプトなし）。データは `json_script` で渡します。コスト、件数、エラー率、平均/p95 レイテンシとトークンを、全体およびプロファイル別・モデル別に表示します。系列の色は固定で、管理画面のライト/ダークテーマに追従します。主要カードは同じ長さの直前期間と比較します。200–299 以外（402、429、499、5xx、ステータス 0 を含む）がエラーです。',
+            '**予算。** カレンダー上の当日と当月を、リクエスト上限と USD 上限および使用率と並べます。p95 は直近最大 20,000 行から Python で計算します。',
+          ],
+        },
+        {
+          type: 'image',
+          src: 'admin-dashboard.png',
+          alt: 'Django admin の利用ダッシュボード：フィルタ、コスト、件数、エラー率、レイテンシ、トークン、プロファイル予算',
+          caption: '利用ダッシュボード：選んだ日または月の支出・エラー・レイテンシと、プロファイルの予算。',
         },
         { type: 'h3', text: 'API キーの保護' },
         {

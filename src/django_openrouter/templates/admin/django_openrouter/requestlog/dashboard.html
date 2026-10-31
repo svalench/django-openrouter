@@ -1,0 +1,232 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'django_openrouter/css/dashboard.css' %}">
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% trans "Home" %}</a>
+  &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+  &rsaquo; <a href="{% url 'admin:django_openrouter_requestlog_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+  &rsaquo; {% trans "Usage dashboard" %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main" class="or-dashboard">
+  <div class="or-dash-toolbar">
+    <p class="or-dash-presets">
+      <a class="or-pill" href="?{{ presets.today }}">{% trans "Today" %}</a>
+      <a class="or-pill" href="?{{ presets.month }}">{% trans "This month" %}</a>
+    </p>
+    <form id="or-dashboard-filters" class="or-dash-filters" method="get">
+      <label>
+        {% trans "Period" %}
+        <select name="period" data-auto-submit>
+          <option value="day"{% if filters.period == "day" %} selected{% endif %}>{% trans "Day (hourly)" %}</option>
+          <option value="month"{% if filters.period == "month" %} selected{% endif %}>{% trans "Month (daily)" %}</option>
+        </select>
+      </label>
+      <label>
+        {% trans "From" %}
+        <input type="date" name="start" value="{{ filters.start|date:'Y-m-d' }}" data-auto-submit>
+      </label>
+      <label>
+        {% trans "To" %}
+        <input type="date" name="end" value="{{ filters.end|date:'Y-m-d' }}" data-auto-submit>
+      </label>
+      <label>
+        {% trans "Profile" %}
+        <select name="profile" data-auto-submit>
+          <option value="">{% trans "All profiles" %}</option>
+          {% for profile in profiles %}
+            <option value="{{ profile.pk }}"{% if filters.profile_id == profile.pk %} selected{% endif %}>{{ profile.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        {% trans "Model" %}
+        <select name="model" data-auto-submit>
+          <option value="">{% trans "All models" %}</option>
+          {% for model_id, model_label in model_options %}
+            <option value="{{ model_id }}"{% if filters.model_id == model_id %} selected{% endif %}>{{ model_label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button type="submit" class="button">{% trans "Apply" %}</button>
+    </form>
+  </div>
+
+  {% if filters.clamped %}
+    <p class="or-dash-note">
+      {% if filters.period == "day" %}
+        {% trans "Hourly view shows at most 7 days. The end date was adjusted." %}
+      {% else %}
+        {% trans "Daily view shows at most 366 days. The end date was adjusted." %}
+      {% endif %}
+    </p>
+  {% endif %}
+  {% if page.p95_approximate %}
+    <p class="or-dash-note">
+      {% blocktrans with sample_size=page.p95_sample_size %}p95 is computed from the {{ sample_size }} most recent rows in this range.{% endblocktrans %}
+    </p>
+  {% endif %}
+  {% if page.has_other %}
+    <p class="or-dash-note">{% trans "Additional series are grouped as Other." %}</p>
+  {% endif %}
+
+  <p class="or-prior">{% blocktrans with period=page.prior_period %}Compared with {{ period }}{% endblocktrans %}</p>
+  <div class="or-kpi-grid">
+    <article class="or-kpi">
+      <div class="or-kpi-label">{% trans "Total cost" %}</div>
+      <div class="or-kpi-value">{{ page.cost }}</div>
+      {% include "admin/django_openrouter/requestlog/dashboard_delta.html" with delta=page.deltas.cost %}
+    </article>
+    <article class="or-kpi">
+      <div class="or-kpi-label">{% trans "Requests" %}</div>
+      <div class="or-kpi-value">{{ page.requests }}</div>
+      {% include "admin/django_openrouter/requestlog/dashboard_delta.html" with delta=page.deltas.requests %}
+    </article>
+    <article class="or-kpi">
+      <div class="or-kpi-label">{% trans "Error rate" %}</div>
+      <div class="or-kpi-value">{{ page.error_rate }}</div>
+      {% include "admin/django_openrouter/requestlog/dashboard_delta.html" with delta=page.deltas.error_rate %}
+    </article>
+    <article class="or-kpi">
+      <div class="or-kpi-label">{% trans "p95 latency" %}</div>
+      <div class="or-kpi-value">{{ page.p95_latency }}</div>
+      {% include "admin/django_openrouter/requestlog/dashboard_delta.html" with delta=page.deltas.latency %}
+    </article>
+  </div>
+  <div class="or-kpi-grid or-kpi-secondary">
+    <article class="or-kpi">
+      <div class="or-kpi-label">{% trans "Avg latency" %}</div>
+      <div class="or-kpi-value">{{ page.avg_latency }}</div>
+    </article>
+    <article class="or-kpi">
+      <div class="or-kpi-label">{% trans "Total tokens" %}</div>
+      <div class="or-kpi-value">{{ page.total_tokens }}</div>
+    </article>
+    <article class="or-kpi">
+      <div class="or-kpi-label">{% trans "Avg tokens" %}</div>
+      <div class="or-kpi-value">{{ page.avg_tokens }}</div>
+    </article>
+    <article class="or-kpi">
+      <div class="or-kpi-label">{% trans "p95 tokens" %}</div>
+      <div class="or-kpi-value">{{ page.p95_tokens }}</div>
+    </article>
+  </div>
+
+  <details class="or-dash-help">
+    <summary>{% trans "How these numbers are counted" %}</summary>
+    <p>
+      {% blocktrans %}Non-2xx responses, including 402, 429, 499 and 5xx, count as errors. In-flight reservations (status 0) stay non-2xx until they are reconciled. Budget percentages use the current calendar day and month and the same rules as limit enforcement: every row counts toward cost, and HTTP errors other than 499 do not count toward the request limit. The model filter does not change those budget totals.{% endblocktrans %}
+    </p>
+  </details>
+
+  {% if page.empty %}
+    <p class="or-dash-empty">{% trans "No requests in this range." %}</p>
+  {% else %}
+    {% for section in page.sections %}
+      <h2>{{ section.title }}</h2>
+      <div class="or-dash-charts">
+        {% for chart in section.charts %}
+          <figure class="or-dash-chart" data-kind="{{ chart.kind }}">
+            <figcaption>{{ chart.title }}</figcaption>
+            {% if chart.empty %}
+              <p class="or-chart-empty">{% trans "No requests in this range." %}</p>
+            {% else %}
+              <div class="or-chart-frame">
+                <canvas class="or-chart" data-chart-id="{{ chart.id }}" role="img" aria-label="{{ chart.title }}"></canvas>
+              </div>
+            {% endif %}
+          </figure>
+        {% endfor %}
+      </div>
+    {% endfor %}
+
+    <div class="or-dash-columns">
+      <div>
+        <h2>{% trans "Top expensive profiles" %}</h2>
+        {% include "admin/django_openrouter/requestlog/dashboard_groups.html" with rows=page.top_profiles %}
+      </div>
+      <div>
+        <h2>{% trans "Top expensive models" %}</h2>
+        {% include "admin/django_openrouter/requestlog/dashboard_groups.html" with rows=page.top_models %}
+      </div>
+    </div>
+
+    <h2>{% trans "By profile" %}</h2>
+    {% if page.profiles_truncated %}
+      <p class="or-dash-note">{% trans "Showing the 50 profiles with the highest cost in this range." %}</p>
+    {% endif %}
+    {% include "admin/django_openrouter/requestlog/dashboard_groups.html" with rows=page.by_profile %}
+
+    <h2>{% trans "By model" %}</h2>
+    {% if page.models_truncated %}
+      <p class="or-dash-note">{% trans "Showing the 50 models with the highest cost in this range." %}</p>
+    {% endif %}
+    {% include "admin/django_openrouter/requestlog/dashboard_groups.html" with rows=page.by_model %}
+  {% endif %}
+
+  <h2>{% trans "Budgets" %}</h2>
+  {% if page.budgets %}
+    <div class="or-dash-table-wrap">
+      <table class="or-dash-table">
+        <thead>
+          <tr>
+            <th>{% trans "Profile" %}</th>
+            <th>{% trans "Daily requests" %}</th>
+            <th>{% trans "Daily request limit" %}</th>
+            <th>{% trans "Daily request use" %}</th>
+            <th>{% trans "Monthly requests" %}</th>
+            <th>{% trans "Monthly request limit" %}</th>
+            <th>{% trans "Monthly request use" %}</th>
+            <th>{% trans "Daily cost" %}</th>
+            <th>{% trans "Daily budget" %}</th>
+            <th>{% trans "Daily budget use" %}</th>
+            <th>{% trans "Monthly cost" %}</th>
+            <th>{% trans "Monthly budget" %}</th>
+            <th>{% trans "Monthly budget use" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in page.budgets %}
+            <tr>
+              <td>{{ row.name }}</td>
+              <td>{{ row.day_requests }}</td>
+              <td>{{ row.day_request_limit }}</td>
+              <td class="{% if row.day_request_over %}or-over{% endif %}">{{ row.day_request_pct }}</td>
+              <td>{{ row.month_requests }}</td>
+              <td>{{ row.month_request_limit }}</td>
+              <td class="{% if row.month_request_over %}or-over{% endif %}">{{ row.month_request_pct }}</td>
+              <td>{{ row.day_cost }}</td>
+              <td>{{ row.day_budget }}</td>
+              <td class="{% if row.day_cost_over %}or-over{% endif %}">{{ row.day_cost_pct }}</td>
+              <td>{{ row.month_cost }}</td>
+              <td>{{ row.month_budget }}</td>
+              <td class="{% if row.month_cost_over %}or-over{% endif %}">{{ row.month_cost_pct }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="or-dash-empty">{% trans "No usage profiles." %}</p>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block footer %}
+{{ block.super }}
+{% if page.chart_data %}
+{{ page.chart_data|json_script:"or-dashboard-charts" }}
+<script src="{% static 'django_openrouter/js/chart.umd.min.js' %}" defer></script>
+{% endif %}
+<script src="{% static 'django_openrouter/js/dashboard.js' %}" defer></script>
+{% endblock %}

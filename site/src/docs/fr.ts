@@ -734,7 +734,7 @@ with bound_username("worker"):
       id: 'admin',
       group: 'Guides',
       title: 'L’admin',
-      lead: 'Toute la politique runtime vit dans quatre sections du Django admin : réglages, catalogue de modèles, profils d’usage et journal des requêtes.',
+      lead: 'Toute la politique runtime vit dans le Django admin : réglages, catalogue de modèles, profils d’usage, journal des requêtes et un tableau de dépense.',
       blocks: [
         {
           type: 'table',
@@ -744,6 +744,7 @@ with bound_username("worker"):
             ['**OpenRouter models**', 'Le catalogue d’OpenRouter : prix, latence, throughput'],
             ['**Usage profiles**', 'Chaîne de modèles, limites, budgets, statistiques de dépense'],
             ['**Request logs**', 'Tokens, coût et latence de chaque appel (lecture seule)'],
+            ['**Usage dashboard**', 'Dépense, taux d’erreur, latence et tokens face aux budgets des profils'],
           ],
         },
         { type: 'h3', text: 'OpenRouter settings' },
@@ -832,6 +833,25 @@ with bound_username("worker"):
           src: 'admin-logs.png',
           alt: 'Django admin — journal des requêtes : heure, username, profil, modèle, statut, tokens, coût, latence ; résumé en haut',
           caption: 'Journal des requêtes : chaque tentative avec tokens, coût et latence, résumé du filtre au-dessus du tableau.',
+        },
+        { type: 'h3', text: 'Tableau de dépense' },
+        {
+          type: 'p',
+          text: 'Le staff avec `view_usage_logs` (et les superusers) ouvre **Usage dashboard** depuis l’index OpenRouter ou le résumé du journal. La vue est enregistrée via `RequestLogAdmin.get_urls` et enveloppée par `admin_view`, donc un `AdminSite` personnalisé qui enregistre `RequestLog` sert la même page.',
+        },
+        {
+          type: 'list',
+          items: [
+            '**Fenêtre.** Jour = heures (7 jours maximum). Mois = jours (366 jours maximum). Filtres profil et modèle.',
+            '**Graphiques.** Chart.js vendu avec le paquet (MIT, sans build, sans CDN, sans script inline). Les données passent par `json_script` : coût, requêtes, taux d’erreur, latence et tokens moyenne/p95, au total et par profil et par modèle. Une série garde sa couleur et suit le thème clair ou sombre de l’admin. Les cartes comparent la fenêtre à la période précédente de même longueur. Tout statut hors 200–299 est une erreur, y compris 402, 429, 499, 5xx et le statut 0.',
+            '**Budgets.** Jour et mois calendaires face aux limites de requêtes et d’USD, avec le pourcentage utilisé. Le p95 est calculé en Python sur au plus 20 000 lignes les plus récentes.',
+          ],
+        },
+        {
+          type: 'image',
+          src: 'admin-dashboard.png',
+          alt: 'Django admin — tableau de dépense : filtres, coût, requêtes, taux d’erreur, latence, tokens et budgets',
+          caption: 'Tableau de dépense : coût, erreurs et latence pour le jour ou le mois choisi, à côté du budget de chaque profil.',
         },
         { type: 'h3', text: 'Protection de la clé API' },
         {

@@ -82,7 +82,7 @@ Screenshots: [`docs/img/`](https://github.com/svalench/django-openrouter/tree/ma
 
 ## Admin pages
 
-Four models under **OpenRouter**. Runtime policy lives here, not in `settings.py`.
+Four models under **OpenRouter**, plus a usage dashboard linked from that index. Runtime policy lives here, not in `settings.py`.
 
 | Page | What it does |
 | --- | --- |
@@ -90,6 +90,7 @@ Four models under **OpenRouter**. Runtime policy lives here, not in `settings.py
 | [OpenRouter models](#openrouter-models) | Catalog from OpenRouter: price, latency, throughput |
 | [Usage profiles](#usage-profiles) | Ordered model chain, limits, budgets, spend stats |
 | [Request logs](#request-logs) | Per-call tokens, cost, latency (read-only) |
+| [Usage dashboard](#usage-dashboard) | Spend, error rate, latency and tokens versus profile budgets |
 
 ### OpenRouter settings
 
@@ -144,6 +145,18 @@ Read-only. Every HTTP attempt (including fallbacks and errors) is a row when `Da
 Columns: time, username, profile, model, HTTP status, prompt/completion tokens, cost, latency. Above the table: request count and USD total for the current filter. Filters: profile, status, date.
 
 Username comes from `django_openrouter.middleware.CurrentUserMiddleware` (after `AuthenticationMiddleware`). Without it, rows show `anonymous`. In Celery / management commands use `bound_username("worker")`.
+
+### Usage dashboard
+
+Staff who can open request logs (superuser or `view_usage_logs`) also get **Usage dashboard** on the OpenRouter admin index and in the log summary. The route lives on `RequestLogAdmin.get_urls` and is wrapped with `admin_view`, so a custom `AdminSite` that registers `RequestLog` serves the same page under its own URL namespace.
+
+![Usage dashboard](https://raw.githubusercontent.com/svalench/django-openrouter/master/docs/img/dashboard.png)
+
+- **Day** groups by hour and accepts up to 7 days. **Month** groups by day and accepts up to 366 days. **Today** and **This month** reset the window. Profile and model narrow every chart except the budget table.
+- Charts use a vendored Chart.js 4.4.6 build (MIT, static file, no CDN and no build step). Series data is passed with Django’s `json_script` tag, so the page does not need an inline script and stays compatible with `script-src 'self'`. `dashboard.js` draws the charts, follows the Django admin light and dark themes, and submits the filter form when a control changes. The four headline figures compare the selected window with the immediately previous window of the same length.
+- Series: cost (USD), request count, error rate, average and p95 latency, average and p95 tokens. The same metrics are grouped by profile and by model. Anything outside HTTP 200–299 is an error, including 402, 429, 499, 5xx and an in-flight reservation (status 0) until it is reconciled.
+- **Budgets** compare each profile with its current calendar day and month. Request counts use the same rule as limit enforcement (HTTP errors other than 499 do not count). Cost includes every row. Percent used is blank when the limit is empty. The model filter does not change these figures.
+- **Top expensive profiles** and **Top expensive models** are the highest cost in the selected range. p95 is computed in Python from at most 20,000 of the newest rows, so a wide window on a large log stays bounded. Queries filter on `created_at` and the `(profile, created_at)` / `(model, created_at)` indexes.
 
 ## Usage
 

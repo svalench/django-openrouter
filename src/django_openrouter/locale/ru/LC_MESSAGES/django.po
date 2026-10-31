@@ -455,3 +455,186 @@ msgstr "Всего запросов"
 #: templates/admin/django_openrouter/requestlog/change_list.html:7
 msgid "Total cost (USD)"
 msgstr "Общая стоимость (USD)"
+
+msgid "Usage dashboard"
+msgstr "Панель расхода"
+
+msgid "(no profile)"
+msgstr "(без профиля)"
+
+msgid "(no model)"
+msgstr "(без модели)"
+
+msgid "Over time"
+msgstr "По времени"
+
+msgid "Cost (USD)"
+msgstr "Стоимость (USD)"
+
+msgid "Error rate"
+msgstr "Доля ошибок"
+
+msgid "Latency (ms)"
+msgstr "Латентность (мс)"
+
+msgid "Average"
+msgstr "Среднее"
+
+msgid "p95"
+msgstr "p95"
+
+msgid "Tokens"
+msgstr "Токены"
+
+msgid "By profile"
+msgstr "По профилю"
+
+msgid "By model"
+msgstr "По модели"
+
+msgid "Other"
+msgstr "Прочие"
+
+msgid "No requests in this range."
+msgstr "В этом диапазоне нет запросов."
+
+msgid "unlimited"
+msgstr "без лимита"
+
+msgid "Name"
+msgstr "Имя"
+
+msgid "p95 latency"
+msgstr "p95 латентности"
+
+msgid "Total tokens"
+msgstr "Всего токенов"
+
+msgid "Avg tokens"
+msgstr "Среднее токенов"
+
+msgid "p95 tokens"
+msgstr "p95 токенов"
+
+msgid "Today"
+msgstr "Сегодня"
+
+msgid "This month"
+msgstr "Этот месяц"
+
+msgid "Period"
+msgstr "Период"
+
+msgid "Day (hourly)"
+msgstr "День (по часам)"
+
+msgid "Month (daily)"
+msgstr "Месяц (по дням)"
+
+msgid "From"
+msgstr "С"
+
+msgid "To"
+msgstr "По"
+
+msgid "Profile"
+msgstr "Профиль"
+
+msgid "All profiles"
+msgstr "Все профили"
+
+msgid "All models"
+msgstr "Все модели"
+
+msgid "Apply"
+msgstr "Показать"
+
+msgid "Hourly view shows at most 7 days. The end date was adjusted."
+msgstr "Почасовой вид показывает не больше 7 дней. Конец диапазона сдвинут."
+
+msgid "Daily view shows at most 366 days. The end date was adjusted."
+msgstr "Подневной вид показывает не больше 366 дней. Конец диапазона сдвинут."
+
+msgid "Additional series are grouped as Other."
+msgstr "Остальные ряды объединены в «Прочие»."
+
+msgid "Top expensive profiles"
+msgstr "Самые дорогие профили"
+
+msgid "Top expensive models"
+msgstr "Самые дорогие модели"
+
+msgid "Showing the 50 profiles with the highest cost in this range."
+msgstr "Показаны 50 профилей с наибольшей стоимостью в этом диапазоне."
+
+msgid "Showing the 50 models with the highest cost in this range."
+msgstr "Показаны 50 моделей с наибольшей стоимостью в этом диапазоне."
+
+msgid "Budgets"
+msgstr "Бюджеты"
+
+msgid "Daily requests"
+msgstr "Запросы за день"
+
+msgid "Daily request limit"
+msgstr "Дневной лимит запросов"
+
+msgid "Daily request use"
+msgstr "Использование дневного лимита"
+
+msgid "Monthly requests"
+msgstr "Запросы за месяц"
+
+msgid "Monthly request limit"
+msgstr "Месячный лимит запросов"
+
+msgid "Monthly request use"
+msgstr "Использование месячного лимита"
+
+msgid "Daily cost"
+msgstr "Расход за день"
+
+msgid "Daily budget"
+msgstr "Дневной бюджет"
+
+msgid "Daily budget use"
+msgstr "Использование дневного бюджета"
+
+msgid "Monthly cost"
+msgstr "Расход за месяц"
+
+msgid "Monthly budget"
+msgstr "Месячный бюджет"
+
+msgid "Monthly budget use"
+msgstr "Использование месячного бюджета"
+
+msgid "No usage profiles."
+msgstr "Нет профилей использования."
+
+msgid "p95 is computed from the %(sample_size)s most recent rows in this range."
+msgstr "p95 посчитан по %(sample_size)s самым свежим строкам в этом диапазоне."
+
+msgid "Non-2xx responses, including 402, 429, 499 and 5xx, count as errors. In-flight reservations (status 0) stay non-2xx until they are reconciled. Budget percentages use the current calendar day and month and the same rules as limit enforcement: every row counts toward cost, and HTTP errors other than 499 do not count toward the request limit. The model filter does not change those budget totals."
+msgstr "Ответы не из диапазона 2xx, включая 402, 429, 499 и 5xx, считаются ошибками. Незакрытые резервы (статус 0) остаются не-2xx, пока их не сверят. Проценты бюджета считаются за текущие календарные сутки и месяц по тем же правилам, что и лимиты: стоимость берётся из каждой строки, а HTTP-ошибки кроме 499 не входят в счётчик запросов. Фильтр по модели эти итоги не меняет."
+
+msgid "Requests"
+msgstr "Запросы"
+
+msgid "Avg latency"
+msgstr "Средняя латентность"
+
+msgid "Total cost"
+msgstr "Общая стоимость"
+
+msgid "Compared with %(period)s"
+msgstr "Сравнение с %(period)s"
+
+msgid "How these numbers are counted"
+msgstr "Как считаются эти числа"
+
+msgid "No earlier data"
+msgstr "Нет данных за предыдущий период"
+
+msgid "pp"
+msgstr "п.п."

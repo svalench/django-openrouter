@@ -5,6 +5,8 @@
   <strong>{% trans "Total requests" %}:</strong> {{ summary.request_count|default:0 }}
   &nbsp;|&nbsp;
   <strong>{% trans "Total cost (USD)" %}:</strong> {{ summary.total_cost|default:0 }}
+  &nbsp;|&nbsp;
+  <a href="{% url 'admin:django_openrouter_requestlog_dashboard' %}">{% trans "Usage dashboard" %}</a>
 </div>
 {{ block.super }}
 {% endblock %}

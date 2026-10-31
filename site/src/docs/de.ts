@@ -734,7 +734,7 @@ with bound_username("worker"):
       id: 'admin',
       group: 'Anleitungen',
       title: 'Das Admin-Panel',
-      lead: 'Die gesamte Runtime-Policy lebt in vier Bereichen des Django-Admin: Settings, Modellkatalog, Nutzungsprofile und Request-Logs.',
+      lead: 'Die gesamte Runtime-Policy lebt im Django-Admin: Settings, Modellkatalog, Nutzungsprofile, Request-Logs und ein Ausgaben-Dashboard.',
       blocks: [
         {
           type: 'table',
@@ -744,6 +744,7 @@ with bound_username("worker"):
             ['**OpenRouter models**', 'Der Katalog von OpenRouter: Preis, Latenz, Throughput'],
             ['**Usage profiles**', 'Modellkette, Limits, Budgets, Verbrauchsstatistik'],
             ['**Request logs**', 'Tokens, Kosten und Latenz jedes Aufrufs (read-only)'],
+            ['**Usage dashboard**', 'Ausgaben, Fehlerrate, Latenz und Tokens gegenüber Profil-Budgets'],
           ],
         },
         { type: 'h3', text: 'OpenRouter settings' },
@@ -832,6 +833,25 @@ with bound_username("worker"):
           src: 'admin-logs.png',
           alt: 'Django-Admin — Request-Log: Zeit, Username, Profil, Modell, Status, Tokens, Kosten, Latenz; Zusammenfassung oben',
           caption: 'Request-Logs: jeder Versuch mit Tokens, Kosten und Latenz, Filter-Zusammenfassung über der Tabelle.',
+        },
+        { type: 'h3', text: 'Ausgaben-Dashboard' },
+        {
+          type: 'p',
+          text: 'Mitarbeiter mit `view_usage_logs` (und Superuser) öffnen **Usage dashboard** vom OpenRouter-Index oder aus der Log-Zusammenfassung. Die Seite hängt an `RequestLogAdmin.get_urls` und ist mit `admin_view` umschlossen, damit eine eigene `AdminSite` dieselbe Seite ausliefert.',
+        },
+        {
+          type: 'list',
+          items: [
+            '**Fenster.** Tag = Stunden (höchstens 7 Tage). Monat = Tage (höchstens 366 Tage). Filter: Profil und Modell.',
+            '**Charts.** Vendored Chart.js (MIT, kein Build, kein CDN, kein Inline-Script). Daten über `json_script`: Kosten, Anzahl, Fehlerrate, Mittel/p95 Latenz und Tokens, gesamt und nach Profil und Modell. Dieselbe Serie behält dieselbe Farbe und folgt dem hellen und dunklen Admin-Theme. Die Kennzahlen vergleichen das Fenster mit dem vorherigen Zeitraum gleicher Länge. Alles außerhalb 200–299 zählt als Fehler, inklusive 402, 429, 499, 5xx und Status 0.',
+            '**Budgets.** Aktueller Kalendertag und -monat gegen Anfrage- und USD-Limits, mit Prozent. p95 wird in Python aus höchstens 20.000 neuesten Zeilen berechnet.',
+          ],
+        },
+        {
+          type: 'image',
+          src: 'admin-dashboard.png',
+          alt: 'Django-Admin Ausgaben-Dashboard: Filter, Kosten, Anfragen, Fehlerrate, Latenz, Tokens und Profil-Budgets',
+          caption: 'Ausgaben-Dashboard: Kosten, Fehler und Latenz für den gewählten Tag oder Monat neben den Profil-Budgets.',
         },
         { type: 'h3', text: 'Schutz des API-Keys' },
         {
