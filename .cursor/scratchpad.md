@@ -59,6 +59,12 @@ DONE
 - pytest полный, coverage 87.56%, ruff, mypy
 DONE
 
+## 2026-10-31 — dashboard visuals
+- KPI: cost, requests, error rate, p95 latency, дельта к предыдущему окну той же длины
+- Chart.js 4.4.6 MIT в static, данные через json_script, цвета серий стабильны, light/dark через CSS variables админки
+- pytest 324 passed, coverage 87.32%, ruff, mypy
+DONE
+
 ## 2026-10-22 — 0.5.1 content-encoding
 - причина: iter_bytes уже снимает Content-Encoding, _rehydrate собирал httpx.Response с тем же заголовком, .json() распаковывал второй раз (zlib -3)
 - фикс: json.loads по раскодированным байтам, _rehydrate удалён
