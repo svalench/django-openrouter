@@ -65,6 +65,12 @@ DONE
 - pytest 324 passed, coverage 87.32%, ruff, mypy
 DONE
 
+## 2026-10-31 — merge master 0.6.0
+- индекс дашборда переименован в 0012, зависит от 0011_requestlog_grouping
+- trace_id, session_id, metadata с master сохранены
+- pytest coverage 86.27%, ruff, mypy, makemigrations --check
+DONE
+
 ## 2026-10-31 — 0.6.0 OTEL и группы логов
 - extra `otel` = только opentelemetry-api; спаны выключены, пока OPENROUTER['OTEL'] не true
 - родительский спан на chat/stream/transcribe/generate_image, дочерний на HTTP-попытку
