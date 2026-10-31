@@ -4,7 +4,7 @@ export const fr: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: 'OpenRouter pour Django — modèles, profils, budgets et journaux gérés depuis l’admin',
-    version: '0.7.0',
+    version: '0.7.1',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -377,7 +377,7 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
       blocks: [
         {
           type: 'p',
-          text: 'Installez l’extra : `pip install "django-openrouter[pydantic-ai]"` (Pydantic AI 2.64+). Importer `django_openrouter` n’importe pas Pydantic AI. La classe est `django_openrouter.integrations.pydantic_ai.OpenRouterProfileModel`. Sans l’extra, cet import lève `ImportError` et indique la commande d’installation.',
+          text: 'Installez l’extra : `pip install "django-openrouter[pydantic-ai]"`. Il installe `pydantic-ai-slim` 2.64+, pas le métapaquet `pydantic-ai`. L’adaptateur n’importe pas le SDK OpenAI, donc l’extra ne tire pas `openai` et se résout à côté d’un projet épinglé sur `openai<2`. Importer `django_openrouter` n’importe pas Pydantic AI. La classe est `django_openrouter.integrations.pydantic_ai.OpenRouterProfileModel`. Sans l’extra, cet import lève `ImportError` et indique la commande d’installation.',
         },
         {
           type: 'p',

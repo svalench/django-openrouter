@@ -4,7 +4,7 @@ export const zh: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: '面向 Django 的 OpenRouter — 通过管理后台管理模型、用量配置、预算和请求日志',
-    version: '0.7.0',
+    version: '0.7.1',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -377,7 +377,7 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
       blocks: [
         {
           type: 'p',
-          text: '安装可选依赖：`pip install "django-openrouter[pydantic-ai]"`（Pydantic AI 2.64+）。导入 `django_openrouter` 不会导入 Pydantic AI。类是 `django_openrouter.integrations.pydantic_ai.OpenRouterProfileModel`。没有该 extra 时，这个导入会抛出 `ImportError` 并给出安装命令。',
+          text: '安装可选依赖：`pip install "django-openrouter[pydantic-ai]"`。安装的是 `pydantic-ai-slim` 2.64+，不是元包 `pydantic-ai`。适配器不导入 OpenAI SDK，因此该 extra 不会拉取 `openai`，也能与固定在 `openai<2` 的项目一起解析。导入 `django_openrouter` 不会导入 Pydantic AI。类是 `django_openrouter.integrations.pydantic_ai.OpenRouterProfileModel`。没有该 extra 时，这个导入会抛出 `ImportError` 并给出安装命令。',
         },
         {
           type: 'p',

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.7.1 — 2026-10-31
+
+The Pydantic AI extra no longer pulls the OpenAI SDK. No migrations.
+
+### Pydantic AI
+
+- Extra `django-openrouter[pydantic-ai]` depends on `pydantic-ai-slim>=2.64` instead of the `pydantic-ai` meta-package. The meta-package installs `pydantic-ai-slim[anthropic,cli,evals,google,logfire,mcp,openai,web]`, and the `openai` extra requires `openai>=3.31`. That conflicts with a project pinned to `openai<2` (for example `openai>=1.59,<2`). `OpenRouterProfileModel` does not import the OpenAI SDK. `Agent`, `Model`, messages, tool choice, profiles, settings and `RequestUsage` are in `pydantic-ai-slim` itself. The floor stays 2.64: that is the release whose `Model` API this adapter is written against.
+
+### Docs
+
+- The README and the docs site (every locale) show the usage dashboard in the Django admin dark theme next to the light screenshot.
+
 ## 0.7.0 — 2026-10-31
 
 OpenTelemetry tracing, request-log grouping, a staff usage dashboard, and an optional Pydantic AI model ship together. There is no 0.6.0 release. Upgrade from 0.5.1 with `manage.py migrate` (`0011_requestlog_grouping`, then `0012_requestlog_model_created_idx`).
