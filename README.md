@@ -152,6 +152,8 @@ Staff who can open request logs (superuser or `django_openrouter.view_usage_logs
 
 ![Usage dashboard](https://raw.githubusercontent.com/svalench/django-openrouter/master/docs/img/dashboard.png)
 
+![Usage dashboard, dark theme](https://raw.githubusercontent.com/svalench/django-openrouter/master/docs/img/dashboard-dark.png)
+
 - **Day** groups by hour and accepts up to 7 days. **Month** groups by day and accepts up to 366 days. **Today** and **This month** reset the window. Profile and model narrow every chart except the budget table.
 - Charts use a vendored Chart.js 4.4.6 build (MIT, static file, no CDN and no build step). Series data is passed with Django’s `json_script` tag, so the page does not need an inline script and stays compatible with `script-src 'self'`. `dashboard.js` draws the charts, follows the Django admin light and dark themes, and submits the filter form when a control changes. The four headline figures compare the selected window with the immediately previous window of the same length.
 - Series: cost (USD), request count, error rate, average and p95 latency, average and p95 tokens. The same metrics are grouped by profile and by model. Anything outside HTTP 200–299 is an error, including 402, 429, 499, 5xx and an in-flight reservation (status 0) until it is reconciled.

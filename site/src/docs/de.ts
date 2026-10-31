@@ -958,6 +958,12 @@ with bound_username("worker"):
           alt: 'Django-Admin Ausgaben-Dashboard: Filter, Kosten, Anfragen, Fehlerrate, Latenz, Tokens und Profil-Budgets',
           caption: 'Ausgaben-Dashboard: Kosten, Fehler und Latenz für den gewählten Tag oder Monat neben den Profil-Budgets.',
         },
+        {
+          type: 'image',
+          src: 'admin-dashboard-dark.png',
+          alt: 'Django-Admin Ausgaben-Dashboard im dunklen Thema: Filter, Kosten, Anfragen, Fehlerrate, Latenz, Tokens und Profil-Budgets',
+          caption: 'Dunkles Thema: dieselben Diagramme folgen dem Theme-Schalter von Django Admin.',
+        },
         { type: 'h3', text: 'Schutz des API-Keys' },
         {
           type: 'list',

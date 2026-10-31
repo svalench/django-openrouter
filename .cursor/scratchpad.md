@@ -101,3 +101,8 @@ DONE
 - pytest 378 passed, coverage 86.70%, ruff check, mypy, makemigrations --check, site build, twine check --strict
 - PyPI: push тега v*.*.* (publish.yml), не GitHub Release
 DONE
+
+## 2026-10-31 — скриншот дашборда
+- светлый docs/img/dashboard.png и site/public/admin-dashboard.png уже с редизайна (тот же коммит, что dashboard.css): KPI, графики, бюджеты. Не заменял
+- добавлен тёмный: docs/img/dashboard-dark.png и site/public/admin-dashboard-dark.png; README raw.githubusercontent; все 9 локалей
+DONE
