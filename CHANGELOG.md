@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+Optional Pydantic AI adapter. Existing chat, image and transcription APIs are unchanged. The package version is still 0.5.1.
+
+- Extra `django-openrouter[pydantic-ai]` (`pydantic-ai>=2.64`). `django_openrouter` does not import it; `django_openrouter.integrations.pydantic_ai.OpenRouterProfileModel` raises `ImportError` with the install hint when the extra is missing.
+- `OpenRouterProfileModel("chat")` is a Pydantic AI `Model`. It sends chat-completions payloads through `AsyncOpenRouterClient`, so the profile chain, fallback on `402` / `408` / `429` / `5xx`, budget reservations, rate limits, retries, timeouts, the kill switch, the request log and `bound_username` stay in this library. A `Provider` that only supplied an HTTP client would let Pydantic AI call OpenRouter on its own and skip those rules.
+- Text, multiple tool calls and tool-result round trips, structured output (`output_type`, including `NativeOutput` / `PromptedOutput`), `Agent.run` / `run_sync` / `run_stream`. Agent `temperature` and `max_tokens` are capped by the profile. `thinking` is forwarded as OpenRouter `reasoning`. Image inputs are sent as `image_url` parts.
+- `BudgetExceeded` and `RateLimitExceeded` are raised to the agent caller and do not fall through to a model outside the profile chain. Token counts and cost are copied onto Pydantic AI `RequestUsage` / `RunUsage.cost`.
+
 ## 0.5.1 — 2026-10-22
 
 Fix chat calls failing when OpenRouter compresses the response body.

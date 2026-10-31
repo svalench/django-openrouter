@@ -367,6 +367,103 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
       ],
     },
     {
+      id: 'pydantic-ai',
+      group: 'ガイド',
+      title: 'Pydantic AI',
+      lead: '任意のアダプタです。Pydantic AI のエージェントは利用プロファイル経由で OpenRouter を呼びます。モデル列、予算、レート制限、キルスイッチ、リクエストログは django-openrouter 側に残ります。',
+      blocks: [
+        {
+          type: 'p',
+          text: '追加依存を入れます: `pip install "django-openrouter[pydantic-ai]"`（Pydantic AI 2.64+）。`django_openrouter` の import は Pydantic AI を読み込みません。クラスは `django_openrouter.integrations.pydantic_ai.OpenRouterProfileModel` です。extra が無いとその import は `ImportError` になり、インストールコマンドを示します。',
+        },
+        {
+          type: 'p',
+          text: 'これは Pydantic AI の `Model` であり、`Provider` ではありません。Provider は HTTP クライアントを渡すだけで、Pydantic AI 自身が OpenRouter を呼び、プロファイルの列、予算の予約、レート制限、キルスイッチ、ログ、`bound_username` を通りません。`OpenRouterProfileModel` は chat completions のペイロードを組み立て、`AsyncOpenRouterClient` を呼びます。`Agent.run` と `Agent.run_sync` はどちらもその async メソッドを使います。',
+        },
+        { type: 'h3', text: 'エージェント' },
+        {
+          type: 'code',
+          lang: 'python',
+          code: `from pydantic_ai import Agent
+
+from django_openrouter.integrations.pydantic_ai import OpenRouterProfileModel
+
+agent = Agent(OpenRouterProfileModel("chat"))
+result = agent.run_sync("Hello")
+print(result.output, result.usage.cost, result.response.model_name)`,
+        },
+        {
+          type: 'p',
+          text: '`profile` は利用プロファイルのスラッグです。`None` は既定のチャットプロファイルです。Pydantic AI の能力は `model_profile=` に渡します。ここでの `profile` は Django のスラッグだからです。エージェントのモデル id は `openrouter:<slug>` のままです。`result.response.model_name` はフォールバック後に実際に答えたカタログ id です。`result.usage` にはトークン数と USD の `cost` が入ります（API の `usage.cost` があればそれ、なければカタログ見積もり）。',
+        },
+        {
+          type: 'p',
+          text: 'エージェントの `temperature` と `max_tokens` はプロファイルが上限です。より低い temperature はそのまま残ります。省略した値はプロファイルの既定です。`thinking` は OpenRouter の `reasoning` として送られます（`False` は `{"enabled": false}`、`"high"` は `{"enabled": true, "effort": "high"}`）。`timeout` はその呼び出しのアイドル `request_timeout` です。入力画像（`ImageUrl`、画像の `BinaryContent`）は `image_url` パートになります。モデルが返した画像は `ChatResult.images` に残り、Pydantic AI の画像パートには変換しません。',
+        },
+        {
+          type: 'callout',
+          kind: 'warning',
+          title: 'ストリーミング',
+          text: '`agent.run_stream` と `run_stream_sync` には OpenRouter 設定で Streaming を有効にする必要があります。テキストの差分は SSE に合わせて届きます。Reasoning と tool calls は最終チャンクから付きます。',
+        },
+        {
+          type: 'p',
+          text: '`BudgetExceeded` と `RateLimitExceeded` は呼び出し元まで届きます。HTTP の前に発生し、別モデルへ黙って移りません。HTTP のフォールバックはプロファイルの列の中だけです（`402`、`408`、`429`、`5xx`）。',
+        },
+        { type: 'h3', text: 'Django ビュー' },
+        {
+          type: 'code',
+          lang: 'python',
+          title: 'views.py',
+          code: `from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from pydantic_ai import Agent
+
+from django_openrouter.exceptions import BudgetExceeded, RateLimitExceeded
+from django_openrouter.integrations.pydantic_ai import OpenRouterProfileModel
+
+agent = Agent(OpenRouterProfileModel("chat"))
+
+@require_POST
+def ask(request):
+    try:
+        result = agent.run_sync(request.POST["q"])
+    except (BudgetExceeded, RateLimitExceeded) as exc:
+        return JsonResponse({"error": str(exc)}, status=429)
+    return JsonResponse(
+        {
+            "answer": result.output,
+            "model": result.response.model_name,
+            "cost_usd": str(result.usage.cost),
+        }
+    )`,
+        },
+        { type: 'h3', text: 'Celery タスク' },
+        {
+          type: 'p',
+          text: 'リクエストの外では `bound_username` がログのユーザー名を縛ります。HTTP では `CurrentUserMiddleware` がすでにそれをします。',
+        },
+        {
+          type: 'code',
+          lang: 'python',
+          title: 'tasks.py',
+          code: `from celery import shared_task
+from pydantic_ai import Agent
+
+from django_openrouter.current_user import bound_username
+from django_openrouter.integrations.pydantic_ai import OpenRouterProfileModel
+
+agent = Agent(OpenRouterProfileModel("chat"))
+
+@shared_task
+def summarize(username: str, text: str) -> str:
+    with bound_username(username):
+        result = agent.run_sync(f"Summarize:\\n{text}")
+    return result.output`,
+        },
+      ],
+    },
+    {
       id: 'transcription',
       group: 'ガイド',
       title: '音声文字起こし',

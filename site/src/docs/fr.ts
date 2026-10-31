@@ -367,6 +367,103 @@ async for chunk in astream("chat", messages=[{"role": "user", "content": "Hello"
       ],
     },
     {
+      id: 'pydantic-ai',
+      group: 'Guides',
+      title: 'Pydantic AI',
+      lead: 'Adaptateur optionnel : un agent Pydantic AI appelle OpenRouter via un profil d’usage. La chaîne de modèles, les budgets, les limites, le kill switch et le journal restent dans django-openrouter.',
+      blocks: [
+        {
+          type: 'p',
+          text: 'Installez l’extra : `pip install "django-openrouter[pydantic-ai]"` (Pydantic AI 2.64+). Importer `django_openrouter` n’importe pas Pydantic AI. La classe est `django_openrouter.integrations.pydantic_ai.OpenRouterProfileModel`. Sans l’extra, cet import lève `ImportError` et indique la commande d’installation.',
+        },
+        {
+          type: 'p',
+          text: 'C’est un `Model` Pydantic AI, pas un `Provider`. Un provider ne fournirait qu’un client HTTP, et Pydantic AI appellerait OpenRouter lui-même — sans la chaîne du profil, la réservation de budget, les limites, le kill switch, le journal ni `bound_username`. `OpenRouterProfileModel` construit le payload chat completions et appelle `AsyncOpenRouterClient`. `Agent.run` et `Agent.run_sync` passent tous les deux par ces méthodes async.',
+        },
+        { type: 'h3', text: 'Agent' },
+        {
+          type: 'code',
+          lang: 'python',
+          code: `from pydantic_ai import Agent
+
+from django_openrouter.integrations.pydantic_ai import OpenRouterProfileModel
+
+agent = Agent(OpenRouterProfileModel("chat"))
+result = agent.run_sync("Hello")
+print(result.output, result.usage.cost, result.response.model_name)`,
+        },
+        {
+          type: 'p',
+          text: '`profile` est le slug du profil d’usage. `None` utilise le profil de chat par défaut. Les capacités Pydantic AI vont dans `model_profile=`, car `profile` est ici le slug Django. L’id de modèle de l’agent reste `openrouter:<slug>`. `result.response.model_name` est l’id du catalogue qui a répondu, après le fallback. `result.usage` contient les tokens et `cost` en USD (`usage.cost` de l’API s’il est présent, sinon l’estimation du catalogue).',
+        },
+        {
+          type: 'p',
+          text: '`temperature` et `max_tokens` de l’agent sont plafonnés par le profil. Une temperature plus basse est conservée. Les valeurs omises restent celles du profil. `thinking` part comme `reasoning` OpenRouter (`False` devient `{"enabled": false}`, `"high"` devient `{"enabled": true, "effort": "high"}`). `timeout` est le `request_timeout` d’inactivité de l’appel. Les images en entrée (`ImageUrl`, `BinaryContent` image) deviennent des parties `image_url`. Les images renvoyées par le modèle restent sur `ChatResult.images` et ne deviennent pas des parties image Pydantic AI.',
+        },
+        {
+          type: 'callout',
+          kind: 'warning',
+          title: 'Streaming',
+          text: '`agent.run_stream` et `run_stream_sync` exigent Streaming activé dans les réglages OpenRouter. Les deltas de texte arrivent avec le SSE. Reasoning et tool calls sont ajoutés depuis le chunk final.',
+        },
+        {
+          type: 'p',
+          text: '`BudgetExceeded` et `RateLimitExceeded` remontent à l’appelant. Ils sont levés avant le HTTP et ne basculent pas silencieusement vers un autre modèle. Le fallback HTTP reste dans la chaîne du profil (`402`, `408`, `429`, `5xx`).',
+        },
+        { type: 'h3', text: 'Vue Django' },
+        {
+          type: 'code',
+          lang: 'python',
+          title: 'views.py',
+          code: `from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from pydantic_ai import Agent
+
+from django_openrouter.exceptions import BudgetExceeded, RateLimitExceeded
+from django_openrouter.integrations.pydantic_ai import OpenRouterProfileModel
+
+agent = Agent(OpenRouterProfileModel("chat"))
+
+@require_POST
+def ask(request):
+    try:
+        result = agent.run_sync(request.POST["q"])
+    except (BudgetExceeded, RateLimitExceeded) as exc:
+        return JsonResponse({"error": str(exc)}, status=429)
+    return JsonResponse(
+        {
+            "answer": result.output,
+            "model": result.response.model_name,
+            "cost_usd": str(result.usage.cost),
+        }
+    )`,
+        },
+        { type: 'h3', text: 'Tâche Celery' },
+        {
+          type: 'p',
+          text: 'Hors requête, `bound_username` fixe le nom dans le journal. Pour HTTP, `CurrentUserMiddleware` le fait déjà.',
+        },
+        {
+          type: 'code',
+          lang: 'python',
+          title: 'tasks.py',
+          code: `from celery import shared_task
+from pydantic_ai import Agent
+
+from django_openrouter.current_user import bound_username
+from django_openrouter.integrations.pydantic_ai import OpenRouterProfileModel
+
+agent = Agent(OpenRouterProfileModel("chat"))
+
+@shared_task
+def summarize(username: str, text: str) -> str:
+    with bound_username(username):
+        result = agent.run_sync(f"Summarize:\\n{text}")
+    return result.output`,
+        },
+      ],
+    },
+    {
       id: 'transcription',
       group: 'Guides',
       title: 'Reconnaissance vocale',
