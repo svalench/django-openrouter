@@ -12,6 +12,7 @@ from django.db import connection
 from django.test.utils import CaptureQueriesContext, override_settings
 from django.urls import clear_url_caches, reverse
 from django.utils import timezone
+from django.utils.html import json_script
 
 from django_openrouter.admin import RequestLogAdmin
 from django_openrouter.dashboard import (
@@ -20,6 +21,7 @@ from django_openrouter.dashboard import (
     chart_sections,
     parse_filters,
     percentile,
+    present,
     preset_links,
 )
 from django_openrouter.models import OpenRouterModel, RequestLog, UsageProfile
@@ -227,6 +229,11 @@ def test_daily_buckets_profile_and_model_filters(
     assert data.top_models[0].label == "<img src=x>"
     assert data.top_models[1].label == "Other model"
     assert [row.label for row in data.top_models] == ["<img src=x>", "Other model"]
+    full_charts = {chart.id: chart for section in chart_sections(data) for chart in section.charts}
+    profile_cost = [item.color for item in full_charts["profile-cost"].datasets]
+    profile_requests = [item.color for item in full_charts["profile-requests"].datasets]
+    assert profile_cost == profile_requests
+    assert len(set(profile_cost)) == len(profile_cost)
 
     only_profile = build_dashboard(
         _day(period="month", start=date(2024, 6, 1), end=date(2024, 6, 30), profile_id=profile.pk)
@@ -247,10 +254,12 @@ def test_daily_buckets_profile_and_model_filters(
     assert only_model.cost_usd == Decimal("5.110000")
 
     one_day = build_dashboard(_day(period="month", start=date(2024, 6, 1), end=date(2024, 6, 1)))
-    svg = "".join(chart.svg for section in chart_sections(one_day) for chart in section.charts)
-    assert "<circle" in svg
-    assert "&lt;img src=x&gt;" in svg
-    assert "<img src=x>" not in svg
+    charts = {chart.id: chart for section in chart_sections(one_day) for chart in section.charts}
+    assert charts["model-cost"].datasets[0].label == "<img src=x>"
+    assert charts["model-cost"].datasets[0].color == charts["model-requests"].datasets[0].color
+    html = str(json_script(present(one_day)["chart_data"], "or-dashboard-charts"))
+    assert "<img" not in html
+    assert "\\u003Cimg src=x\\u003E" in html
 
 
 def test_p95_uses_bounded_recent_sample(
@@ -328,11 +337,54 @@ def test_budgets_follow_enforcement_rules(
     assert filtered.budgets[0].day_cost == Decimal("0.65")
 
 
+def test_kpi_deltas_compare_the_previous_window(
+    profile: UsageProfile, paid_model: OpenRouterModel
+) -> None:
+    other = UsageProfile.objects.create(name="translation", model=paid_model)
+    _log(profile, paid_model, status=200, cost="0.40", latency=10, when=_at(12, day=14))
+    _log(profile, paid_model, status=200, cost="0.40", latency=40, when=_at(13, day=14))
+    _log(profile, paid_model, status=200, cost="0.25", latency=100, when=_at(12, day=15))
+    _log(profile, paid_model, status=500, cost="0.75", latency=200, when=_at(13, day=15))
+    _log(other, paid_model, status=200, cost="9", latency=5, when=_at(12, day=15))
+
+    data = build_dashboard(_day(profile_id=profile.pk))
+    assert data.cost_usd == Decimal("1.00")
+    assert data.previous.start == date(2024, 6, 14)
+    assert data.previous.end == date(2024, 6, 14)
+    assert data.previous.cost_usd == Decimal("0.80")
+    assert data.previous.request_count == 2
+    page = present(data)
+    assert page["prior_period"] == "2024-06-14"
+    assert page["deltas"]["cost"] == {
+        "text": "+$0.200000",
+        "relative": "+25.0%",
+        "tone": "bad",
+    }
+    assert page["deltas"]["requests"] == {"text": "0", "relative": "0.0%", "tone": "flat"}
+    assert page["deltas"]["error_rate"]["text"] == "+50.0 pp"
+    assert page["deltas"]["error_rate"]["tone"] == "bad"
+    assert page["deltas"]["latency"]["tone"] == "bad"
+    assert str(page["deltas"]["latency"]["text"]).startswith("+")
+
+    earlier = build_dashboard(_day(start=date(2024, 6, 14), end=date(2024, 6, 14)))
+    dropped = present(earlier)
+    assert dropped["deltas"]["cost"]["tone"] == "bad"
+    assert dropped["deltas"]["cost"]["relative"] == ""
+    assert dropped["deltas"]["latency"]["text"] == "No earlier data"
+    assert dropped["prior_period"] == "2024-06-13"
+
+    week = build_dashboard(_day(period="month", start=date(2024, 6, 10), end=date(2024, 6, 12)))
+    assert week.previous.start == date(2024, 6, 7)
+    assert week.previous.end == date(2024, 6, 9)
+    assert present(week)["prior_period"] == "2024-06-07 - 2024-06-09"
+
+
 def test_empty_range_and_query_bound(profile: UsageProfile, paid_model: OpenRouterModel) -> None:
     _log(profile, paid_model, status=200, cost="0.2", when=_at(4))
     with CaptureQueriesContext(connection) as ctx:
         data = build_dashboard(_day())
-    assert len(ctx.captured_queries) <= 8
+    # Текущее окно (группы, p95, имена, бюджеты) плюс агрегат и p95 прошлого окна.
+    assert len(ctx.captured_queries) <= 10
     assert data.request_count == 1
     empty = build_dashboard(_day(start=date(2020, 1, 1), end=date(2020, 1, 1)))
     assert empty.request_count == 0
@@ -341,8 +393,9 @@ def test_empty_range_and_query_bound(profile: UsageProfile, paid_model: OpenRout
     assert empty.budgets[0].name == "chat"
     assert empty.budgets[0].day_budget is None
     sections = chart_sections(empty)
-    assert "No requests in this range." in sections[0].charts[2].svg
-    assert "<svg" in sections[1].charts[3].svg
+    by_id = {chart.id: chart for section in sections for chart in section.charts}
+    assert by_id["over-errors"].empty
+    assert by_id["profile-latency"].empty
 
 
 def test_model_created_index_declared() -> None:
@@ -404,11 +457,15 @@ def test_dashboard_renders_filters_and_charts(
     body = response.content.decode()
     assert response.context["page"]["cost"] == "$0.110000"
     assert "$0.990000" not in body
-    assert "<svg" in body
     assert "chat" in body
-    assert 'src="' in body and "dashboard.js" in body
     assert "or-chart" in body
+    assert 'id="or-dashboard-charts"' in body
+    assert 'type="application/json"' in body
+    assert "chart.umd.min.js" in body
     assert "dashboard.js" in body
+    assert "Compared with 2024-06-14" in body
+    assert "+$0.110000" in body
+    assert "<img" not in body
 
 
 def test_empty_logs_keep_budget_row(admin_client, profile: UsageProfile) -> None:

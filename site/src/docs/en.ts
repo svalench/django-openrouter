@@ -793,7 +793,7 @@ with bound_username("worker"):
           type: 'list',
           items: [
             '**Window.** Day groups by hour (at most 7 days). Month groups by day (at most 366 days). Presets jump to today or the current month. Filters narrow by profile and model.',
-            '**Charts.** Inline SVG, no build step and no inline script: cost (USD), request count, error rate, average and p95 latency, average and p95 tokens — overall and grouped by profile and by model. `dashboard.js` only submits the filter form when a control changes.',
+            '**Charts.** Vendored Chart.js (MIT, no build, no CDN, no inline script). Data is passed with `json_script`: cost, requests, error rate, average and p95 latency and tokens, overall and by profile and by model. The same series keeps the same color. Charts follow the admin light and dark themes. Headline cards compare the window with the previous period of the same length.',
             '**Errors.** Anything outside HTTP 200–299, including 402, 429, 499, 5xx, and in-flight reservations (status 0) until they are reconciled.',
             '**Budgets and top spend.** Each profile shows the current calendar day and month against its request and USD limits, with percent used. Request totals follow limit enforcement (HTTP errors other than 499 do not count); cost includes every row. The model filter does not change those budget figures. p95 is computed in Python from at most 20,000 of the newest rows.',
           ],

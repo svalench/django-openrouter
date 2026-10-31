@@ -6,7 +6,8 @@ Staff usage dashboard on the request log.
 
 - Open **Usage dashboard** from the OpenRouter admin index or from the request-log summary. The page is a `RequestLogAdmin.get_urls` route wrapped in `admin_view`, so it stays on whichever admin site registers `RequestLog`. Access matches the log itself: staff who are superusers or have `view_usage_logs`.
 - Day view buckets by hour (at most 7 days). Month view buckets by day (at most 366 days). Filter by date range, profile and model.
-- Charts are inline SVG (no build step, no inline script): cost (USD), request count, error rate, average and p95 latency, average and p95 tokens, overall and grouped by profile and by model. Non-2xx statuses count as errors, including 402, 429, 499, 5xx and in-flight reservations (status 0).
+- Charts use vendored Chart.js 4.4.6 (MIT, no build step, no CDN, no inline script). Series data is embedded with `json_script`. Cost, request count, error rate, average and p95 latency, and average and p95 tokens are shown overall and grouped by profile and by model. Colors stay stable per series and follow the admin light and dark themes. Non-2xx statuses count as errors, including 402, 429, 499, 5xx and in-flight reservations (status 0).
+- Headline cards (total cost, requests, error rate, p95 latency) show the change versus the immediately previous window of the same length.
 - Totals sit next to each profile’s current daily and monthly request and USD limits, with percent used. Request counts follow the same rules as limit enforcement. The most expensive profiles and models in the selected range are listed separately.
 - Aggregation stays in the Django ORM (`TruncHour` / `TruncDay`). p95 is computed in Python from at most 20,000 of the newest rows in the window. A `(model, created_at)` index covers the model filter. `trace_id`, `session_id` and `metadata` are untouched.
 

@@ -793,7 +793,7 @@ with bound_username("worker"):
           type: 'list',
           items: [
             '**Ventana.** Día agrupa por hora (máximo 7 días). Mes agrupa por día (máximo 366 días). Filtros de perfil y modelo.',
-            '**Gráficos.** SVG en línea, sin build ni script inline: coste (USD), peticiones, tasa de error, latencia media/p95 y tokens media/p95, en total y agrupados por perfil y por modelo. Cuenta como error todo lo que no sea 200–299, incluidos 402, 429, 499, 5xx y el estado 0.',
+            '**Gráficos.** Chart.js incluido (MIT, sin build, sin CDN, sin script inline). Los datos van en `json_script`: coste, peticiones, tasa de error, latencia y tokens media/p95, en total y por perfil y modelo. El color de cada serie es estable y sigue el tema claro y oscuro del admin. Las tarjetas comparan la ventana con el periodo anterior de la misma duración. Cuenta como error todo lo que no sea 200–299, incluidos 402, 429, 499, 5xx y el estado 0.',
             '**Presupuestos.** Día y mes naturales frente a los límites de peticiones y USD, con el porcentaje usado. El p95 se calcula en Python sobre como mucho 20.000 filas recientes.',
           ],
         },

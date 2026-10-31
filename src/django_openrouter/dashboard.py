@@ -16,7 +16,6 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
-from html import escape
 from typing import Any, Literal
 from urllib.parse import urlencode
 
@@ -24,7 +23,6 @@ from django.conf import settings
 from django.db.models import Count, DecimalField, IntegerField, Q, QuerySet, Sum, Value
 from django.db.models.functions import Coalesce, TruncDay, TruncHour
 from django.utils import timezone
-from django.utils.safestring import SafeString, mark_safe
 from django.utils.translation import gettext
 
 from django_openrouter.models import (
@@ -37,6 +35,9 @@ from django_openrouter.models import (
 
 PeriodName = Literal["day", "month"]
 MetricName = Literal["cost", "requests", "error_rate"]
+ChartKind = Literal["line", "bar"]
+ChartUnit = Literal["usd", "count", "percent", "ms", "tokens"]
+DeltaTone = Literal["good", "bad", "neutral", "flat", "none"]
 
 # Не-2xx, включая 402/429/499/5xx и незакрытый резерв (status 0).
 NON_2XX = ~Q(status_code__gte=200, status_code__lt=300)
@@ -53,17 +54,20 @@ _ZERO = Decimal("0")
 _MONEY = DecimalField(max_digits=20, decimal_places=10)
 _INT = IntegerField()
 
+# Одна палитра на все графики: индекс серии (по убыванию стоимости) даёт тот же цвет.
 _PALETTE = (
-    "#417690",
-    "#c4541d",
-    "#2e7d32",
-    "#6a1b9a",
-    "#00838f",
-    "#ad1457",
-    "#ef6c00",
-    "#455a64",
-    "#757575",
+    "#3b82f6",
+    "#14b8a6",
+    "#f59e0b",
+    "#a78bfa",
+    "#fb7185",
+    "#22d3ee",
+    "#a3e635",
+    "#94a3b8",
 )
+_OTHER_COLOR = "#64748b"
+_AVG_COLOR = "#3b82f6"
+_P95_COLOR = "#f59e0b"
 
 
 @dataclass(frozen=True)
@@ -200,14 +204,51 @@ class DashboardData:
     model_error_series: tuple[NamedSeries, ...]
     budgets: tuple[BudgetRow, ...]
     has_other: bool
+    previous: PreviousTotals
+
+
+@dataclass(frozen=True)
+class ChartDataset:
+    """Одна линия или группа столбцов. color стабилен для той же серии на соседних графиках."""
+
+    label: str
+    data: tuple[float | None, ...]
+    color: str
 
 
 @dataclass(frozen=True)
 class ChartBlock:
-    """Один SVG-график. svg уже экранирован и помечен safe."""
+    """Спека графика для Chart.js. В страницу попадает через json_script, без inline-скрипта."""
 
+    id: str
     title: str
-    svg: SafeString
+    kind: ChartKind
+    unit: ChartUnit
+    labels: tuple[str, ...]
+    datasets: tuple[ChartDataset, ...]
+
+    @property
+    def empty(self) -> bool:
+        if not self.labels:
+            return True
+        return not any(
+            value is not None and math.isfinite(value)
+            for dataset in self.datasets
+            for value in dataset.data
+        )
+
+
+@dataclass(frozen=True)
+class PreviousTotals:
+    """Окно той же длины непосредственно перед выбранным диапазоном."""
+
+    start: date
+    end: date
+    request_count: int
+    error_count: int
+    error_rate: float | None
+    cost_usd: Decimal
+    p95_latency_ms: float | None
 
 
 @dataclass(frozen=True)
@@ -348,6 +389,7 @@ def build_dashboard(filters: DashboardFilters, *, now: datetime | None = None) -
     total = _Agg()
     for agg in overall.values():
         total.add(agg)
+    previous = _previous_totals(filters)
     return DashboardData(
         filters=filters,
         request_count=total.request_count,
@@ -376,6 +418,7 @@ def build_dashboard(filters: DashboardFilters, *, now: datetime | None = None) -
         model_error_series=err_model,
         budgets=_budgets(filters.profile_id, now=current),
         has_other=other_profile or other_model,
+        previous=previous,
     )
 
 
@@ -399,69 +442,74 @@ def model_choices(filters: DashboardFilters) -> list[tuple[int, str]]:
 
 
 def chart_sections(data: DashboardData) -> tuple[ChartSection, ...]:
-    """SVG без скриптов: линии по времени и столбцы avg/p95 по группам."""
-    labels = [point.label for point in data.buckets]
+    """Спеки Chart.js: линии по времени и столбцы avg/p95 по группам."""
+    labels = tuple(point.label for point in data.buckets)
     over_time = ChartSection(
         title=str(gettext("Over time")),
         charts=(
-            ChartBlock(
+            _line_block(
+                "over-cost",
                 str(gettext("Cost (USD)")),
-                _line_chart(
-                    labels,
-                    [
-                        (
-                            str(gettext("Cost (USD)")),
-                            [float(point.cost_usd) for point in data.buckets],
-                        )
-                    ],
+                "usd",
+                labels,
+                (
+                    ChartDataset(
+                        str(gettext("Cost (USD)")),
+                        tuple(float(point.cost_usd) for point in data.buckets),
+                        _PALETTE[0],
+                    ),
                 ),
             ),
-            ChartBlock(
+            _line_block(
+                "over-requests",
                 str(gettext("Requests")),
-                _line_chart(
-                    labels,
-                    [
-                        (
-                            str(gettext("Requests")),
-                            [float(point.request_count) for point in data.buckets],
-                        )
-                    ],
+                "count",
+                labels,
+                (
+                    ChartDataset(
+                        str(gettext("Requests")),
+                        tuple(float(point.request_count) for point in data.buckets),
+                        _PALETTE[1],
+                    ),
                 ),
             ),
-            ChartBlock(
+            _line_block(
+                "over-errors",
                 str(gettext("Error rate")),
-                _line_chart(
-                    labels,
-                    [(str(gettext("Error rate")), [point.error_rate for point in data.buckets])],
-                    percent=True,
+                "percent",
+                labels,
+                (
+                    ChartDataset(
+                        str(gettext("Error rate")),
+                        tuple(point.error_rate for point in data.buckets),
+                        _PALETTE[4],
+                    ),
                 ),
             ),
-            ChartBlock(
+            _line_block(
+                "over-latency",
                 str(gettext("Latency (ms)")),
-                _line_chart(
-                    labels,
-                    [
-                        (
-                            str(gettext("Average")),
-                            [point.avg_latency_ms for point in data.buckets],
-                        ),
-                        (str(gettext("p95")), [point.p95_latency_ms for point in data.buckets]),
-                    ],
+                "ms",
+                labels,
+                _avg_p95(
+                    tuple(point.avg_latency_ms for point in data.buckets),
+                    tuple(point.p95_latency_ms for point in data.buckets),
                 ),
             ),
-            ChartBlock(
+            _line_block(
+                "over-tokens",
                 str(gettext("Tokens")),
-                _line_chart(
-                    labels,
-                    [
-                        (str(gettext("Average")), [point.avg_tokens for point in data.buckets]),
-                        (str(gettext("p95")), [point.p95_tokens for point in data.buckets]),
-                    ],
+                "tokens",
+                labels,
+                _avg_p95(
+                    tuple(point.avg_tokens for point in data.buckets),
+                    tuple(point.p95_tokens for point in data.buckets),
                 ),
             ),
         ),
     )
     by_profile = _group_section(
+        "profile",
         str(gettext("By profile")),
         labels,
         data.profile_cost_series,
@@ -470,6 +518,7 @@ def chart_sections(data: DashboardData) -> tuple[ChartSection, ...]:
         data.by_profile,
     )
     by_model = _group_section(
+        "model",
         str(gettext("By model")),
         labels,
         data.model_cost_series,
@@ -478,6 +527,25 @@ def chart_sections(data: DashboardData) -> tuple[ChartSection, ...]:
         data.by_model,
     )
     return (over_time, by_profile, by_model)
+
+
+def chart_payload(sections: Sequence[ChartSection]) -> dict[str, object]:
+    """JSON для json_script. Пустые графики остаются текстом в шаблоне."""
+    payload: dict[str, object] = {}
+    for section in sections:
+        for chart in section.charts:
+            if chart.empty:
+                continue
+            payload[chart.id] = {
+                "kind": chart.kind,
+                "unit": chart.unit,
+                "labels": list(chart.labels),
+                "datasets": [
+                    {"label": item.label, "data": list(item.data), "color": item.color}
+                    for item in chart.datasets
+                ],
+            }
+    return payload
 
 
 def format_usd(value: Decimal) -> str:
@@ -505,6 +573,7 @@ def format_tokens(value: float | None) -> str:
 
 def present(data: DashboardData) -> dict[str, object]:
     """Строки для шаблона. Деньги остаются Decimal только внутри расчёта."""
+    sections = chart_sections(data) if data.request_count else ()
     return {
         "cost": format_usd(data.cost_usd),
         "requests": f"{data.request_count:,}",
@@ -518,7 +587,10 @@ def present(data: DashboardData) -> dict[str, object]:
         "p95_approximate": data.p95_approximate,
         "p95_sample_size": data.p95_sample_size,
         "has_other": data.has_other,
-        "sections": chart_sections(data) if data.request_count else (),
+        "sections": sections,
+        "chart_data": chart_payload(sections),
+        "deltas": _deltas(data),
+        "prior_period": format_prior_period(data.previous.start, data.previous.end),
         "top_profiles": [_group_dict(row) for row in data.top_profiles],
         "top_models": [_group_dict(row) for row in data.top_models],
         "by_profile": [_group_dict(row) for row in data.by_profile],
@@ -529,9 +601,118 @@ def present(data: DashboardData) -> dict[str, object]:
     }
 
 
+def _deltas(data: DashboardData) -> dict[str, dict[str, str]]:
+    previous = data.previous
+    return {
+        "cost": _delta_money(data.cost_usd, previous.cost_usd),
+        "requests": _delta_count(data.request_count, previous.request_count),
+        "error_rate": _delta_rate(data.error_rate, previous.error_rate),
+        "latency": _delta_latency(data.p95_latency_ms, previous.p95_latency_ms),
+    }
+
+
+def _delta_money(current: Decimal, previous: Decimal) -> dict[str, str]:
+    absolute = current - previous
+    if absolute == 0:
+        return {"text": format_usd(_ZERO), "relative": "0.0%", "tone": "flat"}
+    relative = ""
+    if previous != 0:
+        change = (absolute / previous) * Decimal(100)
+        relative = f"{change:+.1f}%"
+    tone: DeltaTone = "bad" if absolute > 0 else "good"
+    return {"text": _signed_money(absolute), "relative": relative, "tone": tone}
+
+
+def _signed_money(value: Decimal) -> str:
+    if value > 0:
+        return "+" + format_usd(value)
+    if value < 0:
+        return "-" + format_usd(-value)
+    return format_usd(value)
+
+
+def _delta_count(current: int, previous: int) -> dict[str, str]:
+    absolute = current - previous
+    if absolute == 0:
+        return {"text": "0", "relative": "0.0%", "tone": "flat"}
+    relative = ""
+    if previous:
+        relative = f"{absolute * 100 / previous:+.1f}%"
+    return {"text": f"{absolute:+,}", "relative": relative, "tone": "neutral"}
+
+
+def _delta_rate(current: float | None, previous: float | None) -> dict[str, str]:
+    if current is None or previous is None:
+        missing_prior = previous is None and current is not None
+        note = str(gettext("No earlier data")) if missing_prior else "—"
+        return {"text": note, "relative": "", "tone": "none"}
+    absolute = current - previous
+    unit = str(gettext("pp"))
+    if abs(absolute) < 0.05:
+        return {"text": f"0.0 {unit}", "relative": "", "tone": "flat"}
+    tone: DeltaTone = "bad" if absolute > 0 else "good"
+    return {"text": f"{absolute:+.1f} {unit}", "relative": "", "tone": tone}
+
+
+def _delta_latency(current: float | None, previous: float | None) -> dict[str, str]:
+    if current is None or previous is None:
+        missing_prior = previous is None and current is not None
+        note = str(gettext("No earlier data")) if missing_prior else "—"
+        return {"text": note, "relative": "", "tone": "none"}
+    absolute = current - previous
+    if abs(absolute) < 0.5:
+        return {"text": "0 ms", "relative": "0.0%", "tone": "flat"}
+    relative = ""
+    if previous:
+        relative = f"{absolute * 100 / previous:+.1f}%"
+    tone: DeltaTone = "bad" if absolute > 0 else "good"
+    return {"text": f"{round(absolute):+d} ms", "relative": relative, "tone": tone}
+
+
+def format_prior_period(start: date, end: date) -> str:
+    if start == end:
+        return start.isoformat()
+    return f"{start.isoformat()} - {end.isoformat()}"
+
+
 def bounds(filters: DashboardFilters) -> tuple[datetime, datetime]:
     """Полуинтервал [start 00:00, end+1day 00:00) в текущей таймзоне."""
     return _midnight(filters.start), _midnight(filters.end + timedelta(days=1))
+
+
+def previous_dates(filters: DashboardFilters) -> tuple[date, date]:
+    """Календарное окно той же длины, заканчивающееся в день перед filters.start."""
+    span = (filters.end - filters.start).days + 1
+    end = filters.start - timedelta(days=1)
+    start = end - timedelta(days=span - 1)
+    return start, end
+
+
+def _previous_totals(filters: DashboardFilters) -> PreviousTotals:
+    """Итоги прошлого окна: один агрегат и ограниченная выборка latency для p95."""
+    start, end = previous_dates(filters)
+    start_dt, end_dt = _midnight(start), _midnight(end + timedelta(days=1))
+    qs = _filtered(filters, start_dt, end_dt)
+    row = qs.aggregate(
+        request_count=Count("id"),
+        error_count=Count("id", filter=NON_2XX),
+        total_cost=Coalesce(Sum("cost_usd"), Value(_ZERO), output_field=_MONEY),
+    )
+    request_count = int(row["request_count"] or 0)
+    error_count = int(row["error_count"] or 0)
+    latencies = [
+        int(value or 0)
+        for value in qs.order_by("-created_at").values_list("latency_ms", flat=True)[:P95_ROW_CAP]
+    ]
+    return PreviousTotals(
+        start=start,
+        end=end,
+        request_count=request_count,
+        error_count=error_count,
+        error_rate=_rate(error_count, request_count),
+        cost_usd=_as_decimal(row["total_cost"]),
+        p95_latency_ms=percentile(latencies, 95),
+    )
 
 
 def _filtered(
@@ -847,235 +1028,105 @@ def _metric_value(agg: _Agg | None, metric: MetricName) -> float | None:
 
 
 def _group_section(
+    prefix: str,
     title: str,
-    labels: list[str],
+    labels: Sequence[str],
     cost: Sequence[NamedSeries],
     requests: Sequence[NamedSeries],
     errors: Sequence[NamedSeries],
     rows: Sequence[GroupRow],
 ) -> ChartSection:
     top = rows[:MAX_SERIES]
+    names = tuple(row.label for row in top)
+    other = bool(cost) and cost[-1].label == str(gettext("Other"))
     return ChartSection(
         title=title,
         charts=(
-            ChartBlock(str(gettext("Cost (USD)")), _line_chart(labels, _series_pairs(cost))),
-            ChartBlock(str(gettext("Requests")), _line_chart(labels, _series_pairs(requests))),
-            ChartBlock(
-                str(gettext("Error rate")),
-                _line_chart(labels, _series_pairs(errors), percent=True),
+            _line_block(
+                f"{prefix}-cost",
+                str(gettext("Cost (USD)")),
+                "usd",
+                labels,
+                _colored(cost, other=other),
             ),
-            ChartBlock(
+            _line_block(
+                f"{prefix}-requests",
+                str(gettext("Requests")),
+                "count",
+                labels,
+                _colored(requests, other=other),
+            ),
+            _line_block(
+                f"{prefix}-errors",
+                str(gettext("Error rate")),
+                "percent",
+                labels,
+                _colored(errors, other=other),
+            ),
+            _bar_block(
+                f"{prefix}-latency",
                 str(gettext("Latency (ms)")),
-                _bar_chart(
-                    [row.label for row in top],
-                    [
-                        (str(gettext("Average")), [row.avg_latency_ms for row in top]),
-                        (str(gettext("p95")), [row.p95_latency_ms for row in top]),
-                    ],
+                "ms",
+                names,
+                _avg_p95(
+                    tuple(row.avg_latency_ms for row in top),
+                    tuple(row.p95_latency_ms for row in top),
                 ),
             ),
-            ChartBlock(
+            _bar_block(
+                f"{prefix}-tokens",
                 str(gettext("Tokens")),
-                _bar_chart(
-                    [row.label for row in top],
-                    [
-                        (str(gettext("Average")), [row.avg_tokens for row in top]),
-                        (str(gettext("p95")), [row.p95_tokens for row in top]),
-                    ],
+                "tokens",
+                names,
+                _avg_p95(
+                    tuple(row.avg_tokens for row in top),
+                    tuple(row.p95_tokens for row in top),
                 ),
             ),
         ),
     )
 
 
-def _series_pairs(series: Sequence[NamedSeries]) -> list[tuple[str, list[float | None]]]:
-    return [(item.label, list(item.values)) for item in series]
-
-
-def _line_chart(
+def _line_block(
+    chart_id: str,
+    title: str,
+    unit: ChartUnit,
     labels: Sequence[str],
-    series: Sequence[tuple[str, Sequence[float | None]]],
-    *,
-    percent: bool = False,
-) -> SafeString:
-    width = 720
-    pad_l = 52
-    pad_r = 12
-    pad_t = 16
-    pad_b = 36
-    plot_w = width - pad_l - pad_r
-    plot_h = 150
-    legend_h = 18 * math.ceil(len(series) / 3) if len(series) > 1 else 0
-    height = pad_t + plot_h + pad_b + legend_h
-    finite = [
-        value
-        for _, values in series
-        for value in values
-        if value is not None and math.isfinite(value)
-    ]
-    y_max = max(finite) if finite else (100.0 if percent else 1.0)
-    if y_max <= 0:
-        y_max = 1.0
-    count = max(len(labels), 1)
-
-    def x_at(index: int) -> float:
-        if count == 1:
-            return pad_l + plot_w / 2
-        return pad_l + plot_w * index / (count - 1)
-
-    def y_at(value: float) -> float:
-        return pad_t + plot_h * (1 - (value / y_max))
-
-    parts = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" '
-        'class="or-chart" role="img">'
-    ]
-    for fraction in (0.0, 0.5, 1.0):
-        y = y_at(y_max * fraction)
-        label = _axis_label(y_max * fraction, percent=percent)
-        parts.append(
-            f'<line x1="{pad_l}" y1="{y:.1f}" x2="{width - pad_r}" y2="{y:.1f}" '
-            'stroke="#888" stroke-opacity="0.35"/>'
-        )
-        parts.append(
-            f'<text x="{pad_l - 6}" y="{y + 4:.1f}" text-anchor="end" '
-            f'font-size="11" fill="currentColor">{_xml(label)}</text>'
-        )
-    step = max(1, math.ceil(count / 8))
-    for index, label in enumerate(labels):
-        if index % step != 0 and index != count - 1:
-            continue
-        parts.append(
-            f'<text x="{x_at(index):.1f}" y="{pad_t + plot_h + 16}" text-anchor="middle" '
-            f'font-size="11" fill="currentColor">{_xml(label)}</text>'
-        )
-    drew = False
-    for series_index, (name, values) in enumerate(series):
-        color = _PALETTE[series_index % len(_PALETTE)]
-        for segment in _segments(list(values)):
-            drew = True
-            if len(segment) == 1:
-                index, value = segment[0]
-                cx = f"{x_at(index):.1f}"
-                cy = f"{y_at(value):.1f}"
-                parts.append(
-                    f'<circle cx="{cx}" cy="{cy}" r="3.5" fill="{color}">'
-                    f"<title>{_xml(name)}</title></circle>"
-                )
-                continue
-            points = " ".join(f"{x_at(index):.1f},{y_at(value):.1f}" for index, value in segment)
-            parts.append(
-                f'<polyline fill="none" stroke="{color}" stroke-width="2" points="{points}">'
-                f"<title>{_xml(name)}</title></polyline>"
-            )
-    if not drew:
-        parts.append(
-            f'<text x="{width / 2:.0f}" y="{pad_t + plot_h / 2:.0f}" text-anchor="middle" '
-            f'fill="currentColor">{_xml(str(gettext("No requests in this range.")))}</text>'
-        )
-    if len(series) > 1:
-        for series_index, (name, _) in enumerate(series):
-            color = _PALETTE[series_index % len(_PALETTE)]
-            col = series_index % 3
-            row = series_index // 3
-            x = pad_l + col * 220
-            y = pad_t + plot_h + pad_b + row * 18
-            parts.append(f'<rect x="{x}" y="{y - 9}" width="10" height="10" fill="{color}"/>')
-            text = _xml(name)
-            parts.append(
-                f'<text x="{x + 14}" y="{y}" font-size="11" fill="currentColor">{text}</text>'
-            )
-    parts.append("</svg>")
-    return mark_safe("".join(parts))
+    datasets: Sequence[ChartDataset],
+) -> ChartBlock:
+    return ChartBlock(chart_id, title, "line", unit, tuple(labels), tuple(datasets))
 
 
-def _bar_chart(
-    categories: Sequence[str],
-    series: Sequence[tuple[str, Sequence[float | None]]],
-) -> SafeString:
-    width = 720
-    pad_l = 148
-    pad_r = 16
-    pad_t = 12
-    row_h = 18 * max(len(series), 1) + 10
-    height = pad_t + row_h * max(len(categories), 1) + (22 if len(series) > 1 else 8)
-    finite = [
-        value
-        for _, values in series
-        for value in values
-        if value is not None and math.isfinite(value) and value > 0
-    ]
-    x_max = max(finite) if finite else 1.0
-    plot_w = width - pad_l - pad_r
-    parts = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" '
-        'class="or-chart" role="img">'
-    ]
-    if not categories:
-        parts.append(
-            f'<text x="{width / 2:.0f}" y="{height / 2:.0f}" text-anchor="middle" '
-            f'fill="currentColor">{_xml(str(gettext("No requests in this range.")))}</text>'
-        )
-        parts.append("</svg>")
-        return mark_safe("".join(parts))
-    for row_index, category in enumerate(categories):
-        y0 = pad_t + row_index * row_h
-        parts.append(
-            f'<text x="{pad_l - 8}" y="{y0 + 14}" text-anchor="end" font-size="12" '
-            f'fill="currentColor">{_xml(_short(category))}</text>'
-        )
-        for series_index, (_, values) in enumerate(series):
-            value = values[row_index] if row_index < len(values) else None
-            if value is None or value <= 0:
-                continue
-            bar_w = plot_w * (value / x_max)
-            y = y0 + 4 + series_index * 16
-            color = _PALETTE[series_index % len(_PALETTE)]
-            parts.append(
-                f'<rect x="{pad_l}" y="{y}" width="{bar_w:.1f}" height="12" fill="{color}"/>'
-            )
-    if len(series) > 1:
-        legend_y = height - 8
-        for series_index, (name, _) in enumerate(series):
-            color = _PALETTE[series_index % len(_PALETTE)]
-            x = pad_l + series_index * 160
-            parts.append(
-                f'<rect x="{x}" y="{legend_y - 10}" width="10" height="10" fill="{color}"/>'
-            )
-            parts.append(
-                f'<text x="{x + 14}" y="{legend_y}" font-size="11" fill="currentColor">'
-                f"{_xml(name)}</text>"
-            )
-    parts.append("</svg>")
-    return mark_safe("".join(parts))
+def _bar_block(
+    chart_id: str,
+    title: str,
+    unit: ChartUnit,
+    labels: Sequence[str],
+    datasets: Sequence[ChartDataset],
+) -> ChartBlock:
+    return ChartBlock(chart_id, title, "bar", unit, tuple(labels), tuple(datasets))
 
 
-def _segments(values: Sequence[float | None]) -> list[list[tuple[int, float]]]:
-    segments: list[list[tuple[int, float]]] = []
-    current: list[tuple[int, float]] = []
-    for index, value in enumerate(values):
-        if value is None or not math.isfinite(value):
-            if current:
-                segments.append(current)
-                current = []
-            continue
-        current.append((index, value))
-    if current:
-        segments.append(current)
-    return segments
+def _avg_p95(
+    average: Sequence[float | None],
+    p95: Sequence[float | None],
+) -> tuple[ChartDataset, ...]:
+    return (
+        ChartDataset(str(gettext("Average")), tuple(average), _AVG_COLOR),
+        ChartDataset(str(gettext("p95")), tuple(p95), _P95_COLOR),
+    )
 
 
-def _axis_label(value: float, *, percent: bool) -> str:
-    if percent:
-        return f"{value:.0f}%"
-    if value == 0:
-        return "0"
-    absolute = abs(value)
-    if absolute >= 100:
-        return f"{value:.0f}"
-    if absolute >= 1:
-        return f"{value:.1f}"
-    return f"{value:.4f}"
+def _colored(series: Sequence[NamedSeries], *, other: bool) -> tuple[ChartDataset, ...]:
+    last = len(series) - 1
+    painted: list[ChartDataset] = []
+    for index, item in enumerate(series):
+        if other and index == last:
+            color = _OTHER_COLOR
+        else:
+            color = _PALETTE[index % len(_PALETTE)]
+        painted.append(ChartDataset(item.label, item.values, color))
+    return tuple(painted)
 
 
 def _group_dict(row: GroupRow) -> dict[str, object]:
@@ -1276,13 +1327,3 @@ def _query(
     if filters.model_id is not None:
         params["model"] = str(filters.model_id)
     return urlencode(params)
-
-
-def _xml(value: str) -> str:
-    return escape(value, quote=True)
-
-
-def _short(value: str, limit: int = 22) -> str:
-    if len(value) <= limit:
-        return value
-    return value[: limit - 1] + "…"

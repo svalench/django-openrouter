@@ -793,7 +793,7 @@ with bound_username("worker"):
           type: 'list',
           items: [
             '**Fenêtre.** Jour = heures (7 jours maximum). Mois = jours (366 jours maximum). Filtres profil et modèle.',
-            '**Graphiques.** SVG inline, sans build ni script inline : coût (USD), nombre de requêtes, taux d’erreur, latence moyenne/p95, tokens moyens/p95, au total et groupés par profil et par modèle. Tout statut hors 200–299 est une erreur, y compris 402, 429, 499, 5xx et le statut 0.',
+            '**Graphiques.** Chart.js vendu avec le paquet (MIT, sans build, sans CDN, sans script inline). Les données passent par `json_script` : coût, requêtes, taux d’erreur, latence et tokens moyenne/p95, au total et par profil et par modèle. Une série garde sa couleur et suit le thème clair ou sombre de l’admin. Les cartes comparent la fenêtre à la période précédente de même longueur. Tout statut hors 200–299 est une erreur, y compris 402, 429, 499, 5xx et le statut 0.',
             '**Budgets.** Jour et mois calendaires face aux limites de requêtes et d’USD, avec le pourcentage utilisé. Le p95 est calculé en Python sur au plus 20 000 lignes les plus récentes.',
           ],
         },

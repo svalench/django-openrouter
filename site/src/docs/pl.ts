@@ -793,7 +793,7 @@ with bound_username("worker"):
           type: 'list',
           items: [
             '**Okno.** Dzień grupuje po godzinach (do 7 dni). Miesiąc — po dniach (do 366 dni). Filtry: profil i model.',
-            '**Wykresy.** Inline SVG, bez builda i bez inline script: koszt (USD), liczba żądań, odsetek błędów, średnia i p95 opóźnienia, średnie i p95 tokenów — łącznie oraz według profilu i modelu. Błędem jest wszystko poza 200–299, w tym 402, 429, 499, 5xx i status 0.',
+            '**Wykresy.** Dołączony Chart.js (MIT, bez builda, bez CDN, bez inline script). Dane idą przez `json_script`: koszt, liczba żądań, odsetek błędów, średnia i p95 opóźnienia i tokenów — łącznie oraz według profilu i modelu. Kolor serii jest stały i podąża za jasnym i ciemnym motywem admina. Karty porównują okno z poprzednim okresem tej samej długości. Błędem jest wszystko poza 200–299, w tym 402, 429, 499, 5xx i status 0.',
             '**Budżety.** Bieżący dzień i miesiąc kalendarzowy wobec limitów żądań i USD, z procentem wykorzystania. p95 liczone jest w Pythonie z co najwyżej 20 000 najnowszych wierszy.',
           ],
         },

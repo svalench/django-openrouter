@@ -793,7 +793,7 @@ with bound_username("worker"):
           type: 'list',
           items: [
             '**Fenster.** Tag = Stunden (höchstens 7 Tage). Monat = Tage (höchstens 366 Tage). Filter: Profil und Modell.',
-            '**Charts.** Inline-SVG ohne Build und ohne Inline-Script: Kosten (USD), Anzahl, Fehlerrate, Mittel/p95 Latenz, Mittel/p95 Tokens — gesamt und gruppiert nach Profil und Modell. Alles außerhalb 200–299 zählt als Fehler, inklusive 402, 429, 499, 5xx und Status 0.',
+            '**Charts.** Vendored Chart.js (MIT, kein Build, kein CDN, kein Inline-Script). Daten über `json_script`: Kosten, Anzahl, Fehlerrate, Mittel/p95 Latenz und Tokens, gesamt und nach Profil und Modell. Dieselbe Serie behält dieselbe Farbe und folgt dem hellen und dunklen Admin-Theme. Die Kennzahlen vergleichen das Fenster mit dem vorherigen Zeitraum gleicher Länge. Alles außerhalb 200–299 zählt als Fehler, inklusive 402, 429, 499, 5xx und Status 0.',
             '**Budgets.** Aktueller Kalendertag und -monat gegen Anfrage- und USD-Limits, mit Prozent. p95 wird in Python aus höchstens 20.000 neuesten Zeilen berechnet.',
           ],
         },

@@ -626,3 +626,15 @@ msgstr "Средняя латентность"
 
 msgid "Total cost"
 msgstr "Общая стоимость"
+
+msgid "Compared with %(period)s"
+msgstr "Сравнение с %(period)s"
+
+msgid "How these numbers are counted"
+msgstr "Как считаются эти числа"
+
+msgid "No earlier data"
+msgstr "Нет данных за предыдущий период"
+
+msgid "pp"
+msgstr "п.п."
