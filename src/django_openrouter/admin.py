@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 from decimal import Decimal
 from typing import Any, cast
+from urllib.parse import urlencode
 
 import httpx
 from django import forms
@@ -17,6 +19,8 @@ from django.forms import BaseInlineFormSet, ModelForm, PasswordInput
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils.html import format_html
+from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 
 from django_openrouter.exceptions import ConfigurationError, OpenRouterError
@@ -727,6 +731,52 @@ class OpenRouterModelAdmin(admin.ModelAdmin):
         self.message_user(request, text, level=level)
 
 
+class _ExactIdFilter(SimpleListFilter):
+    """Точный фильтр по id. В сайдбаре — недавние значения, ссылка из строки работает всегда."""
+
+    def lookups(
+        self, request: HttpRequest, model_admin: admin.ModelAdmin
+    ) -> list[tuple[str, str]]:
+        field = self.parameter_name
+        if not field:
+            return []
+        values = (
+            model_admin.get_queryset(request)
+            .exclude(**{f"{field}__isnull": True})
+            .exclude(**{field: ""})
+            .values_list(field, flat=True)
+            .distinct()
+            .order_by(field)[:30]
+        )
+        return [(str(value), str(value)) for value in values]
+
+    def queryset(
+        self,
+        request: HttpRequest,
+        queryset: QuerySet[RequestLog],
+    ) -> QuerySet[RequestLog]:
+        value = self.value()
+        field = self.parameter_name
+        if not value or not field:
+            return queryset
+        return queryset.filter(**{field: value})
+
+
+class SessionIdFilter(_ExactIdFilter):
+    title = _("session")
+    parameter_name = "session_id"
+
+
+class TraceIdFilter(_ExactIdFilter):
+    title = _("trace")
+    parameter_name = "trace_id"
+
+
+def _request_log_url(**params: str) -> str:
+    base = reverse("admin:django_openrouter_requestlog_changelist")
+    return f"{base}?{urlencode(params)}"
+
+
 def _format_per_million(price: Decimal | None) -> str:
     if price is None:
         return "—"
@@ -741,6 +791,8 @@ class RequestLogAdmin(admin.ModelAdmin):
     list_display = (
         "created_at",
         "username",
+        "session_id_link",
+        "trace_id_link",
         "profile",
         "model",
         "status_code",
@@ -749,14 +801,36 @@ class RequestLogAdmin(admin.ModelAdmin):
         "cost_usd",
         "latency_ms",
     )
-    list_filter = ("profile", "status_code", "created_at")
+    list_filter = ("profile", "status_code", SessionIdFilter, TraceIdFilter, "created_at")
     date_hierarchy = "created_at"
-    search_fields = ("error_message", "username")
+    search_fields = ("error_message", "username", "session_id", "trace_id")
     ordering = ("-created_at",)
+    fields = (
+        "created_at",
+        "username",
+        "profile",
+        "model",
+        "session_id",
+        "session_calls_link",
+        "trace_id",
+        "trace_calls_link",
+        "metadata_display",
+        "status_code",
+        "error_message",
+        "prompt_tokens",
+        "completion_tokens",
+        "cost_usd",
+        "latency_ms",
+    )
     readonly_fields = (
         "profile",
         "model",
         "username",
+        "session_id",
+        "trace_id",
+        "metadata_display",
+        "session_calls_link",
+        "trace_calls_link",
         "status_code",
         "error_message",
         "prompt_tokens",
@@ -765,6 +839,53 @@ class RequestLogAdmin(admin.ModelAdmin):
         "latency_ms",
         "created_at",
     )
+
+    @admin.display(description=_("Session"), ordering="session_id")
+    def session_id_link(self, obj: RequestLog) -> str:
+        if not obj.session_id:
+            return "—"
+        return format_html(
+            '<a href="{}">{}</a>',
+            _request_log_url(session_id=obj.session_id),
+            obj.session_id,
+        )
+
+    @admin.display(description=_("Trace"), ordering="trace_id")
+    def trace_id_link(self, obj: RequestLog) -> str:
+        if not obj.trace_id:
+            return "—"
+        return format_html(
+            '<a href="{}">{}</a>',
+            _request_log_url(trace_id=obj.trace_id),
+            obj.trace_id,
+        )
+
+    @admin.display(description=_("Metadata"))
+    def metadata_display(self, obj: RequestLog) -> str:
+        if not obj.metadata:
+            return "—"
+        text = json.dumps(obj.metadata, ensure_ascii=False, indent=2, sort_keys=True)
+        return format_html('<pre style="margin:0;white-space:pre-wrap">{}</pre>', text)
+
+    @admin.display(description=_("Session calls"))
+    def session_calls_link(self, obj: RequestLog) -> str:
+        if not obj.session_id:
+            return "—"
+        return format_html(
+            '<a href="{}">{}</a>',
+            _request_log_url(session_id=obj.session_id),
+            gettext("all calls in this session"),
+        )
+
+    @admin.display(description=_("Trace calls"))
+    def trace_calls_link(self, obj: RequestLog) -> str:
+        if not obj.trace_id:
+            return "—"
+        return format_html(
+            '<a href="{}">{}</a>',
+            _request_log_url(trace_id=obj.trace_id),
+            gettext("all calls in this trace"),
+        )
 
     def has_view_permission(self, request: HttpRequest, obj: RequestLog | None = None) -> bool:
         user = request.user

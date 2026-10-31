@@ -7,6 +7,7 @@ from decimal import ROUND_UP, Decimal, InvalidOperation
 from django.db import transaction
 from django.utils.translation import gettext as _
 
+from django_openrouter.call_context import grouping_fields
 from django_openrouter.exceptions import (
     BudgetExceeded,
     ConfigurationError,
@@ -184,6 +185,7 @@ def reserve_request(
             status_code=0,
             error_message=RESERVATION_PENDING_MESSAGE,
             cost_usd=cost,
+            **grouping_fields(),
         )
 
 
