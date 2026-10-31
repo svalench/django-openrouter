@@ -546,6 +546,31 @@ class RequestLog(models.Model):
         db_index=True,
         help_text=_("Authenticated user's username, or 'anonymous'."),
     )
+    trace_id = models.CharField(  # noqa: DJ001
+        max_length=64,
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name=_("Trace id"),
+        help_text=_(
+            "Groups retries and fallbacks of one call. "
+            "The OpenTelemetry trace id when tracing is enabled, otherwise a generated id."
+        ),
+    )
+    session_id = models.CharField(  # noqa: DJ001
+        max_length=255,
+        null=True,
+        blank=True,
+        db_index=True,
+        verbose_name=_("Session id"),
+        help_text=_("Caller session. Filter the log to see every call in the session."),
+    )
+    metadata = models.JSONField(
+        null=True,
+        blank=True,
+        verbose_name=_("Metadata"),
+        help_text=_("Caller JSON object stored with the call. It is not used for limits."),
+    )
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:

@@ -55,6 +55,7 @@ from django.utils import timezone
 from django.utils.module_loading import import_string
 from django.utils.translation import gettext as _
 
+from django_openrouter.call_context import current_grouping
 from django_openrouter.config import openrouter_setting
 from django_openrouter.current_user import current_username
 from django_openrouter.http_clients import get_async_client, get_sync_client
@@ -127,6 +128,9 @@ class LogRecord:
     username: str
     created_at: datetime
     reservation_id: int | None = None
+    trace_id: str | None = None
+    session_id: str | None = None
+    metadata: dict[str, Any] | None = None
 
 
 def record_to_dict(record: LogRecord) -> dict[str, Any]:
@@ -142,6 +146,9 @@ def record_to_dict(record: LogRecord) -> dict[str, Any]:
         "cost_usd": str(record.cost_usd),
         "latency_ms": record.latency_ms,
         "username": record.username,
+        "trace_id": record.trace_id or "",
+        "session_id": record.session_id or "",
+        "metadata": json.dumps(record.metadata or {}, ensure_ascii=False, sort_keys=True),
     }
 
 
@@ -179,6 +186,7 @@ class DatabaseBackend(LogBackend):
                 completion_tokens=record.completion_tokens,
                 latency_ms=record.latency_ms,
                 username=record.username,
+                **_grouping_values(record),
             )
             if record.status_code == 200:
                 values["cost_usd"] = record.cost_usd
@@ -196,6 +204,7 @@ class DatabaseBackend(LogBackend):
             cost_usd=record.cost_usd,
             latency_ms=record.latency_ms,
             username=record.username,
+            **_grouping_values(record),
         )
 
     async def awrite(self, record: LogRecord) -> None:
@@ -207,6 +216,7 @@ class DatabaseBackend(LogBackend):
                 completion_tokens=record.completion_tokens,
                 latency_ms=record.latency_ms,
                 username=record.username,
+                **_grouping_values(record),
             )
             if record.status_code == 200:
                 values["cost_usd"] = record.cost_usd
@@ -224,6 +234,7 @@ class DatabaseBackend(LogBackend):
             cost_usd=record.cost_usd,
             latency_ms=record.latency_ms,
             username=record.username,
+            **_grouping_values(record),
         )
 
 
@@ -274,6 +285,9 @@ class ClickHouseBackend(LogBackend):
 
     def __init__(self, **config: Any) -> None:
         super().__init__(**config)
+        # Колонки JSONEachRow: created_at, profile, model, status_code,
+        # error_message, prompt_tokens, completion_tokens, cost_usd, latency_ms,
+        # username, trace_id, session_id, metadata (metadata — JSON-строка).
         url = str(self.config.get("URL") or "").rstrip("/")
         if not url:
             raise ImproperlyConfigured(
@@ -429,6 +443,15 @@ async def adispatch_log(record: LogRecord) -> None:
     _send_signal(record)
 
 
+def _grouping_values(record: LogRecord) -> dict[str, Any]:
+    """Колонки группировки. Пустая строка в записи — NULL в таблице."""
+    return {
+        "trace_id": record.trace_id or None,
+        "session_id": record.session_id or None,
+        "metadata": record.metadata,
+    }
+
+
 def make_record(
     *,
     profile: UsageProfile | None,
@@ -440,8 +463,19 @@ def make_record(
     cost_usd: Decimal = Decimal("0"),
     latency_ms: int = 0,
     username: str | None = None,
+    trace_id: str | None = None,
+    session_id: str | None = None,
+    metadata: dict[str, Any] | None = None,
 ) -> LogRecord:
     """Собирает LogRecord из аргументов клиента (created_at ставится здесь)."""
+    grouping = current_grouping()
+    if grouping is not None:
+        if trace_id is None:
+            trace_id = grouping.trace_id
+        if session_id is None:
+            session_id = grouping.session_id
+        if metadata is None:
+            metadata = grouping.metadata
     return LogRecord(
         profile=profile,
         model=model,
@@ -456,4 +490,7 @@ def make_record(
         username=username or current_username(),
         created_at=timezone.now(),
         reservation_id=_active_reservation_id.get(),
+        trace_id=trace_id,
+        session_id=session_id,
+        metadata=metadata,
     )

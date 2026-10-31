@@ -16,6 +16,7 @@ class DjangoOpenRouterConfig(AppConfig):
         from django.http import HttpRequest, HttpResponseBase
 
         from django_openrouter import signals as _signals  # noqa: F401
+        from django_openrouter import tracing as _tracing  # noqa: F401
         from django_openrouter.admin import OpenRouterAutocompleteJsonView
 
         def autocomplete_view(request: HttpRequest) -> HttpResponseBase:
