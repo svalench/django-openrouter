@@ -67,6 +67,13 @@ from django_openrouter.rules import (
     maximum_transcription_cost,
     reserve_request,
 )
+from django_openrouter.tracing import (
+    note_profile,
+    note_request_model,
+    open_call,
+    remember_output,
+    trace_attempt,
+)
 
 # OpenRouter принимает эти контейнеры. Opus внутри webm/ogg — дело вызывающего кода.
 _FORMAT_BY_TYPE = {
@@ -128,18 +135,28 @@ def transcribe(
     model: str | None = None,
     language: str | None = None,
     prompt: str | None = None,
+    session_id: str | None = None,
+    metadata: dict[str, Any] | None = None,
+    trace_id: str | None = None,
+    trace: dict[str, Any] | None = None,
 ) -> TranscriptionResult:
     """Синхронная транскрипция. Конфиг: БД → settings → env через get_runtime_config()."""
-    prepared = _prepare_call(
-        profile,
-        audio,
-        filename=filename,
-        content_type=content_type,
-        model=model,
-        language=language,
-        prompt=prompt,
-    )
-    return _run_sync(*prepared)
+    with open_call(
+        "transcription",
+        profile_name=profile,
+        overrides=_call_options(session_id, metadata, trace_id, trace),
+        prompt_text=prompt,
+    ):
+        prepared = _prepare_call(
+            profile,
+            audio,
+            filename=filename,
+            content_type=content_type,
+            model=model,
+            language=language,
+            prompt=prompt,
+        )
+        return _run_sync(*prepared)
 
 
 async def atranscribe(
@@ -151,18 +168,47 @@ async def atranscribe(
     model: str | None = None,
     language: str | None = None,
     prompt: str | None = None,
+    session_id: str | None = None,
+    metadata: dict[str, Any] | None = None,
+    trace_id: str | None = None,
+    trace: dict[str, Any] | None = None,
 ) -> TranscriptionResult:
     """Асинхронное зеркало transcribe()."""
-    prepared = await sync_to_async(_prepare_call, thread_sensitive=True)(
-        profile,
-        audio,
-        filename=filename,
-        content_type=content_type,
-        model=model,
-        language=language,
-        prompt=prompt,
-    )
-    return await _run_async(*prepared)
+    with open_call(
+        "transcription",
+        profile_name=profile,
+        overrides=_call_options(session_id, metadata, trace_id, trace),
+        prompt_text=prompt,
+    ):
+        prepared = await sync_to_async(_prepare_call, thread_sensitive=True)(
+            profile,
+            audio,
+            filename=filename,
+            content_type=content_type,
+            model=model,
+            language=language,
+            prompt=prompt,
+        )
+        return await _run_async(*prepared)
+
+
+def _call_options(
+    session_id: str | None,
+    metadata: dict[str, Any] | None,
+    trace_id: str | None,
+    trace: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Только явно переданные ключи, чтобы пустой аргумент не затёр bound_session."""
+    options: dict[str, Any] = {}
+    if session_id is not None:
+        options["session_id"] = session_id
+    if metadata is not None:
+        options["metadata"] = metadata
+    if trace_id is not None:
+        options["trace_id"] = trace_id
+    if trace is not None:
+        options["trace"] = trace
+    return options
 
 
 def _prepare_call(
@@ -190,8 +236,11 @@ def _prepare_call(
     if not cfg.api_key:
         raise ConfigurationError(_("OpenRouter API key is not configured."))
     usage_profile = _load_transcription_profile(cfg, profile_name)
+    note_profile(usage_profile.name)
     check_limits(usage_profile)
     chain = _transcription_chain(usage_profile, model)
+    if chain:
+        note_request_model(chain[0].model_id)
     raw, resolved_name, resolved_type = _coerce_audio(audio, filename, content_type)
     raw, resolved_name, resolved_type = _apply_audio_hook(raw, resolved_name, resolved_type)
     _check_size(usage_profile, raw)
@@ -471,6 +520,7 @@ def _success_record(
     started: float,
     result: TranscriptionResult,
 ) -> LogRecord:
+    remember_output(text=result.text, model=result.model_used, finish_reason=None)
     return make_record(
         profile=profile,
         model=model,
@@ -517,7 +567,7 @@ def _run_sync(
 ) -> TranscriptionResult:
     last_error: OpenRouterAPIError | None = None
     credits_exhausted = False
-    for model in chain:
+    for fallback_index, model in enumerate(chain):
         if credits_exhausted and not model.is_free:
             continue
         try:
@@ -529,6 +579,7 @@ def _run_sync(
                 audio_format,
                 language=language,
                 prompt=prompt,
+                fallback_index=fallback_index,
             )
         except OpenRouterAPIError as exc:
             if isinstance(exc, _UsageMissing) or not _should_fallback(exc.status_code):
@@ -547,6 +598,7 @@ def _attempt_sync(
     *,
     language: str | None,
     prompt: str | None,
+    fallback_index: int = 0,
 ) -> TranscriptionResult:
     http = get_sync_client()
     url = f"{cfg.base_url}/audio/transcriptions"
@@ -562,54 +614,60 @@ def _attempt_sync(
     )
     estimated = _reservation_cost(profile, model)
     for attempt in range(retries + 1):
-        _activate(profile, reserve_request(profile, model, estimated_cost=estimated))
-        started = time.perf_counter()
-        retry_after: str | None = None
-        try:
-            with limiter.slot(cfg.max_parallel_requests):
-                response = http.post(
-                    url, json=body, headers=_headers(cfg), timeout=cfg.request_timeout
+        with trace_attempt(
+            model_id=model.model_id,
+            fallback_index=fallback_index,
+            retry_index=attempt,
+            stream=False,
+        ):
+            _activate(profile, reserve_request(profile, model, estimated_cost=estimated))
+            started = time.perf_counter()
+            retry_after: str | None = None
+            try:
+                with limiter.slot(cfg.max_parallel_requests):
+                    response = http.post(
+                        url, json=body, headers=_headers(cfg), timeout=cfg.request_timeout
+                    )
+                    if response.status_code == 200:
+                        result = _parse_transcription(response, model, started)
+                        dispatch_log(_success_record(profile, model, started, result))
+                        return result
+                    retry_after = response.headers.get("Retry-After")
+                    raise _http_error(response.status_code, response.text)
+            except httpx.RequestError as exc:
+                error = OpenRouterAPIError(str(exc), status_code=None)
+                dispatch_log(
+                    _failure_record(profile, model, started, status_code=0, error_message=str(exc))
                 )
-                if response.status_code == 200:
-                    result = _parse_transcription(response, model, started)
-                    dispatch_log(_success_record(profile, model, started, result))
-                    return result
-                retry_after = response.headers.get("Retry-After")
-                raise _http_error(response.status_code, response.text)
-        except httpx.RequestError as exc:
-            error = OpenRouterAPIError(str(exc), status_code=None)
-            dispatch_log(
-                _failure_record(profile, model, started, status_code=0, error_message=str(exc))
-            )
-            if attempt >= retries:
-                raise error from exc
-        except _UsageMissing:
-            mark_usage_missing()
-            raise
-        except OpenRouterAPIError as exc:
-            dispatch_log(
-                _failure_record(
-                    profile,
-                    model,
-                    started,
-                    status_code=exc.status_code or 0,
-                    error_message=str(exc),
-                )
-            )
-            if attempt >= retries or not _is_retryable(exc.status_code):
+                if attempt >= retries:
+                    raise error from exc
+            except _UsageMissing:
+                mark_usage_missing()
                 raise
-        except BaseException as exc:
-            if _active_reservation_open():
+            except OpenRouterAPIError as exc:
                 dispatch_log(
                     _failure_record(
                         profile,
                         model,
                         started,
-                        status_code=499,
-                        error_message=f"attempt aborted: {type(exc).__name__}",
+                        status_code=exc.status_code or 0,
+                        error_message=str(exc),
                     )
                 )
-            raise
+                if attempt >= retries or not _is_retryable(exc.status_code):
+                    raise
+            except BaseException as exc:
+                if _active_reservation_open():
+                    dispatch_log(
+                        _failure_record(
+                            profile,
+                            model,
+                            started,
+                            status_code=499,
+                            error_message=f"attempt aborted: {type(exc).__name__}",
+                        )
+                    )
+                raise
         delay = _retry_delay(attempt, retry_after)
         if delay:
             time.sleep(delay)
@@ -631,7 +689,7 @@ async def _run_async(
 ) -> TranscriptionResult:
     last_error: OpenRouterAPIError | None = None
     credits_exhausted = False
-    for model in chain:
+    for fallback_index, model in enumerate(chain):
         if credits_exhausted and not model.is_free:
             continue
         try:
@@ -643,6 +701,7 @@ async def _run_async(
                 audio_format,
                 language=language,
                 prompt=prompt,
+                fallback_index=fallback_index,
             )
         except OpenRouterAPIError as exc:
             if isinstance(exc, _UsageMissing) or not _should_fallback(exc.status_code):
@@ -661,6 +720,7 @@ async def _attempt_async(
     *,
     language: str | None,
     prompt: str | None,
+    fallback_index: int = 0,
 ) -> TranscriptionResult:
     http = get_async_client()
     url = f"{cfg.base_url}/audio/transcriptions"
@@ -676,57 +736,63 @@ async def _attempt_async(
     )
     estimated = _reservation_cost(profile, model)
     for attempt in range(retries + 1):
-        reservation = await sync_to_async(reserve_request, thread_sensitive=True)(
-            profile, model, estimated_cost=estimated
-        )
-        _activate(profile, reservation)
-        started = time.perf_counter()
-        retry_after: str | None = None
-        try:
-            async with limiter.aslot(cfg.max_parallel_requests):
-                response = await http.post(
-                    url, json=body, headers=_headers(cfg), timeout=cfg.request_timeout
-                )
-                if response.status_code == 200:
-                    result = _parse_transcription(response, model, started)
-                    await adispatch_log(_success_record(profile, model, started, result))
-                    return result
-                retry_after = response.headers.get("Retry-After")
-                raise _http_error(response.status_code, response.text)
-        except httpx.RequestError as exc:
-            error = OpenRouterAPIError(str(exc), status_code=None)
-            await adispatch_log(
-                _failure_record(profile, model, started, status_code=0, error_message=str(exc))
+        with trace_attempt(
+            model_id=model.model_id,
+            fallback_index=fallback_index,
+            retry_index=attempt,
+            stream=False,
+        ):
+            reservation = await sync_to_async(reserve_request, thread_sensitive=True)(
+                profile, model, estimated_cost=estimated
             )
-            if attempt >= retries:
-                raise error from exc
-        except _UsageMissing:
-            await amark_usage_missing()
-            raise
-        except OpenRouterAPIError as exc:
-            await adispatch_log(
-                _failure_record(
-                    profile,
-                    model,
-                    started,
-                    status_code=exc.status_code or 0,
-                    error_message=str(exc),
+            _activate(profile, reservation)
+            started = time.perf_counter()
+            retry_after: str | None = None
+            try:
+                async with limiter.aslot(cfg.max_parallel_requests):
+                    response = await http.post(
+                        url, json=body, headers=_headers(cfg), timeout=cfg.request_timeout
+                    )
+                    if response.status_code == 200:
+                        result = _parse_transcription(response, model, started)
+                        await adispatch_log(_success_record(profile, model, started, result))
+                        return result
+                    retry_after = response.headers.get("Retry-After")
+                    raise _http_error(response.status_code, response.text)
+            except httpx.RequestError as exc:
+                error = OpenRouterAPIError(str(exc), status_code=None)
+                await adispatch_log(
+                    _failure_record(profile, model, started, status_code=0, error_message=str(exc))
                 )
-            )
-            if attempt >= retries or not _is_retryable(exc.status_code):
+                if attempt >= retries:
+                    raise error from exc
+            except _UsageMissing:
+                await amark_usage_missing()
                 raise
-        except BaseException as exc:
-            if _active_reservation_open():
+            except OpenRouterAPIError as exc:
                 await adispatch_log(
                     _failure_record(
                         profile,
                         model,
                         started,
-                        status_code=499,
-                        error_message=f"attempt aborted: {type(exc).__name__}",
+                        status_code=exc.status_code or 0,
+                        error_message=str(exc),
                     )
                 )
-            raise
+                if attempt >= retries or not _is_retryable(exc.status_code):
+                    raise
+            except BaseException as exc:
+                if _active_reservation_open():
+                    await adispatch_log(
+                        _failure_record(
+                            profile,
+                            model,
+                            started,
+                            status_code=499,
+                            error_message=f"attempt aborted: {type(exc).__name__}",
+                        )
+                    )
+                raise
         delay = _retry_delay(attempt, retry_after)
         if delay:
             await asyncio.sleep(delay)

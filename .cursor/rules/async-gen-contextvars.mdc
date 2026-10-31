@@ -1,0 +1,7 @@
+# ContextVar и async-генераторы
+
+`aclose` async-генератора после `break` / `return` из `async for` выполняется в другом `Context`. `Token.reset` там падает (`created in a different Context` / `already been used`), а значение остаётся в контексте вызывающего кода. Следующий `chat()` на том же потоке видит старый флаг.
+
+Перед `yield` наружу (пользователю или фасаду, который сразу отдаёт чанк) снимать contextvar в текущем контексте и ставить снова только когда генератор продолжили. `Token.reset` в `finally` генератора оборачивать: чужой контекст и повторный reset не должны ронять вызов.
+
+Проверка: `tests/test_client.py::test_async_stream` (ранний `return` по `done`), затем тест, который читает `session_id` из `RequestLog`.

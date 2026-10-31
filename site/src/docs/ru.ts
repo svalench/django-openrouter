@@ -4,7 +4,7 @@ export const ru: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: 'OpenRouter для Django — модели, профили, бюджеты и логи через админку',
-    version: '0.5.1',
+    version: '0.6.0',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -208,6 +208,9 @@ print(result.model_used, result.cost_usd, result.latency_ms)`,
             ['`HTTP_REFERER`', 'не задан', 'Заголовок `HTTP-Referer` (атрибуция приложения в OpenRouter)'],
             ['`X_TITLE`', 'не задан', 'Заголовок `X-Title`'],
             ['`LOG_BACKENDS`', 'только БД', 'Куда писать логи запросов — см. раздел «Бэкенды логов»'],
+            ["`OTEL`", "`false`", "Спаны. Выключено, даже если opentelemetry-api установлен"],
+            ["`OTEL_CAPTURE_CONTENT`", "`false`", "Писать на спан отредактированные промпт и ответ"],
+            ["`OTEL_CONTENT_REDACTOR`", "не задан", "Dotted path fn(text, *, kind) -> str"],
           ],
         },
         {
@@ -627,7 +630,7 @@ python manage.py sync_models --api-key sk-or-...  # разовый ключ, н�
         { type: 'h3', text: 'FileBackend' },
         {
           type: 'p',
-          text: 'JSON Lines в файл с ротацией по объёму (`RotatingFileHandler`): одна строка = один JSON-объект с полями `created_at`, `profile`, `model`, `status_code`, `error_message`, `prompt_tokens`, `completion_tokens`, `cost_usd`, `latency_ms`, `username`.',
+          text: 'JSON Lines в файл с ротацией по объёму (`RotatingFileHandler`): одна строка = один JSON-объект с полями `created_at`, `profile`, `model`, `status_code`, `error_message`, `prompt_tokens`, `completion_tokens`, `cost_usd`, `latency_ms`, `username`, `trace_id`, `session_id`, `metadata`.',
         },
         { type: 'h3', text: 'ClickHouseBackend' },
         {
@@ -649,7 +652,10 @@ python manage.py sync_models --api-key sk-or-...  # разовый ключ, н�
     completion_tokens UInt32,
     cost_usd Decimal(20, 10),
     latency_ms UInt32,
-    username String
+    username String,
+    trace_id String,
+    session_id String,
+    metadata String
 )
 ENGINE = MergeTree
 ORDER BY (created_at, profile);`,
@@ -677,6 +683,58 @@ with bound_username("worker"):
         {
           type: 'p',
           text: 'Отнаследуйтесь от `django_openrouter.log_backends.LogBackend`, реализуйте `write()` (и опционально `awrite()`) и добавьте dotted path класса в `LOG_BACKENDS`.',
+        },
+      ],
+    },
+    {
+      id: 'tracing',
+      group: "Руководство",
+      title: "Трейсинг и группы логов",
+      lead: "Необязательные спаны OpenTelemetry и поля trace_id, session_id, metadata в журнале запросов.",
+      blocks: [
+        {
+          type: "p",
+          text: "pip install django-openrouter[otel] ставит только opentelemetry-api. SDK и экспортёр остаются в проекте-хосте. Если пакета нет, вызовы его не импортируют. Спаны выключены, пока OPENROUTER['OTEL'] не равен true.",
+        },
+        {
+          type: "h3",
+          text: "Спаны",
+        },
+        {
+          type: "p",
+          text: "chat, achat, stream, astream, transcribe, atranscribe, generate_image и agenerate_image открывают один родительский спан. generate_image не добавляет вложенный спан chat. Каждая HTTP-попытка, включая retry и fallback, — дочерний спан. Активный спан Django или Celery остаётся родителем. Стрим пишет время до первого токена и держит родительский спан до конца генератора.",
+        },
+        {
+          type: "p",
+          text: "Атрибуты: gen_ai.system=openrouter, gen_ai.operation.name, модели запроса и ответа, токены и finish reason, плюс openrouter.cost_usd, profile, индекс fallback, индекс retry, код статуса, латентность, username, session_id и trace_id. BudgetExceeded, RateLimitExceeded, таймауты и прерванный стрим (499) — ошибки спана. Текст промпта и ответа не пишется, пока не включён OTEL_CAPTURE_CONTENT. Редактор — dotted path (text, *, kind) -> str. Ключ API и заголовок Authorization в атрибуты не попадают.",
+        },
+        {
+          type: "h3",
+          text: "Группировка",
+        },
+        {
+          type: "p",
+          text: "У RequestLog nullable индексы trace_id и session_id и nullable JSON metadata. Retry и fallback одного вызова делят trace_id: это id трейса OpenTelemetry, если спан пишется, иначе сгенерированный id. trace_id= задаёт id в логе и в атрибуте спана и не подменяет id контекста спана. session_id= и metadata= у chat по-прежнему уходят в OpenRouter. trace= — дополнительные атрибуты спана, в запрос не входят. Транскрипция сохраняет поля и не кладёт их в JSON аудио.",
+        },
+        {
+          type: "code",
+          lang: "python",
+          title: "bound_session",
+          code: "from django_openrouter import chat\nfrom django_openrouter.current_user import bound_session\n\nwith bound_session(\"ticket-42\", metadata={\"feature\": \"support\"}):\n    chat(\"chat\", messages=[{\"role\": \"user\", \"content\": \"Hi\"}])\n\nchat(\n    \"chat\",\n    messages=[{\"role\": \"user\", \"content\": \"Hi\"}],\n    session_id=\"other\",\n    metadata={\"feature\": \"billing\"},\n    trace={\"feature.flag\": \"beta\"},\n)",
+        },
+        {
+          type: "p",
+          text: "Аргументы вызова перекрывают bound_session только для этого вызова. Ключи metadata вызова заменяют ключи блока. В админке журнал фильтруется и ищется по session_id и trace_id. У строки есть ссылки all calls in this session и all calls in this trace. Metadata на странице записи только для чтения.",
+        },
+        {
+          type: "h3",
+          text: "Logfire, Langfuse, Jaeger, Tempo",
+        },
+        {
+          type: "code",
+          lang: "python",
+          title: "OTLP",
+          code: "pip install \"django-openrouter[otel]\" opentelemetry-sdk opentelemetry-exporter-otlp\n\n# Logfire: logfire.configure() sets the TracerProvider.\n# Langfuse via OTLP:\n#   OTEL_EXPORTER_OTLP_ENDPOINT=https://cloud.langfuse.com/api/public/otel\n#   OTEL_EXPORTER_OTLP_HEADERS=Authorization=Basic <base64 public:secret>\n# Jaeger or Grafana Tempo (OTLP/HTTP):\n#   OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318\n\nfrom opentelemetry import trace\nfrom opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter\nfrom opentelemetry.sdk.trace import TracerProvider\nfrom opentelemetry.sdk.trace.export import BatchSpanProcessor\n\nprovider = TracerProvider()\nprovider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))\ntrace.set_tracer_provider(provider)",
         },
       ],
     },
@@ -773,7 +831,8 @@ with bound_username("worker"):
           type: 'list',
           items: [
             '**Колонки:** время, username, профиль, модель, HTTP-статус, токены prompt/completion, стоимость, латентность.',
-            '**Сводка над таблицей:** число запросов и сумма USD по текущему фильтру. Фильтры: профиль, статус, дата; есть поиск по тексту ошибки и username.',
+            '**Сводка над таблицей:** число запросов и сумма USD по текущему фильтру. Фильтры: профиль, статус, дата, session id, trace id; поиск по тексту ошибки, username, session id и trace id.',
+            '**Сессия и трейс:** у строки ссылки all calls in this session и all calls in this trace. Metadata на странице записи только для чтения.',
             '**Username** подставляет `CurrentUserMiddleware`; без него строки помечаются `anonymous`. В Celery и management-командах — `bound_username("worker")` (см. «Бэкенды логов»).',
             '**Права:** отдельное право `view_usage_logs` позволяет дать саппорту доступ к расходу без доступа к настройкам.',
           ],

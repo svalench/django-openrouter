@@ -4,14 +4,13 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('django_openrouter', '0010_timeouts'),
+        ("django_openrouter", "0011_requestlog_grouping"),
     ]
 
     operations = [
         migrations.AddIndex(
-            model_name='requestlog',
-            index=models.Index(fields=['model', 'created_at'], name='or_log_model_created'),
+            model_name="requestlog",
+            index=models.Index(fields=["model", "created_at"], name="or_log_model_created"),
         ),
     ]

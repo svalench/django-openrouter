@@ -4,7 +4,7 @@ export const fr: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: 'OpenRouter pour Django — modèles, profils, budgets et journaux gérés depuis l’admin',
-    version: '0.5.1',
+    version: '0.6.0',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -208,6 +208,9 @@ print(result.model_used, result.cost_usd, result.latency_ms)`,
             ['`HTTP_REFERER`', 'non défini', 'En-tête `HTTP-Referer` (attribution de l’app dans OpenRouter)'],
             ['`X_TITLE`', 'non défini', 'En-tête `X-Title`'],
             ['`LOG_BACKENDS`', 'BD seule', 'Où écrire les journaux de requêtes — voir la section « Backends de logs »'],
+            ["`OTEL`", "`false`", "Spans. Reste désactivé même si opentelemetry-api est installé"],
+            ["`OTEL_CAPTURE_CONTENT`", "`false`", "Écrire le prompt et la réponse rédigés sur le span"],
+            ["`OTEL_CONTENT_REDACTOR`", "non défini", "Chemin pointé fn(text, *, kind) -> str"],
           ],
         },
         {
@@ -627,7 +630,7 @@ python manage.py sync_models --api-key sk-or-...  # clé à usage unique, jamais
         { type: 'h3', text: 'FileBackend' },
         {
           type: 'p',
-          text: 'JSON Lines vers un fichier avec rotation par taille (`RotatingFileHandler`) : une ligne = un objet JSON avec les champs `created_at`, `profile`, `model`, `status_code`, `error_message`, `prompt_tokens`, `completion_tokens`, `cost_usd`, `latency_ms`, `username`.',
+          text: 'JSON Lines vers un fichier avec rotation par taille (`RotatingFileHandler`) : une ligne = un objet JSON avec les champs `created_at`, `profile`, `model`, `status_code`, `error_message`, `prompt_tokens`, `completion_tokens`, `cost_usd`, `latency_ms`, `username`, `trace_id`, `session_id`, `metadata`.',
         },
         { type: 'h3', text: 'ClickHouseBackend' },
         {
@@ -649,7 +652,10 @@ python manage.py sync_models --api-key sk-or-...  # clé à usage unique, jamais
     completion_tokens UInt32,
     cost_usd Decimal(20, 10),
     latency_ms UInt32,
-    username String
+    username String,
+    trace_id String,
+    session_id String,
+    metadata String
 )
 ENGINE = MergeTree
 ORDER BY (created_at, profile);`,
@@ -677,6 +683,50 @@ with bound_username("worker"):
         {
           type: 'p',
           text: 'Héritez de `django_openrouter.log_backends.LogBackend`, implémentez `write()` (et optionnellement `awrite()`) et ajoutez le dotted path de la classe à `LOG_BACKENDS`.',
+        },
+      ],
+    },
+    {
+      id: 'tracing',
+      group: "Guides",
+      title: "Traces et groupes de logs",
+      lead: "Spans OpenTelemetry facultatifs, et trace_id, session_id, metadata sur chaque log.",
+      blocks: [
+        {
+          type: "p",
+          text: "pip install django-openrouter[otel] n'ajoute que opentelemetry-api. Le SDK et l'exporteur restent dans le projet hôte. Sans le paquet, aucun import. Les spans restent off tant que OPENROUTER['OTEL'] n'est pas true.",
+        },
+        {
+          type: "h3",
+          text: "Spans",
+        },
+        {
+          type: "p",
+          text: "Un span parent pour chat, stream, transcribe et generate_image, et leurs miroirs async. generate_image n'ajoute pas un second span chat. Chaque tentative HTTP, retry ou fallback, est un span enfant. Le stream note le délai jusqu'au premier token et garde le span jusqu'à la fin du générateur. BudgetExceeded, RateLimitExceeded, timeouts et un stream interrompu (499) sont des erreurs.",
+        },
+        {
+          type: "h3",
+          text: "trace_id / session_id",
+        },
+        {
+          type: "p",
+          text: "RequestLog a trace_id et session_id indexés et nullables, et un JSON metadata nullable. Les retries partagent un trace_id : l'id OpenTelemetry si un span est actif, sinon un id généré. session_id et metadata d'un chat partent toujours vers OpenRouter. trace= reste local. La transcription les stocke sans les mettre dans le JSON audio. L'admin filtre, cherche, et lie toutes les requêtes de la session ou de la trace. metadata est en lecture seule.",
+        },
+        {
+          type: "code",
+          lang: "python",
+          title: "bound_session",
+          code: "from django_openrouter import chat\nfrom django_openrouter.current_user import bound_session\n\nwith bound_session(\"ticket-42\", metadata={\"feature\": \"support\"}):\n    chat(\"chat\", messages=[{\"role\": \"user\", \"content\": \"Hi\"}])\n\nchat(\n    \"chat\",\n    messages=[{\"role\": \"user\", \"content\": \"Hi\"}],\n    session_id=\"other\",\n    metadata={\"feature\": \"billing\"},\n    trace={\"feature.flag\": \"beta\"},\n)",
+        },
+        {
+          type: "h3",
+          text: "Logfire, Langfuse, Jaeger, Tempo",
+        },
+        {
+          type: "code",
+          lang: "python",
+          title: "OTLP",
+          code: "pip install \"django-openrouter[otel]\" opentelemetry-sdk opentelemetry-exporter-otlp\n\n# Logfire: logfire.configure() sets the TracerProvider.\n# Langfuse via OTLP:\n#   OTEL_EXPORTER_OTLP_ENDPOINT=https://cloud.langfuse.com/api/public/otel\n#   OTEL_EXPORTER_OTLP_HEADERS=Authorization=Basic <base64 public:secret>\n# Jaeger or Grafana Tempo (OTLP/HTTP):\n#   OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318\n\nfrom opentelemetry import trace\nfrom opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter\nfrom opentelemetry.sdk.trace import TracerProvider\nfrom opentelemetry.sdk.trace.export import BatchSpanProcessor\n\nprovider = TracerProvider()\nprovider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))\ntrace.set_tracer_provider(provider)",
         },
       ],
     },

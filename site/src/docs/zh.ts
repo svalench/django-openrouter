@@ -4,7 +4,7 @@ export const zh: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: '面向 Django 的 OpenRouter — 通过管理后台管理模型、用量配置、预算和请求日志',
-    version: '0.5.1',
+    version: '0.6.0',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -208,6 +208,9 @@ print(result.model_used, result.cost_usd, result.latency_ms)`,
             ['`HTTP_REFERER`', '未设置', '`HTTP-Referer` 头（OpenRouter 中的应用归属）'],
             ['`X_TITLE`', '未设置', '`X-Title` 头'],
             ['`LOG_BACKENDS`', '仅数据库', '请求日志写入位置 — 见「日志后端」一节'],
+            ["`OTEL`", "`false`", "开启 span。即使安装了 opentelemetry-api 也默认关闭"],
+            ["`OTEL_CAPTURE_CONTENT`", "`false`", "把脱敏后的提示和回复写到 span"],
+            ["`OTEL_CONTENT_REDACTOR`", "未设置", "点分路径 fn(text, *, kind) -> str"],
           ],
         },
         {
@@ -627,7 +630,7 @@ python manage.py sync_models --api-key sk-or-...  # one-off key, never stored` }
         { type: 'h3', text: 'FileBackend' },
         {
           type: 'p',
-          text: '按大小滚动的 JSON Lines 文件（`RotatingFileHandler`）：一行 = 一个 JSON 对象，字段为 `created_at`、`profile`、`model`、`status_code`、`error_message`、`prompt_tokens`、`completion_tokens`、`cost_usd`、`latency_ms`、`username`。',
+          text: '按大小滚动的 JSON Lines 文件（`RotatingFileHandler`）：一行 = 一个 JSON 对象，字段为 `created_at`、`profile`、`model`、`status_code`、`error_message`、`prompt_tokens`、`completion_tokens`、`cost_usd`、`latency_ms`、`username`、`trace_id`、`session_id`、`metadata`。',
         },
         { type: 'h3', text: 'ClickHouseBackend' },
         {
@@ -649,7 +652,10 @@ python manage.py sync_models --api-key sk-or-...  # one-off key, never stored` }
     completion_tokens UInt32,
     cost_usd Decimal(20, 10),
     latency_ms UInt32,
-    username String
+    username String,
+    trace_id String,
+    session_id String,
+    metadata String
 )
 ENGINE = MergeTree
 ORDER BY (created_at, profile);`,
@@ -677,6 +683,50 @@ with bound_username("worker"):
         {
           type: 'p',
           text: '继承 `django_openrouter.log_backends.LogBackend`，实现 `write()`（以及可选的 `awrite()`），并把类的点分路径加入 `LOG_BACKENDS`。',
+        },
+      ],
+    },
+    {
+      id: 'tracing',
+      group: "指南",
+      title: "追踪与日志分组",
+      lead: "可选的 OpenTelemetry span，以及每条请求日志上的 trace_id、session_id 和 metadata。",
+      blocks: [
+        {
+          type: "p",
+          text: "pip install django-openrouter[otel] 只安装 opentelemetry-api。SDK 和导出器由宿主项目选择。未安装时不会 import。在 OPENROUTER['OTEL'] 为 true 之前不会创建 span。",
+        },
+        {
+          type: "h3",
+          text: "Spans",
+        },
+        {
+          type: "p",
+          text: "chat、stream、transcribe、generate_image 及其异步版本各有一个父 span。generate_image 不会再套一层 chat span。每次 HTTP 尝试（含重试和 fallback）是子 span。流式调用记录首 token 时间，并保持父 span 直到生成器结束。BudgetExceeded、RateLimitExceeded、超时和被中断的流（499）记为错误。",
+        },
+        {
+          type: "h3",
+          text: "trace_id / session_id",
+        },
+        {
+          type: "p",
+          text: "RequestLog 增加可空且有索引的 trace_id、session_id，以及可空 JSON metadata。同一次调用的重试共享 trace_id：有 span 时用 OpenTelemetry 的 trace id，否则生成一个。chat 的 session_id 和 metadata 仍会发给 OpenRouter。trace= 只作为 span 属性。转写会保存这些字段，但不会放进音频 JSON。管理后台可按 session_id 和 trace_id 过滤和搜索，并链接到同一会话或同一 trace 的全部调用。metadata 只读。",
+        },
+        {
+          type: "code",
+          lang: "python",
+          title: "bound_session",
+          code: "from django_openrouter import chat\nfrom django_openrouter.current_user import bound_session\n\nwith bound_session(\"ticket-42\", metadata={\"feature\": \"support\"}):\n    chat(\"chat\", messages=[{\"role\": \"user\", \"content\": \"Hi\"}])\n\nchat(\n    \"chat\",\n    messages=[{\"role\": \"user\", \"content\": \"Hi\"}],\n    session_id=\"other\",\n    metadata={\"feature\": \"billing\"},\n    trace={\"feature.flag\": \"beta\"},\n)",
+        },
+        {
+          type: "h3",
+          text: "Logfire, Langfuse, Jaeger, Tempo",
+        },
+        {
+          type: "code",
+          lang: "python",
+          title: "OTLP",
+          code: "pip install \"django-openrouter[otel]\" opentelemetry-sdk opentelemetry-exporter-otlp\n\n# Logfire: logfire.configure() sets the TracerProvider.\n# Langfuse via OTLP:\n#   OTEL_EXPORTER_OTLP_ENDPOINT=https://cloud.langfuse.com/api/public/otel\n#   OTEL_EXPORTER_OTLP_HEADERS=Authorization=Basic <base64 public:secret>\n# Jaeger or Grafana Tempo (OTLP/HTTP):\n#   OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318\n\nfrom opentelemetry import trace\nfrom opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter\nfrom opentelemetry.sdk.trace import TracerProvider\nfrom opentelemetry.sdk.trace.export import BatchSpanProcessor\n\nprovider = TracerProvider()\nprovider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))\ntrace.set_tracer_provider(provider)",
         },
       ],
     },

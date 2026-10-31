@@ -65,6 +65,15 @@ DONE
 - pytest 324 passed, coverage 87.32%, ruff, mypy
 DONE
 
+## 2026-10-31 — 0.6.0 OTEL и группы логов
+- extra `otel` = только opentelemetry-api; спаны выключены, пока OPENROUTER['OTEL'] не true
+- родительский спан на chat/stream/transcribe/generate_image, дочерний на HTTP-попытку
+- RequestLog.trace_id, session_id (индексы), metadata JSON, миграция 0011
+- bound_session, session_id/metadata/trace_id/trace; File и ClickHouse; админка
+- причина падения полного прогона: async for + ранний return не сбрасывает ContextVar (`aclose` в другом Context). Перед yield наружу контекст снимается
+- pytest 332 passed, coverage 85.09%, ruff, mypy; site npm run build
+DONE
+
 ## 2026-10-22 — 0.5.1 content-encoding
 - причина: iter_bytes уже снимает Content-Encoding, _rehydrate собирал httpx.Response с тем же заголовком, .json() распаковывал второй раз (zlib -3)
 - фикс: json.loads по раскодированным байтам, _rehydrate удалён

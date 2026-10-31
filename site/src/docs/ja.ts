@@ -4,7 +4,7 @@ export const ja: DocsContent = {
   meta: {
     name: 'django-openrouter',
     tagline: 'OpenRouter for Django — モデル・プロファイル・予算・ログを管理画面から運用',
-    version: '0.5.1',
+    version: '0.6.0',
     github: 'https://github.com/svalench/django-openrouter',
     pypi: 'https://pypi.org/project/django-openrouter/',
   },
@@ -208,6 +208,9 @@ print(result.model_used, result.cost_usd, result.latency_ms)`,
             ['`HTTP_REFERER`', '未設定', '`HTTP-Referer` ヘッダー（OpenRouter でのアプリ帰属）'],
             ['`X_TITLE`', '未設定', '`X-Title` ヘッダー'],
             ['`LOG_BACKENDS`', 'DB のみ', 'リクエストログの書き込み先 — 「ログバックエンド」セクション参照'],
+            ["`OTEL`", "`false`", "スパン。opentelemetry-api があっても既定ではオフ"],
+            ["`OTEL_CAPTURE_CONTENT`", "`false`", "マスクしたプロンプトと応答をスパンに書く"],
+            ["`OTEL_CONTENT_REDACTOR`", "未設定", "ドットパス fn(text, *, kind) -> str"],
           ],
         },
         {
@@ -627,7 +630,7 @@ python manage.py sync_models --api-key sk-or-...  # 使い捨てキー。保存�
         { type: 'h3', text: 'FileBackend' },
         {
           type: 'p',
-          text: 'サイズベースのローテーション付き（`RotatingFileHandler`）で JSON Lines をファイルへ出力。1 行 = 1 JSON オブジェクトで、フィールドは `created_at`、`profile`、`model`、`status_code`、`error_message`、`prompt_tokens`、`completion_tokens`、`cost_usd`、`latency_ms`、`username` です。',
+          text: 'サイズベースのローテーション付き（`RotatingFileHandler`）で JSON Lines をファイルへ出力。1 行 = 1 JSON オブジェクトで、フィールドは `created_at`、`profile`、`model`、`status_code`、`error_message`、`prompt_tokens`、`completion_tokens`、`cost_usd`、`latency_ms`、`username`、`trace_id`、`session_id`、`metadata` です。',
         },
         { type: 'h3', text: 'ClickHouseBackend' },
         {
@@ -649,7 +652,10 @@ python manage.py sync_models --api-key sk-or-...  # 使い捨てキー。保存�
     completion_tokens UInt32,
     cost_usd Decimal(20, 10),
     latency_ms UInt32,
-    username String
+    username String,
+    trace_id String,
+    session_id String,
+    metadata String
 )
 ENGINE = MergeTree
 ORDER BY (created_at, profile);`,
@@ -677,6 +683,50 @@ with bound_username("worker"):
         {
           type: 'p',
           text: '`django_openrouter.log_backends.LogBackend` を継承し、`write()`（任意で `awrite()`）を実装して、クラスの dotted path を `LOG_BACKENDS` に追加します。',
+        },
+      ],
+    },
+    {
+      id: 'tracing',
+      group: "ガイド",
+      title: "トレースとログのグループ",
+      lead: "任意の OpenTelemetry スパンと、各リクエストログの trace_id、session_id、metadata。",
+      blocks: [
+        {
+          type: "p",
+          text: "pip install django-openrouter[otel] は opentelemetry-api だけを入れます。SDK とエクスポーターはホスト側です。未インストールなら import しません。OPENROUTER['OTEL'] が true になるまでスパンはオフです。",
+        },
+        {
+          type: "h3",
+          text: "Spans",
+        },
+        {
+          type: "p",
+          text: "chat、stream、transcribe、generate_image と非同期版は親スパンを一つ開きます。generate_image はネストした chat スパンを足しません。リトライとフォールバックを含む各 HTTP 試行が子スパンです。ストリームは最初のトークンまでの時間を記録し、ジェネレータが終わるまで親を開いたままにします。BudgetExceeded、RateLimitExceeded、タイムアウト、中断したストリーム (499) はエラーです。",
+        },
+        {
+          type: "h3",
+          text: "trace_id / session_id",
+        },
+        {
+          type: "p",
+          text: "RequestLog に nullable でインデックス付きの trace_id と session_id、nullable の JSON metadata があります。一つの呼び出しのリトライは同じ trace_id を共有します。スパンがあるときは OpenTelemetry のトレース id、なければ生成した id です。chat の session_id と metadata はこれまで通り OpenRouter に送られます。trace= はローカルなスパン属性です。文字起こしはフィールドを保存し、音声 JSON には入れません。管理画面では session_id と trace_id で絞り込みと検索ができ、同じセッションまたはトレースの呼び出しへのリンクがあります。metadata は読み取り専用です。",
+        },
+        {
+          type: "code",
+          lang: "python",
+          title: "bound_session",
+          code: "from django_openrouter import chat\nfrom django_openrouter.current_user import bound_session\n\nwith bound_session(\"ticket-42\", metadata={\"feature\": \"support\"}):\n    chat(\"chat\", messages=[{\"role\": \"user\", \"content\": \"Hi\"}])\n\nchat(\n    \"chat\",\n    messages=[{\"role\": \"user\", \"content\": \"Hi\"}],\n    session_id=\"other\",\n    metadata={\"feature\": \"billing\"},\n    trace={\"feature.flag\": \"beta\"},\n)",
+        },
+        {
+          type: "h3",
+          text: "Logfire, Langfuse, Jaeger, Tempo",
+        },
+        {
+          type: "code",
+          lang: "python",
+          title: "OTLP",
+          code: "pip install \"django-openrouter[otel]\" opentelemetry-sdk opentelemetry-exporter-otlp\n\n# Logfire: logfire.configure() sets the TracerProvider.\n# Langfuse via OTLP:\n#   OTEL_EXPORTER_OTLP_ENDPOINT=https://cloud.langfuse.com/api/public/otel\n#   OTEL_EXPORTER_OTLP_HEADERS=Authorization=Basic <base64 public:secret>\n# Jaeger or Grafana Tempo (OTLP/HTTP):\n#   OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318\n\nfrom opentelemetry import trace\nfrom opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter\nfrom opentelemetry.sdk.trace import TracerProvider\nfrom opentelemetry.sdk.trace.export import BatchSpanProcessor\n\nprovider = TracerProvider()\nprovider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))\ntrace.set_tracer_provider(provider)",
         },
       ],
     },
